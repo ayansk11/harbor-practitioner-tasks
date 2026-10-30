@@ -1,6 +1,6 @@
 # Validation results
 
-Last updated: 2026-10-29 (Mac clock, MST).
+Last updated: 2026-10-30 (Mac clock, MST).
 
 Every task was run on Daytona with Harbor 0.25.0 (`harbor.version` in each trace's `job_lock.json`), using `tools/proof_matrix.py`. For each task the matrix runs the canonical solution ten times (oracle agent, `-k 10`), each alternative valid solution once, Harbor's nop agent once, each wrong or shortcut attempt once, and the canonical solution once more with `--force-build`. Expected: 1.0 for canonical, alternatives and force-build; 0.0 for nop and every attempt.
 
@@ -16,13 +16,14 @@ Every task was run on Daytona with Harbor 0.25.0 (`harbor.version` in each trace
 
 - `README.md`: which run is final, one row per variant (what it is, the rewards, the shipped trace, what the trace shows) and the notes.
 - `PROOF_RESULTS_<run>.md` (and `.json`, `run_<run>.log`): the matrix as `tools/proof_matrix.py` wrote it.
-- `traces/<variant>/`: one Harbor trial per variant of the final run (68 trace folders in all, including the lost feature-leakage-churn trial kept as evidence). Each holds the trial's `result.json`, `config.json`, `trial.log`, `agent/`, `verifier/` (reward and full verifier log), `artifacts/manifest.json`, and the job's `result.json` and `lock.json` as `job_result.json` and `job_lock.json`. The downloaded copy of `/app` is not shipped.
-- `traces/REDACTIONS.md`: machine-specific paths were replaced by `<submission>`, `<home>` and `<local-scratch>`; no reward, count or timing was changed.
+- `traces/<variant>/`: one Harbor trial per variant of the final run (68 trace folders from the final runs, including the lost feature-leakage-churn trial kept as evidence; the et0 agent pilot's folder, next bullet, makes 69). Each holds the trial's `result.json`, `config.json`, `trial.log`, `agent/`, `verifier/` (reward and full verifier log), `artifacts/manifest.json`, and the job's `result.json` and `lock.json` as `job_result.json` and `job_lock.json`. The downloaded copy of `/app` is not shipped.
+- `et0-station-ingest/traces/agent-pilot/`: the one model-agent trial run so far, outside the matrices, with the same files plus the agent's `trajectory.json`, `terminus_2.pane` and `recording.cast` in `agent/`.
+- `traces/REDACTIONS.md`: machine-specific paths were replaced by `<submission>`, `<home>` and `<local-scratch>` (and, in the et0 agent pilot's trace, the model service's URL by `<model-endpoint>`); no reward, count or timing was changed.
 
 ## Notes and limits
 
 - The raw Harbor job folders (`jobs/`) are git-ignored. The `Job folder` column of `PROOF_RESULTS_*.md` points there; use the trace folders instead.
 - Runner: Daytona sandboxes (Harbor `-e daytona`). The base image is pinned to a multi-arch index digest (`tools/BASE_IMAGE_DIGEST`). The sandboxes were linux/amd64; this is inferred from the Daytona backend, not read from the traces. No run used a local Docker engine.
 - Superseded runs kept as dated records: `ab-test-reanalysis` run `full1` (before its hidden set `h_twin` was rebuilt; `full2` is final) and `et0-station-ingest` run `smoke` (a pre-check). No traces are shipped from them.
-- No agent (model) trials were run: no model API key was settled for that. The matrices use Harbor's `oracle` and `nop` agents only, so these results show that the verifiers accept the reference and alternative solutions and reject the nop and the listed attempts. They say nothing yet about how hard the tasks are for an agent.
+- One agent (model) trial was run, outside the matrices: Harbor's `terminus-2` with `openai/gpt-oss-120b` on `et0-station-ingest`, reward 0.0 ([et0 README](et0-station-ingest/README.md#agent-pilot)). The matrices use Harbor's `oracle` and `nop` agents only, so these results show that the verifiers accept the reference and alternative solutions and reject the nop and the listed attempts. One trial says almost nothing about how hard the tasks are for an agent.
 - Times: job `result.json` times are the Mac clock (MST, no zone suffix); trial `result.json` times are UTC (suffix `Z`).

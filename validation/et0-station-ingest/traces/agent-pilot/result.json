@@ -1,0 +1,185 @@
+{
+    "id": "17ef1bb6-d662-4fd6-8a78-d748488d9aaf",
+    "task_name": "diffuse-labs/et0-station-ingest",
+    "trial_name": "et0-station-ingest__pKWPTuY",
+    "trial_uri": "file://<submission>/jobs/agent-trials/et0-station-ingest-terminus2-gptoss-pilot/et0-station-ingest__pKWPTuY",
+    "task_id": {
+        "path": "tasks/et0-station-ingest"
+    },
+    "source": null,
+    "task_checksum": "255c5eeb57732512bd9928381ce5ca441a7991ad48f379e51541a5278d6692e9",
+    "config": {
+        "task": {
+            "path": "tasks/et0-station-ingest",
+            "git_url": null,
+            "git_commit_id": null,
+            "name": null,
+            "ref": null,
+            "overwrite": false,
+            "download_dir": null,
+            "source": null
+        },
+        "trial_name": "et0-station-ingest__pKWPTuY",
+        "trials_dir": "jobs/agent-trials/et0-station-ingest-terminus2-gptoss-pilot",
+        "install_only": false,
+        "timeout_multiplier": 1.0,
+        "agent_timeout_multiplier": null,
+        "verifier_timeout_multiplier": null,
+        "agent_setup_timeout_multiplier": null,
+        "environment_build_timeout_multiplier": null,
+        "agent": {
+            "name": "terminus-2",
+            "import_path": null,
+            "model_name": "openai/gpt-oss-120b",
+            "base_url": null,
+            "model_api_key_name": null,
+            "model_api_format": null,
+            "skip_model_parsing": false,
+            "n_concurrent": null,
+            "concurrency_group": null,
+            "skills": [],
+            "override_timeout_sec": null,
+            "override_setup_timeout_sec": null,
+            "max_timeout_sec": null,
+            "resume_trajectory": false,
+            "load_trajectory": null,
+            "extra_allowed_hosts": [],
+            "kwargs": {
+                "api_base": "<model-endpoint>"
+            },
+            "mcp_servers": []
+        },
+        "user_agent": null,
+        "environment": {
+            "type": "daytona",
+            "import_path": null,
+            "force_build": false,
+            "delete": true,
+            "stream": false,
+            "cpu_enforcement_policy": "auto",
+            "memory_enforcement_policy": "auto",
+            "override_cpus": null,
+            "override_memory_mb": null,
+            "override_storage_mb": null,
+            "override_gpus": null,
+            "override_tpu": null,
+            "mounts": null,
+            "extra_docker_compose": [],
+            "kwargs": {},
+            "extra_allowed_hosts": []
+        },
+        "verifier": {
+            "override_timeout_sec": null,
+            "max_timeout_sec": null,
+            "disable": false
+        },
+        "artifacts": [],
+        "extra_instruction_paths": [],
+        "extra_instructions": [],
+        "job_id": "1b048d63-7f75-437a-a6f7-1f09e3522cec",
+        "source_trial": null
+    },
+    "agent_info": {
+        "name": "terminus-2",
+        "version": "2.0.0",
+        "model_info": {
+            "name": "gpt-oss-120b",
+            "provider": "openai"
+        }
+    },
+    "agent_result": {
+        "n_input_tokens": 902606,
+        "n_cache_tokens": 0,
+        "n_output_tokens": 35123,
+        "cost_usd": null,
+        "model_usage": {
+            "gpt-oss-120b": {
+                "n_input_tokens": 902606,
+                "n_cache_tokens": 0,
+                "n_output_tokens": 35123,
+                "cost_usd": null
+            }
+        },
+        "rollout_details": [],
+        "metadata": {
+            "n_episodes": 29,
+            "api_request_times_msec": [
+                1705.061912536621,
+                2505.039930343628,
+                3093.48201751709,
+                4028.263807296753,
+                6329.057931900024,
+                3809.0052604675293,
+                13046.349048614502,
+                25214.553117752075,
+                14663.44428062439,
+                15947.059154510498,
+                15596.360921859741,
+                13752.340078353882,
+                12515.789985656738,
+                15952.927112579346,
+                17097.03278541565,
+                14405.999183654785,
+                15034.810304641724,
+                14792.816877365112,
+                15493.605852127075,
+                13579.590320587158,
+                3764.0068531036377,
+                13490.019083023071,
+                5004.449844360352,
+                9316.358089447021,
+                2874.3879795074463,
+                10802.759885787964,
+                14386.590003967285,
+                2986.358165740967,
+                2727.833032608032
+            ],
+            "summarization_count": 0
+        }
+    },
+    "verifier_result": {
+        "rewards": {
+            "reward": 0.0,
+            "tolerance_mm_day": 0.03,
+            "app_locked": 1,
+            "visible_ok": 0,
+            "visible_missing_rows": 0,
+            "visible_extra_rows": 0,
+            "visible_bad_rows": 0,
+            "visible_duplicate_rows": 0,
+            "visible_rows_over_tol": 2184,
+            "visible_max_abs_err": 66.684361,
+            "hidden_run_rc": 0,
+            "hidden_run_timed_out": 0,
+            "hidden_run_seconds": 0.32,
+            "hidden_ok": 0,
+            "hidden_missing_rows": 0,
+            "hidden_extra_rows": 0,
+            "hidden_bad_rows": 0,
+            "hidden_duplicate_rows": 0,
+            "hidden_rows_over_tol": 2016,
+            "hidden_max_abs_err": 1.087565
+        }
+    },
+    "verifier_environment_mode": "separate",
+    "exception_info": null,
+    "started_at": "2026-10-30T00:31:00.154956Z",
+    "finished_at": "2026-10-30T00:41:03.170358Z",
+    "environment_setup": {
+        "started_at": "2026-10-30T00:31:00.195223Z",
+        "finished_at": "2026-10-30T00:31:24.696374Z"
+    },
+    "agent_setup": {
+        "started_at": "2026-10-30T00:31:24.696412Z",
+        "finished_at": "2026-10-30T00:31:38.903189Z"
+    },
+    "agent_execution": {
+        "started_at": "2026-10-30T00:31:38.904645Z",
+        "finished_at": "2026-10-30T00:40:19.953971Z"
+    },
+    "verifier": {
+        "started_at": "2026-10-30T00:40:28.005660Z",
+        "finished_at": "2026-10-30T00:41:03.170333Z"
+    },
+    "step_results": null
+}

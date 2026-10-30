@@ -1,0 +1,18 @@
+{
+    "task": {
+        "path": "tasks/et0-station-ingest"
+    },
+    "trial_name": "et0-station-ingest__pKWPTuY",
+    "trials_dir": "jobs/agent-trials/et0-station-ingest-terminus2-gptoss-pilot",
+    "agent": {
+        "name": "terminus-2",
+        "model_name": "openai/gpt-oss-120b",
+        "kwargs": {
+            "api_base": "<model-endpoint>"
+        }
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "1b048d63-7f75-437a-a6f7-1f09e3522cec"
+}

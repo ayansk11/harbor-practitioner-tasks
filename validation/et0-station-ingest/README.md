@@ -1,14 +1,14 @@
 # Validation: et0-station-ingest
 
-Last updated: 2026-10-29 (Mac clock, MST).
+Last updated: 2026-10-30 (Mac clock, MST).
 
 **Final run: `full1`.** Harbor 0.25.0 on Daytona, 2026-10-28 from 19:45:27 to 19:56:20 (Mac clock, MST; job `result.json`). Overall: ALL AS EXPECTED (`PROOF_RESULTS_full1.md`).
 
 ## Files in this folder
 
 - `PROOF_RESULTS_<run>.md`, `proof_results_<run>.json`, `run_<run>.log`: the proof matrix of each run, written by `tools/proof_matrix.py`.
-- `traces/<variant>/`: one Harbor trial per variant of the final run (table below).
-- `traces/REDACTIONS.md`: the machine-specific paths replaced in the trace copies.
+- `traces/<variant>/`: one Harbor trial per variant of the final run (table below); `traces/agent-pilot/`: the agent pilot (section "Agent pilot").
+- `traces/REDACTIONS.md`: the machine-specific paths replaced in the trace copies, and the model service's URL in the pilot's copy.
 - `NOTES.md`: what the run showed beyond the rewards.
 
 The "Job folder" column of the `PROOF_RESULTS_*.md` files points into `jobs/`, the raw Harbor output. `jobs/` is git-ignored and not part of the repository; the trace folders below are the shipped copy.
@@ -42,20 +42,49 @@ Each `traces/<variant>/` folder holds the files of one Harbor trial, copied from
 | File | What it shows |
 |---|---|
 | `result.json` | Harbor's trial record: the reward and the grader's metrics, the exception if any, phase start and end times (UTC, ending in `Z`), and the trial config |
-| `config.json` | the trial config: task path, agent (`oracle` or `nop`) and, for oracle trials, the `SOLUTION` variable passed with `--ae` |
-| `trial.log` | Harbor's trial log (sandbox build and artifact download) |
-| `agent/oracle.txt` | what `solution/solve.sh` printed in the sandbox (nop trials have no `agent/` folder; an empty file means `solve.sh` printed nothing) |
+| `config.json` | the trial config: task path, agent (`oracle` or `nop`; `terminus-2` and its model for the agent pilot) and, for oracle trials, the `SOLUTION` variable passed with `--ae` |
+| `trial.log` | Harbor's trial log (sandbox build and artifact download; the agent pilot's also records the agent's trajectory saves and parser warnings) |
+| `agent/oracle.txt` | what `solution/solve.sh` printed in the sandbox (nop trials have no `agent/` folder; an empty file means `solve.sh` printed nothing; the agent pilot has no `oracle.txt`: its `agent/` holds `trajectory.json`, `terminus_2.pane` and `recording.cast`) |
 | `verifier/reward.txt`, `verifier/reward.json` | the reward Harbor read, and the grader's metrics |
 | `verifier/test-stdout.txt` | the verifier's full log (`tests/test.sh` and the grader) |
 | `artifacts/manifest.json` | what Harbor downloaded from the agent sandbox for the verifier (the downloaded copy of `/app` itself is not shipped) |
 | `job_result.json` | the job-level `result.json`: every trial of that job with its reward (for canonical, all ten), and job start and end times (Mac clock, MST, no zone suffix) |
 | `job_lock.json` | the job-level `lock.json`: `harbor.version` (0.25.0), the task digest and the trial settings |
 
-`traces/REDACTIONS.md` lists the machine-specific paths that were replaced in these copies. Nothing else was changed.
+`traces/REDACTIONS.md` lists the machine-specific paths that were replaced in these copies, and the model service's URL in `traces/agent-pilot/`. Nothing else was changed.
+
+## Agent pilot
+
+One trial of a model agent, outside the proof matrix: Harbor's `terminus-2` agent with `openai/gpt-oss-120b`, served by an
+OpenAI-compatible model service (its URL is `<model-endpoint>` in the trace), on 2026-10-30 from 00:31:00 to 00:41:03
+UTC (2026-10-29, 17:31 to 17:41 on the Mac clock, MST). It ran on the same task package as `full1`: the task digest in
+`traces/agent-pilot/job_lock.json` equals the one in the other traces. Reward 0.0. The trace,
+[`traces/agent-pilot/`](traces/agent-pilot/), holds the same files as the others except `agent/oracle.txt`, plus the agent's
+record (`agent/trajectory.json`: the prompt and 29 agent steps), its terminal pane (`agent/terminus_2.pane`) and a
+terminal recording (`agent/recording.cast`). The downloaded `/app` is not shipped; the agent's final code is in
+`agent/trajectory.json`: its last `cat > et0/ingest.py` (step 23) and its `cat > et0/pipeline.py` (step 28).
+
+What the trace shows:
+- The agent rewrote `et0/ingest.py` with the wind-height conversion (FAO-56 Eq. 47) and the radiation-unit conversion.
+  It read `et0/meta.py`, judged its latitude parsing correct (step 9) and left it unchanged, so the southern-latitude
+  defect stayed.
+- It compared the first five days of one station (PAL) with the met-service sample, whose values are given to 0.1
+  mm/day, and never looked at the sample's other station, CDB, which is in the southern hemisphere; then it made the
+  pipeline round every value to 0.1 mm/day. Rounding alone can move a value by up to 0.05 mm/day, more than the 0.03
+  tolerance.
+- It ran the pipeline only with `--out output/et0_fixed.csv` and never regenerated `/app/output/et0.csv`, which the
+  instruction asks for; then it marked the task complete.
+- The visible check read the untouched `/app/output/et0.csv`: 2,184 of 2,920 rows over the tolerance, max error 66.68
+  mm/day, the same as the nop trial. The hidden run of the agent's pipeline: 2,016 of 3,651 rows over the tolerance,
+  max error 1.09 mm/day (`verifier/reward.json`, `verifier/test-stdout.txt`).
+
+The trial ended on 2026-10-30 at 00:41 UTC, before this repository was created on GitHub (07:08 UTC the same day), and
+none of its commands used the network. One trial is not a pass rate; the `difficulty` label in `task.toml` is still
+our estimate.
 
 ## Notes
 
 - A smoke run (`PROOF_RESULTS_smoke.md`: canonical with one trial 1.0, nop 0.0) ran just before `full1` as a pre-check. No traces are shipped from it.
 - This task's `solve.sh` prints no `applied <variant>` line; `agent/oracle.txt` holds the pipeline's own output. The evidence that each `SOLUTION` reached `solve.sh` is that each attempt's errors in `verifier/reward.json` match the local results in `../../docs/et0-station-ingest/DESIGN.md` section 9.
 - The three defence probes (from NOTES.md): `read_answers` scored 0 because the agent's user could not read `/tests` (an INFERENCE, see NOTES.md); `abs_app_path` scored 0 because the grader made `/app` unavailable before running the agent's code (`app_locked` 1, hidden run rc 1); `symlink_output` scored 0 because Harbor's artifact step did not keep the symlink into `/tests`, so the verifier saw no output file. For `symlink_output`, three files show this: `trial.log` (Harbor's traceback from the artifact download), `artifacts/manifest.json` (`/app` has status `failed`) and `artifacts/app_output_listing.txt` (a listing, made on 2026-10-29 from the local job folder, showing that the downloaded `output/` folder was empty). The grader's own symlink defence was therefore not exercised on Daytona.
-- No agent (model) trials were run for this task; the matrix uses Harbor's `oracle` and `nop` agents only.
+- One agent (model) trial was run for this task, outside the matrix (section "Agent pilot"); the matrix uses Harbor's `oracle` and `nop` agents only.

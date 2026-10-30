@@ -375,7 +375,7 @@ per run. G4, G8 (resources), G12, G13, G16, G17 and G22-G25 are proven by the re
   instruction tells the agent to time a run on `/app/data`, which is about the same size.
 - `difficulty = "hard"` is the author's estimate (review finding 7, section 12): FEATURES.md states every rule and each
   leak is a short edit, so frontier agents may pass often. Set it from the measured pass rate of agent trials on
-  Daytona (and say so in the README); no agent trials have been run (section 13). A high pass rate is not a defect
+  Daytona (and say so in the README); no agent trials have been run on this task (section 13). A high pass rate is not a defect
   (G29).
 - Planted rows are in H only; the visible extract has no order or ticket at `t - 30 days` and no same-district label
   landing at a scoring point, so an agent cannot see those edges matter by running on `/app/data`. The spec states

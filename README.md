@@ -78,8 +78,10 @@ tools/                 proof_matrix.py, check_task.py, sync_kit.py, BASE_IMAGE_D
 ## Known limitations
 
 All five tasks:
-- **No agent trials yet.** Every reward above comes from the oracle (reference solutions and attempts) and the nop
-  agent. Pass rates are not measured; the `difficulty` labels in `task.toml` are our estimates.
+- **One agent trial so far.** Every reward above comes from the oracle (reference solutions and attempts) and the nop
+  agent. One pilot trial of a model agent (Harbor's `terminus-2` with `openai/gpt-oss-120b`) ran on
+  `et0-station-ingest` and scored 0.0 ([what it did](validation/et0-station-ingest/README.md#agent-pilot)). Pass rates
+  are not measured; the `difficulty` labels in `task.toml` are our estimates.
 - **Validated on Daytona only**, never with a local Docker engine (linux/amd64 sandboxes, inferred from the backend).
   The base image `python:3.12-slim-bookworm` is pinned by a multi-arch index digest (`tools/BASE_IMAGE_DIGEST`), so an
   arm64 host builds an arm64 image that has not been run.
@@ -87,14 +89,17 @@ All five tasks:
   needs no network.
 - **The hidden tests are public.** This repository is public, so anyone, including an agent with internet access, can
   read the hidden inputs and expected answers in each task's `tests/` folder. For agent trials, deny the agent network
-  access or use a private copy.
+  access; a private copy of the tasks does not help while this repository is public. On Daytona's Tier 1 and 2, network
+  rules cannot be overridden per sandbox and `github.com`, `*.github.com` and `*.githubusercontent.com` stay reachable
+  ([Daytona network limits](https://www.daytona.io/docs/en/network-limits/)), so on those tiers read each trial's
+  trajectory for fetches from those hosts and exclude any trial that made one.
 - **Kit rules the instructions do not spell out:** the graded copy loses `conftest.py`, `sitecustomize`/`usercustomize`,
   `*.pth`, `*.pyc` and `__pycache__`; a copy over 2 GiB or 200,000 entries scores 0; written files are capped at 1 GiB,
   run output at 64 MiB, uid 1001 at 512 processes and threads. No sane solution needs any of these.
 - In the two HTTP tasks a hostile service could send the hidden data out over the host network; it cannot raise its
   own score that way (the expected answers stay in `/tests`).
 - **Run traces:** one Harbor trial per variant of each final run, under `validation/<slug>/traces/<variant>/` (reward,
-  config, full verifier log; the lost DNS trial has no reward or verifier log), indexed in `validation/README.md`. The raw job folders (`jobs/`) are git-ignored; the
+  config, full verifier log; the lost DNS trial has no reward or verifier log), indexed in `validation/README.md`; the agent pilot's trial is in `validation/et0-station-ingest/traces/agent-pilot/`. The raw job folders (`jobs/`) are git-ignored; the
   "Job folder" column of `PROOF_RESULTS_*.md` points there, and the trace folders are the shipped copy.
 - The DESIGN.md files cite planning notes that are not in this repository. So do the shared kit's docstring
   (`base/verifier_kit/kit.py` line 3, copied into each task's `tests/`: an infrastructure-check log) and two et0
