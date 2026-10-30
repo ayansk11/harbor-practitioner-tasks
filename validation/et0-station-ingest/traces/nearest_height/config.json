@@ -1,0 +1,17 @@
+{
+    "task": {
+        "path": "<submission>/tasks/et0-station-ingest"
+    },
+    "trial_name": "et0-station-ingest__kCVjMH6",
+    "trials_dir": "<submission>/jobs/et0-station-ingest/et0-station-ingest-nearest_height-full1",
+    "agent": {
+        "name": "oracle",
+        "env": {
+            "SOLUTION": "nearest_height"
+        }
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "d81e7b1f-23b6-4aa9-b886-8ee513a89cb4"
+}

@@ -1,0 +1,17 @@
+{
+    "task": {
+        "path": "<submission>/tasks/et0-station-ingest"
+    },
+    "trial_name": "et0-station-ingest__K2dYS5L",
+    "trials_dir": "<submission>/jobs/et0-station-ingest/et0-station-ingest-hardcode_output-full1",
+    "agent": {
+        "name": "oracle",
+        "env": {
+            "SOLUTION": "hardcode_output"
+        }
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "c7683711-c154-4fcf-bed1-aea016f35e65"
+}

@@ -1,0 +1,17 @@
+{
+    "task": {
+        "path": "<submission>/tasks/orders-export-missing-rows"
+    },
+    "trial_name": "orders-export-missing-rows__fhtFEef",
+    "trials_dir": "<submission>/jobs/orders-export-missing-rows/orders-export-missing-rows-customer_offset-full1",
+    "agent": {
+        "name": "oracle",
+        "env": {
+            "SOLUTION": "customer_offset"
+        }
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "32d42be2-982b-42ae-831e-fc367022f616"
+}

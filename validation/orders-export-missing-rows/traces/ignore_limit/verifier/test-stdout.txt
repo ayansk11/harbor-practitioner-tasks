@@ -1,0 +1,90 @@
+[test.sh] lock ok: /logs/verifier 0:0 755, /logs 0:0 755, owner before 0:0; protected_symlinks=1 protected_hardlinks=1 protected_regular=2; setid files left: 0
+[kit] python 3.12.16, sqlite 3.40.1
+[kit] SHA256SUMS ok (8 files)
+[kit] submission copied to /work/sub; removed 0 auto-run entries; skipped 0 special files
+[kit] staged /tests/original for uid 1001 at /work/original
+[kit] staged /tests/hidden/orders.db for uid 1001 at /work/db_original
+[kit] service on 127.0.0.1:36503 answered after 0.21s
+[kit] original service on port 36503: up after 0.22s
+[kit] original: 301 requests, answers equal the hidden database
+[kit] original phase 0.55s
+[kit] staged /tests/hidden/orders.db for uid 1001 at /work/db_agent
+[kit] service on 127.0.0.1:59445 answered after 0.20s
+[kit] agent service on port 59445: up after 0.21s
+[kit]   FAIL c7_public: GET /orders: status 200, page has 30000 orders, more than limit=100
+[kit]   FAIL c7_public: GET /orders?limit=500
+[kit]   FAIL c7_public: GET /customers/6/orders
+[kit]   FAIL c2_pages: /orders limit=50: page 1: page has 30000 orders, more than limit=50
+[kit]   FAIL c1_order: /orders limit=50: 0 orders (0 distinct) for 30000 expected; first difference at got 0 ids, expected 30000
+[kit] walk /orders limit=50: 0 pages, 0 orders, 0.13s
+[kit]   FAIL c2_pages: /orders limit=200: page 1: page has 30000 orders, more than limit=200
+[kit]   FAIL c1_order: /orders limit=200: 0 orders (0 distinct) for 30000 expected; first difference at got 0 ids, expected 30000
+[kit] walk /orders limit=200: 0 pages, 0 orders, 0.21s
+[kit]   FAIL c2_pages: /orders limit=500: page 1: page has 30000 orders, more than limit=500
+[kit]   FAIL c1_order: /orders limit=500: 0 orders (0 distinct) for 30000 expected; first difference at got 0 ids, expected 30000
+[kit] walk /orders limit=500: 0 pages, 0 orders, 0.13s
+[kit]   FAIL c2_pages: /orders limit=7 (newest 5000): page 1: page has 30000 orders, more than limit=7
+[kit]   FAIL c1_order: /orders limit=7 (newest 5000): only 0 orders
+[kit] walk /orders limit=7 (newest 5000): 0 pages, 0 orders, 0.14s
+[kit]   FAIL c2_pages: /orders limit=1 (newest 2000): page 1: page has 30000 orders, more than limit=1
+[kit]   FAIL c1_order: /orders limit=1 (newest 2000): only 0 orders
+[kit] walk /orders limit=1 (newest 2000): 0 pages, 0 orders, 0.13s
+[kit]   FAIL c2_pages: /customers/6/orders limit=3: page 1: page has 413 orders, more than limit=3
+[kit]   FAIL c3_customers: /customers/6/orders limit=3: 0 orders (0 distinct) for 413 expected; first difference at got 0 ids, expected 413
+[kit] walk /customers/6/orders limit=3: 0 pages, 0 orders, 0.00s
+[kit]   FAIL c2_pages: /customers/6/orders limit=20: page 1: page has 413 orders, more than limit=20
+[kit]   FAIL c3_customers: /customers/6/orders limit=20: 0 orders (0 distinct) for 413 expected; first difference at got 0 ids, expected 413
+[kit] walk /customers/6/orders limit=20: 0 pages, 0 orders, 0.00s
+[kit]   FAIL c2_pages: /customers/16/orders limit=3: page 1: page has 281 orders, more than limit=3
+[kit]   FAIL c3_customers: /customers/16/orders limit=3: 0 orders (0 distinct) for 281 expected; first difference at got 0 ids, expected 281
+[kit] walk /customers/16/orders limit=3: 0 pages, 0 orders, 0.00s
+[kit]   FAIL c2_pages: /customers/16/orders limit=20: page 1: page has 281 orders, more than limit=20
+[kit]   FAIL c3_customers: /customers/16/orders limit=20: 0 orders (0 distinct) for 281 expected; first difference at got 0 ids, expected 281
+[kit] walk /customers/16/orders limit=20: 0 pages, 0 orders, 0.00s
+[kit]   FAIL c2_pages: /customers/1/orders limit=3: page 1: page has 242 orders, more than limit=3
+[kit]   FAIL c3_customers: /customers/1/orders limit=3: 0 orders (0 distinct) for 242 expected; first difference at got 0 ids, expected 242
+[kit] walk /customers/1/orders limit=3: 0 pages, 0 orders, 0.00s
+[kit]   FAIL c2_pages: /customers/1/orders limit=20: page 1: page has 242 orders, more than limit=20
+[kit]   FAIL c3_customers: /customers/1/orders limit=20: 0 orders (0 distinct) for 242 expected; first difference at got 0 ids, expected 242
+[kit] walk /customers/1/orders limit=20: 0 pages, 0 orders, 0.00s
+[kit]   FAIL c2_pages: /customers/27/orders limit=3: page 1: page has 211 orders, more than limit=3
+[kit]   FAIL c3_customers: /customers/27/orders limit=3: 0 orders (0 distinct) for 211 expected; first difference at got 0 ids, expected 211
+[kit] walk /customers/27/orders limit=3: 0 pages, 0 orders, 0.00s
+[kit]   FAIL c2_pages: /customers/27/orders limit=20: page 1: page has 211 orders, more than limit=20
+[kit]   FAIL c3_customers: /customers/27/orders limit=20: 0 orders (0 distinct) for 211 expected; first difference at got 0 ids, expected 211
+[kit] walk /customers/27/orders limit=20: 0 pages, 0 orders, 0.00s
+[kit]   FAIL c2_pages: /customers/4/orders limit=3: page 1: page has 196 orders, more than limit=3
+[kit]   FAIL c3_customers: /customers/4/orders limit=3: 0 orders (0 distinct) for 196 expected; first difference at got 0 ids, expected 196
+[kit] walk /customers/4/orders limit=3: 0 pages, 0 orders, 0.00s
+[kit]   FAIL c2_pages: /customers/4/orders limit=20: page 1: page has 196 orders, more than limit=20
+[kit]   FAIL c3_customers: /customers/4/orders limit=20: 0 orders (0 distinct) for 196 expected; first difference at got 0 ids, expected 196
+[kit] walk /customers/4/orders limit=20: 0 pages, 0 orders, 0.00s
+[kit]   FAIL c2_pages: /customers/35/orders limit=3: page 1: page has 190 orders, more than limit=3
+[kit]   FAIL c3_customers: /customers/35/orders limit=3: 0 orders (0 distinct) for 190 expected; first difference at got 0 ids, expected 190
+[kit] walk /customers/35/orders limit=3: 0 pages, 0 orders, 0.00s
+[kit]   FAIL c2_pages: /customers/35/orders limit=20: page 1: page has 190 orders, more than limit=20
+[kit]   FAIL c3_customers: /customers/35/orders limit=20: 0 orders (0 distinct) for 190 expected; first difference at got 0 ids, expected 190
+[kit] walk /customers/35/orders limit=20: 0 pages, 0 orders, 0.00s
+[kit]   FAIL c2_pages: /customers/441/orders limit=3: page 1: page has 53 orders, more than limit=3
+[kit]   FAIL c3_customers: /customers/441/orders limit=3: 0 orders (0 distinct) for 53 expected; first difference at got 0 ids, expected 53
+[kit] walk /customers/441/orders limit=3: 0 pages, 0 orders, 0.00s
+[kit]   FAIL c2_pages: /customers/441/orders limit=20: page 1: page has 53 orders, more than limit=20
+[kit] walk /customers/441/orders limit=20: 0 pages, 0 orders, 0.00s
+[kit] walk /customers/456/orders limit=3: 0 pages, 0 orders, 0.00s
+[kit] walk /customers/456/orders limit=20: 1 pages, 17 orders, 0.00s
+[kit] walk /customers/1645/orders limit=3: 0 pages, 0 orders, 0.00s
+[kit] walk /customers/1645/orders limit=20: 0 pages, 0 orders, 0.00s
+[kit] walk /customers/2063/orders limit=3: 0 pages, 0 orders, 0.00s
+[kit] walk /customers/2063/orders limit=20: 0 pages, 0 orders, 0.00s
+[kit] walk /orders limit=100 with orders inserted after pages [3, 10]: 0 pages, 0 orders (0 of 50 new)
+[kit] walk /customers/6/orders limit=3 with orders inserted after pages [2, 5]: 0 pages, 0 orders (0 of 6 new)
+[kit] agent: 344 requests in 1.54s
+[kit] check c1_order: 0 passed, 5 failed
+[kit] check c2_pages: 2 passed, 26 failed
+[kit] check c3_customers: 2 passed, 19 failed
+[kit] check c4_inserts: 2 passed, 2 failed
+[kit] check c5_errors: 11 passed, 0 failed
+[kit] check c6_fields: 28 passed, 0 failed
+[kit] check c7_public: 2 passed, 3 failed
+[kit] check db: 3 passed, 0 failed
+[kit] reward=0.0 (killed 0 runner processes) metrics={'reward': 0.0, 'c1_order_ok': 0, 'c2_pages_ok': 0, 'c3_customers_ok': 0, 'c4_inserts_ok': 0, 'c5_errors_ok': 1, 'c6_fields_ok': 1, 'c7_public_ok': 0, 'db_ok': 1, 'failed_checks': 55, 'agent_seconds': 1.54, 'grading_seconds': 2.45}

@@ -1,0 +1,17 @@
+{
+    "task": {
+        "path": "<submission>/tasks/et0-station-ingest"
+    },
+    "trial_name": "et0-station-ingest__kgRb5cS",
+    "trials_dir": "<submission>/jobs/et0-station-ingest/et0-station-ingest-symlink_output-full1",
+    "agent": {
+        "name": "oracle",
+        "env": {
+            "SOLUTION": "symlink_output"
+        }
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "ab2ed49f-09ff-4a0f-a03b-0d6221619d7e"
+}

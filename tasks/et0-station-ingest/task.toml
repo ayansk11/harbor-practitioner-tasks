@@ -1,0 +1,22 @@
+schema_version = "1.4"
+artifacts = [{ source = "/app", exclude = ["data", "__pycache__", ".venv"] }]
+
+[task]
+name = "diffuse-labs/et0-station-ingest"
+description = "Fix a FAO-56 Penman-Monteith ET0 pipeline that mishandles station metadata (sensor height, radiation units, hemisphere), against a misleading altitude hint."
+keywords = ["scientific-computing", "agrometeorology", "fao-56", "data-ingest", "debugging"]
+
+[metadata]
+category = "scientific-workflows"
+difficulty = "easy-medium"
+
+[agent]
+timeout_sec = 1800.0
+
+[verifier]
+environment_mode = "separate"
+timeout_sec = 120.0
+
+[environment]
+cpus = 1
+memory_mb = 1024

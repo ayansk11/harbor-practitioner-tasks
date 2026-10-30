@@ -1,0 +1,6 @@
+# Redacted 2026-10-29: machine-specific paths replaced (<submission> x2). <submission> = the submission folder on the authoring Mac, <home> = the author's home folder, <local-scratch> = the session scratch folder. Nothing else changed: no reward, count or timing.
+Selected strategy: _DaytonaDirect
+Building environment from <submission>/tasks/et0-station-ingest/environment/Dockerfile
+Collecting main service artifacts
+Selected strategy: _DaytonaDirect
+Building environment from <submission>/tasks/et0-station-ingest/tests/Dockerfile

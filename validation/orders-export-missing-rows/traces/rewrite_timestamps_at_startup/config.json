@@ -1,0 +1,17 @@
+{
+    "task": {
+        "path": "<submission>/tasks/orders-export-missing-rows"
+    },
+    "trial_name": "orders-export-missing-rows__4kUTUxx",
+    "trials_dir": "<submission>/jobs/orders-export-missing-rows/orders-export-missing-rows-rewrite_timestamps_at_startup-full1",
+    "agent": {
+        "name": "oracle",
+        "env": {
+            "SOLUTION": "rewrite_timestamps_at_startup"
+        }
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "1da0fb27-d8f9-4fea-97e2-272224c2365a"
+}

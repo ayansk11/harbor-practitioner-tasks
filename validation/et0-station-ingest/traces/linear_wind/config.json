@@ -1,0 +1,17 @@
+{
+    "task": {
+        "path": "<submission>/tasks/et0-station-ingest"
+    },
+    "trial_name": "et0-station-ingest__ETJJkV3",
+    "trials_dir": "<submission>/jobs/et0-station-ingest/et0-station-ingest-linear_wind-full1",
+    "agent": {
+        "name": "oracle",
+        "env": {
+            "SOLUTION": "linear_wind"
+        }
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "6bfc2751-6341-40c7-8620-df262b0493f4"
+}

@@ -1,0 +1,17 @@
+{
+    "task": {
+        "path": "<submission>/tasks/ab-test-reanalysis"
+    },
+    "trial_name": "ab-test-reanalysis__K7NgMLk",
+    "trials_dir": "<submission>/jobs/ab-test-reanalysis/ab-test-reanalysis-fix_bots_only-full2",
+    "agent": {
+        "name": "oracle",
+        "env": {
+            "SOLUTION": "fix_bots_only"
+        }
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "53af1048-2eb9-4a8b-84cf-22a5e5552579"
+}

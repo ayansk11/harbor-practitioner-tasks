@@ -1,0 +1,1 @@
+applied rewrite_timestamps_at_startup to /app

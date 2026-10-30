@@ -1,0 +1,74 @@
+# Station register for the irrigation-advice ET0 run (see /app/docs/METHOD.md for every field).
+stations:
+  - id: VNT
+    name: Valle Norte
+    latitude: 38.42
+    longitude: -3.71
+    elevation_m: 85
+    wind_height_m: 2.0
+    radiation_units: "MJ/m2/day"
+    humidity: rh_minmax
+    network: valley-agromet
+  - id: PAL
+    name: Paso Alto
+    latitude: "36.95N"
+    longitude: -3.02
+    elevation_m: 1840
+    wind_height_m: 10.0
+    radiation_units: "MJ/m2/day"
+    humidity: rh_minmax
+    network: highland-synop
+  - id: CDB
+    name: Costa del Bajo
+    latitude: "34.92S"
+    longitude: 138.6
+    elevation_m: 48
+    wind_height_m: 2.0
+    radiation_units: "MJ/m2/day"
+    humidity: dewpoint
+    network: southern-coast
+  - id: LGN
+    name: Laguna Grande
+    latitude: -31.85
+    longitude: 116.02
+    elevation_m: 420
+    wind_height_m: 3.0
+    radiation_units: "W/m2"
+    humidity: rh_minmax
+    network: southern-coast
+  - id: RSD
+    name: Ribera Seca
+    latitude: "41.73N"
+    longitude: -1.02
+    elevation_m: 230
+    wind_height_m: 2.0
+    radiation_units: "W/m2"
+    humidity: dewpoint
+    network: highland-synop
+  - id: MRS
+    name: Marisma
+    latitude: 35.1
+    longitude: -6.15
+    elevation_m: 12
+    wind_height_m: 3.0
+    radiation_units: "MJ/m2/day"
+    humidity: rh_minmax
+    network: valley-agromet
+  - id: HLT
+    name: Altiplano Sur
+    latitude: "33.40S"
+    longitude: -70.55
+    elevation_m: 610
+    wind_height_m: 10.0
+    radiation_units: "W/m2"
+    humidity: dewpoint
+    network: highland-synop
+  - id: ARN
+    name: Arenales
+    latitude: 40.05
+    longitude: -4.4
+    elevation_m: 690
+    wind_height_m: 2.0
+    radiation_units: "MJ/m2/day"
+    humidity: dewpoint
+    network: valley-agromet

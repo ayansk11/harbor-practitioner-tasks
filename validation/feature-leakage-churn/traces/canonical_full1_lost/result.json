@@ -1,0 +1,121 @@
+{
+    "id": "9ef2f18f-73e8-40a8-b741-a32d08b08b71",
+    "task_name": "diffuse-labs/feature-leakage-churn",
+    "trial_name": "feature-leakage-churn__dtTSGvN",
+    "trial_uri": "file://<submission>/jobs/feature-leakage-churn/feature-leakage-churn-canonical-full1/feature-leakage-churn__dtTSGvN",
+    "task_id": {
+        "path": "<submission>/tasks/feature-leakage-churn"
+    },
+    "source": null,
+    "task_checksum": "356c933be4afbde41a7bd1848962ef6ccae022d11277b2d4b7271c18be993f9a",
+    "config": {
+        "task": {
+            "path": "<submission>/tasks/feature-leakage-churn",
+            "git_url": null,
+            "git_commit_id": null,
+            "name": null,
+            "ref": null,
+            "overwrite": false,
+            "download_dir": null,
+            "source": null
+        },
+        "trial_name": "feature-leakage-churn__dtTSGvN",
+        "trials_dir": "<submission>/jobs/feature-leakage-churn/feature-leakage-churn-canonical-full1",
+        "install_only": false,
+        "timeout_multiplier": 1.0,
+        "agent_timeout_multiplier": null,
+        "verifier_timeout_multiplier": null,
+        "agent_setup_timeout_multiplier": null,
+        "environment_build_timeout_multiplier": null,
+        "agent": {
+            "name": "oracle",
+            "import_path": null,
+            "model_name": null,
+            "base_url": null,
+            "model_api_key_name": null,
+            "model_api_format": null,
+            "skip_model_parsing": false,
+            "n_concurrent": null,
+            "concurrency_group": null,
+            "skills": [],
+            "override_timeout_sec": null,
+            "override_setup_timeout_sec": null,
+            "max_timeout_sec": null,
+            "resume_trajectory": false,
+            "load_trajectory": null,
+            "extra_allowed_hosts": [],
+            "kwargs": {},
+            "mcp_servers": []
+        },
+        "user_agent": null,
+        "environment": {
+            "type": "daytona",
+            "import_path": null,
+            "force_build": false,
+            "delete": true,
+            "stream": false,
+            "cpu_enforcement_policy": "auto",
+            "memory_enforcement_policy": "auto",
+            "override_cpus": null,
+            "override_memory_mb": null,
+            "override_storage_mb": null,
+            "override_gpus": null,
+            "override_tpu": null,
+            "mounts": null,
+            "extra_docker_compose": [],
+            "kwargs": {},
+            "extra_allowed_hosts": []
+        },
+        "verifier": {
+            "override_timeout_sec": null,
+            "max_timeout_sec": null,
+            "disable": false
+        },
+        "artifacts": [],
+        "extra_instruction_paths": [],
+        "extra_instructions": [],
+        "job_id": "78683dcf-8509-441d-88c2-1669b135669a",
+        "source_trial": null
+    },
+    "agent_info": {
+        "name": "oracle",
+        "version": "1.0.0",
+        "model_info": null
+    },
+    "agent_result": {
+        "n_input_tokens": null,
+        "n_cache_tokens": null,
+        "n_output_tokens": null,
+        "cost_usd": null,
+        "model_usage": null,
+        "rollout_details": null,
+        "metadata": null
+    },
+    "verifier_result": null,
+    "verifier_environment_mode": "separate",
+    "exception_info": {
+        "exception_type": "DaytonaConnectionError",
+        "exception_message": "Failed to get session command: Cannot connect to host proxy.app.daytona.io:443 ssl:default [nodename nor servname provided, or not known]",
+        "exception_traceback": "Traceback (most recent call last):\n  File \"<home>/.local/share/uv/tools/harbor/lib/python3.13/site-packages/aiohttp/connector.py\", line 1592, in _create_direct_connection\n    hosts = await self._resolve_host(host, port, traces=traces)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<home>/.local/share/uv/tools/harbor/lib/python3.13/site-packages/aiohttp/connector.py\", line 1202, in _resolve_host\n    return await asyncio.shield(resolved_host_task)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<home>/.local/share/uv/tools/harbor/lib/python3.13/site-packages/aiohttp/connector.py\", line 1233, in _resolve_host_with_throttle\n    addrs = await self._resolver.resolve(host, port, family=self._family)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<home>/.local/share/uv/tools/harbor/lib/python3.13/site-packages/aiohttp/resolver.py\", line 47, in resolve\n    infos = await self._loop.getaddrinfo(\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<5 lines>...\n    )\n    ^\n  File \"<home>/.local/share/uv/python/cpython-3.13-macos-aarch64-none/lib/python3.13/asyncio/base_events.py\", line 939, in getaddrinfo\n    return await self.run_in_executor(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n        None, getaddr_func, host, port, family, type, proto, flags)\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<home>/.local/share/uv/python/cpython-3.13-macos-aarch64-none/lib/python3.13/concurrent/futures/thread.py\", line 59, in run\n    result = self.fn(*self.args, **self.kwargs)\n  File \"<home>/.local/share/uv/python/cpython-3.13-macos-aarch64-none/lib/python3.13/socket.py\", line 977, in getaddrinfo\n    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):\n               ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nsocket.gaierror: [Errno 8] nodename nor servname provided, or not known\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"<home>/.local/share/uv/tools/harbor/lib/python3.13/site-packages/daytona/_utils/errors.py\", line 211, in async_wrapper\n    return await async_func(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<home>/.local/share/uv/tools/harbor/lib/python3.13/site-packages/daytona/_utils/otel_decorator.py\", line 129, in async_wrapper\n    result = await func(*args, **kwargs)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<home>/.local/share/uv/tools/harbor/lib/python3.13/site-packages/daytona/_utils/otel_decorator.py\", line 257, in async_wrapper\n    result = await func(*args, **kwargs)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<home>/.local/share/uv/tools/harbor/lib/python3.13/site-packages/daytona/_async/process.py\", line 371, in get_session_command\n    return await self._api_client.get_session_command(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n        session_id=session_id, command_id=command_id, _request_timeout=http_timeout(request_timeout)\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"<home>/.local/share/uv/tools/harbor/lib/python3.13/site-packages/pydantic/_internal/_validate_call.py\", line 35, in wrapper_function\n    return await wrapper(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<home>/.local/share/uv/tools/harbor/lib/python3.13/site-packages/daytona_toolbox_api_client_async/api/process_api.py\", line 3093, in get_session_command\n    response_data = await self.api_client.call_api(\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<2 lines>...\n    )\n    ^\n  File \"<home>/.local/share/uv/tools/harbor/lib/python3.13/site-packages/daytona/internal/toolbox_api_client_proxy.py\", line 110, in tracked_call_api\n    return await original_call_api(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<home>/.local/share/uv/tools/harbor/lib/python3.13/site-packages/daytona_toolbox_api_client_async/api_client.py\", line 278, in call_api\n    response_data = await self.rest_client.request(\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<4 lines>...\n    )\n    ^\n  File \"<home>/.local/share/uv/tools/harbor/lib/python3.13/site-packages/daytona/internal/shared_session.py\", line 174, in request_wrapper\n    result = await original_request(*args, **attempt_kwargs)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<home>/.local/share/uv/tools/harbor/lib/python3.13/site-packages/daytona_toolbox_api_client_async/rest.py\", line 224, in request\n    r = await pool_manager.request(**args)\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<home>/.local/share/uv/tools/harbor/lib/python3.13/site-packages/aiohttp/client.py\", line 900, in _request\n    resp = await handler(req)\n           ^^^^^^^^^^^^^^^^^^\n  File \"<home>/.local/share/uv/tools/harbor/lib/python3.13/site-packages/aiohttp/client.py\", line 854, in _connect_and_send_request\n    conn = await self._connector.connect(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n        req, traces=traces, timeout=real_timeout\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"<home>/.local/share/uv/tools/harbor/lib/python3.13/site-packages/aiohttp/connector.py\", line 665, in connect\n    proto = await self._create_connection(req, traces, timeout)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<home>/.local/share/uv/tools/harbor/lib/python3.13/site-packages/aiohttp/connector.py\", line 1263, in _create_connection\n    _, proto = await self._create_direct_connection(req, traces, timeout)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<home>/.local/share/uv/tools/harbor/lib/python3.13/site-packages/aiohttp/connector.py\", line 1598, in _create_direct_connection\n    raise ClientConnectorDNSError(req.connection_key, exc) from exc\naiohttp.client_exceptions.ClientConnectorDNSError: Cannot connect to host proxy.app.daytona.io:443 ssl:default [nodename nor servname provided, or not known]\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"<home>/.local/share/uv/tools/harbor/lib/python3.13/site-packages/harbor/trial/trial.py\", line 609, in run\n    await self._run()\n  File \"<home>/.local/share/uv/tools/harbor/lib/python3.13/site-packages/harbor/trial/single_step.py\", line 51, in _run\n    await self._run_verifier()\n  File \"<home>/.local/share/uv/tools/harbor/lib/python3.13/site-packages/harbor/trial/single_step.py\", line 98, in _run_verifier\n    self.result.verifier_result = await self._run_separate_verifier(\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<4 lines>...\n    )\n    ^\n  File \"<home>/.local/share/uv/tools/harbor/lib/python3.13/site-packages/harbor/trial/trial.py\", line 1081, in _run_separate_verifier\n    return await self._verify_with_timeout(verifier, timeout_sec)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<home>/.local/share/uv/tools/harbor/lib/python3.13/site-packages/harbor/trial/trial.py\", line 974, in _verify_with_timeout\n    return await asyncio.wait_for(verifier.verify(), timeout=timeout_sec)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<home>/.local/share/uv/python/cpython-3.13-macos-aarch64-none/lib/python3.13/asyncio/tasks.py\", line 507, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"<home>/.local/share/uv/tools/harbor/lib/python3.13/site-packages/harbor/verifier/verifier.py\", line 269, in verify\n    await self.environment.exec(\n    ...<2 lines>...\n    )\n  File \"<home>/.local/share/uv/tools/harbor/lib/python3.13/site-packages/harbor/environments/daytona/environment.py\", line 1998, in exec\n    return await self._strategy.exec(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^\n        command, cwd=effective_cwd, env=env, timeout_sec=timeout_sec, user=user\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"<home>/.local/share/uv/tools/harbor/lib/python3.13/site-packages/harbor/environments/daytona/environment.py\", line 393, in exec\n    return await self._env._sandbox_exec(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n        command, cwd=cwd, env=env, timeout_sec=timeout_sec, user=user\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"<home>/.local/share/uv/tools/harbor/lib/python3.13/site-packages/harbor/environments/daytona/environment.py\", line 1800, in _sandbox_exec\n    result = await self._poll_response(session_id, response.cmd_id)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<home>/.local/share/uv/tools/harbor/lib/python3.13/site-packages/harbor/environments/daytona/environment.py\", line 1656, in _poll_response\n    response = await self._get_session_command_with_retry(\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<2 lines>...\n    )\n    ^\n  File \"<home>/.local/share/uv/tools/harbor/lib/python3.13/site-packages/tenacity/asyncio/__init__.py\", line 232, in async_wrapped\n    return await copy(fn, *args, **kwargs)  # type: ignore[type-var]\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<home>/.local/share/uv/tools/harbor/lib/python3.13/site-packages/tenacity/asyncio/__init__.py\", line 126, in __call__\n    do = await self.iter(retry_state=retry_state)\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<home>/.local/share/uv/tools/harbor/lib/python3.13/site-packages/tenacity/asyncio/__init__.py\", line 171, in iter\n    result = await action(retry_state)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<home>/.local/share/uv/tools/harbor/lib/python3.13/site-packages/tenacity/_utils.py\", line 130, in inner\n    return call(*args, **kwargs)\n  File \"<home>/.local/share/uv/tools/harbor/lib/python3.13/site-packages/tenacity/__init__.py\", line 482, in exc_check\n    retry_exc.reraise()\n    ~~~~~~~~~~~~~~~~~^^\n  File \"<home>/.local/share/uv/tools/harbor/lib/python3.13/site-packages/tenacity/__init__.py\", line 216, in reraise\n    raise self.last_attempt.result()\n          ~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"<home>/.local/share/uv/python/cpython-3.13-macos-aarch64-none/lib/python3.13/concurrent/futures/_base.py\", line 449, in result\n    return self.__get_result()\n           ~~~~~~~~~~~~~~~~~^^\n  File \"<home>/.local/share/uv/python/cpython-3.13-macos-aarch64-none/lib/python3.13/concurrent/futures/_base.py\", line 401, in __get_result\n    raise self._exception\n  File \"<home>/.local/share/uv/tools/harbor/lib/python3.13/site-packages/tenacity/asyncio/__init__.py\", line 130, in __call__\n    result = await fn(*args, **kwargs)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<home>/.local/share/uv/tools/harbor/lib/python3.13/site-packages/harbor/environments/daytona/environment.py\", line 1632, in _get_session_command_with_retry\n    return await self._sandbox.process.get_session_command(session_id, command_id)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<home>/.local/share/uv/tools/harbor/lib/python3.13/site-packages/daytona/_utils/errors.py\", line 213, in async_wrapper\n    process_n_raise_exception(e)\n    ~~~~~~~~~~~~~~~~~~~~~~~~~^^^\n  File \"<home>/.local/share/uv/tools/harbor/lib/python3.13/site-packages/daytona/_utils/errors.py\", line 166, in process_n_raise_exception\n    raise daytona_error_cls(_prefix_message(message_prefix, str(e))) from e\ndaytona.common.errors.DaytonaConnectionError: Failed to get session command: Cannot connect to host proxy.app.daytona.io:443 ssl:default [nodename nor servname provided, or not known]\n",
+        "occurred_at": "2026-10-29T03:46:03.592131Z"
+    },
+    "started_at": "2026-10-29T03:01:32.696265Z",
+    "finished_at": "2026-10-29T03:46:03.594944Z",
+    "environment_setup": {
+        "started_at": "2026-10-29T03:01:32.708673Z",
+        "finished_at": "2026-10-29T03:01:42.514068Z"
+    },
+    "agent_setup": {
+        "started_at": "2026-10-29T03:01:42.514418Z",
+        "finished_at": "2026-10-29T03:01:42.514646Z"
+    },
+    "agent_execution": {
+        "started_at": "2026-10-29T03:01:42.515350Z",
+        "finished_at": "2026-10-29T03:01:50.085952Z"
+    },
+    "verifier": {
+        "started_at": "2026-10-29T03:02:07.445833Z",
+        "finished_at": "2026-10-29T03:46:03.548832Z"
+    },
+    "step_results": null
+}

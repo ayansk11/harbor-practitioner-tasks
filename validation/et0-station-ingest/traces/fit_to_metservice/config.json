@@ -1,0 +1,17 @@
+{
+    "task": {
+        "path": "<submission>/tasks/et0-station-ingest"
+    },
+    "trial_name": "et0-station-ingest__MqcH3kN",
+    "trials_dir": "<submission>/jobs/et0-station-ingest/et0-station-ingest-fit_to_metservice-full1",
+    "agent": {
+        "name": "oracle",
+        "env": {
+            "SOLUTION": "fit_to_metservice"
+        }
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "598e9a8e-25ec-4d23-b8ce-e21fd03776f1"
+}

@@ -1,0 +1,54 @@
+# Redacted 2026-10-29: machine-specific paths replaced (<submission> x2, <local-scratch> x1). <submission> = the submission folder on the authoring Mac, <home> = the author's home folder, <local-scratch> = the session scratch folder. The scratch sub-folder name under <local-scratch> was also dropped. Nothing else changed: no reward, count or timing.
+canonical                    expected 1 got 1.0 ok            2.71s failed checks: -  visible suite: pass (21 passed in 0.29s)
+canonical                    expected 1 got 1.0 ok            2.76s failed checks: -  visible suite: pass (21 passed in 0.27s)
+canonical                    expected 1 got 1.0 ok            2.67s failed checks: -  visible suite: pass (21 passed in 0.28s)
+canonical                    expected 1 got 1.0 ok            2.76s failed checks: -  visible suite: pass (21 passed in 0.30s)
+canonical                    expected 1 got 1.0 ok            2.79s failed checks: -  visible suite: pass (21 passed in 0.28s)
+canonical                    expected 1 got 1.0 ok            2.74s failed checks: -  visible suite: pass (21 passed in 0.27s)
+alt                          expected 1 got 1.0 ok            3.05s failed checks: -  visible suite: pass (14 passed in 0.22s)
+alt                          expected 1 got 1.0 ok            2.84s failed checks: -  visible suite: pass (14 passed in 0.21s)
+alt                          expected 1 got 1.0 ok            2.80s failed checks: -  visible suite: pass (14 passed in 0.21s)
+alt                          expected 1 got 1.0 ok            2.85s failed checks: -  visible suite: pass (14 passed in 0.21s)
+alt                          expected 1 got 1.0 ok            2.84s failed checks: -  visible suite: pass (14 passed in 0.21s)
+alt                          expected 1 got 1.0 ok            2.83s failed checks: -  visible suite: pass (14 passed in 0.21s)
+
+# local_check.py results for orders-export-missing-rows
+started 2026-10-28 21:17:02 MST (Mac clock); python 3.12.13
+command: <submission>/.venv/bin/python <submission>/authoring/orders-export-missing-rows/local_check.py --repeat 6 canonical alt
+scratch: <local-scratch>/run_rep
+
+SHA256SUMS: ok
+tests/original equals the shipped code: yes
+__pycache__ in the package: none
+
+| Variant | Expected | Got | Grade time (s) | Failed checks | Visible suite | First failure |
+|---|---|---|---|---|---|---|
+| canonical | 1 | 1.0 | 2.71 | - | pass (21 passed in 0.29s) | - |
+| canonical | 1 | 1.0 | 2.76 | - | pass (21 passed in 0.27s) | - |
+| canonical | 1 | 1.0 | 2.67 | - | pass (21 passed in 0.28s) | - |
+| canonical | 1 | 1.0 | 2.76 | - | pass (21 passed in 0.30s) | - |
+| canonical | 1 | 1.0 | 2.79 | - | pass (21 passed in 0.28s) | - |
+| canonical | 1 | 1.0 | 2.74 | - | pass (21 passed in 0.27s) | - |
+| alt | 1 | 1.0 | 3.05 | - | pass (14 passed in 0.22s) | - |
+| alt | 1 | 1.0 | 2.84 | - | pass (14 passed in 0.21s) | - |
+| alt | 1 | 1.0 | 2.8 | - | pass (14 passed in 0.21s) | - |
+| alt | 1 | 1.0 | 2.85 | - | pass (14 passed in 0.21s) | - |
+| alt | 1 | 1.0 | 2.84 | - | pass (14 passed in 0.21s) | - |
+| alt | 1 | 1.0 | 2.83 | - | pass (14 passed in 0.21s) | - |
+
+ALL AS EXPECTED: yes
+
+metrics per run:
+- canonical: {"reward": 1.0, "c1_order_ok": 1, "c2_pages_ok": 1, "c3_customers_ok": 1, "c4_inserts_ok": 1, "c5_errors_ok": 1, "c6_fields_ok": 1, "c7_public_ok": 1, "db_ok": 1, "failed_checks": 0, "agent_seconds": 2.06, "grading_seconds": 2.65}
+- canonical: {"reward": 1.0, "c1_order_ok": 1, "c2_pages_ok": 1, "c3_customers_ok": 1, "c4_inserts_ok": 1, "c5_errors_ok": 1, "c6_fields_ok": 1, "c7_public_ok": 1, "db_ok": 1, "failed_checks": 0, "agent_seconds": 2.12, "grading_seconds": 2.71}
+- canonical: {"reward": 1.0, "c1_order_ok": 1, "c2_pages_ok": 1, "c3_customers_ok": 1, "c4_inserts_ok": 1, "c5_errors_ok": 1, "c6_fields_ok": 1, "c7_public_ok": 1, "db_ok": 1, "failed_checks": 0, "agent_seconds": 2.04, "grading_seconds": 2.62}
+- canonical: {"reward": 1.0, "c1_order_ok": 1, "c2_pages_ok": 1, "c3_customers_ok": 1, "c4_inserts_ok": 1, "c5_errors_ok": 1, "c6_fields_ok": 1, "c7_public_ok": 1, "db_ok": 1, "failed_checks": 0, "agent_seconds": 2.11, "grading_seconds": 2.7}
+- canonical: {"reward": 1.0, "c1_order_ok": 1, "c2_pages_ok": 1, "c3_customers_ok": 1, "c4_inserts_ok": 1, "c5_errors_ok": 1, "c6_fields_ok": 1, "c7_public_ok": 1, "db_ok": 1, "failed_checks": 0, "agent_seconds": 2.13, "grading_seconds": 2.73}
+- canonical: {"reward": 1.0, "c1_order_ok": 1, "c2_pages_ok": 1, "c3_customers_ok": 1, "c4_inserts_ok": 1, "c5_errors_ok": 1, "c6_fields_ok": 1, "c7_public_ok": 1, "db_ok": 1, "failed_checks": 0, "agent_seconds": 2.08, "grading_seconds": 2.69}
+- alt: {"reward": 1.0, "c1_order_ok": 1, "c2_pages_ok": 1, "c3_customers_ok": 1, "c4_inserts_ok": 1, "c5_errors_ok": 1, "c6_fields_ok": 1, "c7_public_ok": 1, "db_ok": 1, "failed_checks": 0, "agent_seconds": 2.17, "grading_seconds": 2.99}
+- alt: {"reward": 1.0, "c1_order_ok": 1, "c2_pages_ok": 1, "c3_customers_ok": 1, "c4_inserts_ok": 1, "c5_errors_ok": 1, "c6_fields_ok": 1, "c7_public_ok": 1, "db_ok": 1, "failed_checks": 0, "agent_seconds": 2.19, "grading_seconds": 2.78}
+- alt: {"reward": 1.0, "c1_order_ok": 1, "c2_pages_ok": 1, "c3_customers_ok": 1, "c4_inserts_ok": 1, "c5_errors_ok": 1, "c6_fields_ok": 1, "c7_public_ok": 1, "db_ok": 1, "failed_checks": 0, "agent_seconds": 2.15, "grading_seconds": 2.74}
+- alt: {"reward": 1.0, "c1_order_ok": 1, "c2_pages_ok": 1, "c3_customers_ok": 1, "c4_inserts_ok": 1, "c5_errors_ok": 1, "c6_fields_ok": 1, "c7_public_ok": 1, "db_ok": 1, "failed_checks": 0, "agent_seconds": 2.21, "grading_seconds": 2.8}
+- alt: {"reward": 1.0, "c1_order_ok": 1, "c2_pages_ok": 1, "c3_customers_ok": 1, "c4_inserts_ok": 1, "c5_errors_ok": 1, "c6_fields_ok": 1, "c7_public_ok": 1, "db_ok": 1, "failed_checks": 0, "agent_seconds": 2.19, "grading_seconds": 2.78}
+- alt: {"reward": 1.0, "c1_order_ok": 1, "c2_pages_ok": 1, "c3_customers_ok": 1, "c4_inserts_ok": 1, "c5_errors_ok": 1, "c6_fields_ok": 1, "c7_public_ok": 1, "db_ok": 1, "failed_checks": 0, "agent_seconds": 2.18, "grading_seconds": 2.77}
+

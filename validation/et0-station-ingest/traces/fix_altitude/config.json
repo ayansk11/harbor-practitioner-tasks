@@ -1,0 +1,17 @@
+{
+    "task": {
+        "path": "<submission>/tasks/et0-station-ingest"
+    },
+    "trial_name": "et0-station-ingest__r5BbKJx",
+    "trials_dir": "<submission>/jobs/et0-station-ingest/et0-station-ingest-fix_altitude-full1",
+    "agent": {
+        "name": "oracle",
+        "env": {
+            "SOLUTION": "fix_altitude"
+        }
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "512015e6-ef08-413c-a3e5-89cc8cae3c4c"
+}

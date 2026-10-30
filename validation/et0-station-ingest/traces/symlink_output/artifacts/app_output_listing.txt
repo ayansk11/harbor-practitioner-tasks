@@ -1,0 +1,3 @@
+Listing of artifacts/app/output/ in trial et0-station-ingest__kgRb5cS (job et0-station-ingest-symlink_output-full1), made 2026-10-29 from the local job folder, which is not shipped:
+folder exists: True; entries: []
+An empty folder means Harbor's artifact step did not keep the symlink /app/output/et0.csv -> /tests/expected/visible_et0.csv (see NOTES.md and artifacts/manifest.json, where /app has status "failed").

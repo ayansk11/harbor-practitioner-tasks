@@ -1,0 +1,14 @@
+{
+    "task": {
+        "path": "<submission>/tasks/feature-leakage-churn"
+    },
+    "trial_name": "feature-leakage-churn__Ydh7FGt",
+    "trials_dir": "<submission>/jobs/feature-leakage-churn/feature-leakage-churn-nop-full1",
+    "agent": {
+        "name": "nop"
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "69b0a000-3c75-45e1-85b4-bbefb4d6c393"
+}

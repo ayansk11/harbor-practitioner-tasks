@@ -1,0 +1,13 @@
+[test.sh] lock ok: /logs/verifier 0:0 755, /logs 0:0 755, owner before 0:0; protected_symlinks=1 protected_hardlinks=1 protected_regular=2; setid files left: 0
+[kit] SHA256SUMS: 13 files verified
+[kit] submission copied to /work/sub; removed 0 auto-run entries; skipped 0 special files
+[kit] /app locked: renamed to /app.unavailable
+[kit] visible: worst row ('LGN', '2025-12-11') got 73.8840 expected 7.1996
+[kit] visible: rows=2920 expected=2920 missing=0 extra=0 bad=0 dup=0 over_tol=2184 max_abs_err=66.6844 ok=False
+[kit] staged /tests/hidden for uid 1001 at /work/hidden_in
+[kit] staged (empty) for uid 1001 at /work/hidden_out
+[kit] network isolation: ON (private namespace, loopback only); probe rc=0 out=b'NETNS-OK' err=b''
+[kit] ran ['python3', '-m', 'et0.pipeline', '--stations']... rc=0 timed_out=False 0.368s net=private strays_killed=0
+[kit] hidden: worst row ('H06', '2025-12-10') got 74.0260 expected 6.6150
+[kit] hidden: rows=3651 expected=3651 missing=0 extra=0 bad=0 dup=0 over_tol=3461 max_abs_err=67.4110 ok=False
+[kit] reward=0.0 (killed 0 runner processes) metrics={'reward': 0.0, 'tolerance_mm_day': 0.03, 'app_locked': 1, 'visible_ok': 0, 'visible_missing_rows': 0, 'visible_extra_rows': 0, 'visible_bad_rows': 0, 'visible_duplicate_rows': 0, 'visible_rows_over_tol': 2184, 'visible_max_abs_err': 66.684361, 'hidden_run_rc': 0, 'hidden_run_timed_out': 0, 'hidden_run_seconds': 0.368, 'hidden_ok': 0, 'hidden_missing_rows': 0, 'hidden_extra_rows': 0, 'hidden_bad_rows': 0, 'hidden_duplicate_rows': 0, 'hidden_rows_over_tol': 3461, 'hidden_max_abs_err': 67.411037}

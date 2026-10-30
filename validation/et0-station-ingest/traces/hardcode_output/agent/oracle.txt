@@ -1,0 +1,17 @@
+/solution/attempts/hardcode_output/oneoff.py:28: Pandas4Warning: Series.dt.dayofyear is deprecated and will be removed in a future version. Use Series.dt.day_of_year instead.
+  et0 = fao56.et0_daily(raw["tmax_c"], raw["tmin_c"], u2, rs, ea, d.dt.dayofyear, lat, st["elevation_m"])
+/solution/attempts/hardcode_output/oneoff.py:28: Pandas4Warning: Series.dt.dayofyear is deprecated and will be removed in a future version. Use Series.dt.day_of_year instead.
+  et0 = fao56.et0_daily(raw["tmax_c"], raw["tmin_c"], u2, rs, ea, d.dt.dayofyear, lat, st["elevation_m"])
+/solution/attempts/hardcode_output/oneoff.py:28: Pandas4Warning: Series.dt.dayofyear is deprecated and will be removed in a future version. Use Series.dt.day_of_year instead.
+  et0 = fao56.et0_daily(raw["tmax_c"], raw["tmin_c"], u2, rs, ea, d.dt.dayofyear, lat, st["elevation_m"])
+/solution/attempts/hardcode_output/oneoff.py:28: Pandas4Warning: Series.dt.dayofyear is deprecated and will be removed in a future version. Use Series.dt.day_of_year instead.
+  et0 = fao56.et0_daily(raw["tmax_c"], raw["tmin_c"], u2, rs, ea, d.dt.dayofyear, lat, st["elevation_m"])
+/solution/attempts/hardcode_output/oneoff.py:28: Pandas4Warning: Series.dt.dayofyear is deprecated and will be removed in a future version. Use Series.dt.day_of_year instead.
+  et0 = fao56.et0_daily(raw["tmax_c"], raw["tmin_c"], u2, rs, ea, d.dt.dayofyear, lat, st["elevation_m"])
+/solution/attempts/hardcode_output/oneoff.py:28: Pandas4Warning: Series.dt.dayofyear is deprecated and will be removed in a future version. Use Series.dt.day_of_year instead.
+  et0 = fao56.et0_daily(raw["tmax_c"], raw["tmin_c"], u2, rs, ea, d.dt.dayofyear, lat, st["elevation_m"])
+/solution/attempts/hardcode_output/oneoff.py:28: Pandas4Warning: Series.dt.dayofyear is deprecated and will be removed in a future version. Use Series.dt.day_of_year instead.
+  et0 = fao56.et0_daily(raw["tmax_c"], raw["tmin_c"], u2, rs, ea, d.dt.dayofyear, lat, st["elevation_m"])
+/solution/attempts/hardcode_output/oneoff.py:28: Pandas4Warning: Series.dt.dayofyear is deprecated and will be removed in a future version. Use Series.dt.day_of_year instead.
+  et0 = fao56.et0_daily(raw["tmax_c"], raw["tmin_c"], u2, rs, ea, d.dt.dayofyear, lat, st["elevation_m"])
+wrote output/et0.csv

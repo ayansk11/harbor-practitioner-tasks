@@ -1,0 +1,8 @@
+VNT: 365 days, mean ET0 3.55 mm/day
+PAL: 365 days, mean ET0 2.88 mm/day
+CDB: 365 days, mean ET0 3.59 mm/day
+LGN: 365 days, mean ET0 3.96 mm/day
+RSD: 365 days, mean ET0 3.70 mm/day
+MRS: 365 days, mean ET0 3.77 mm/day
+HLT: 365 days, mean ET0 3.71 mm/day
+ARN: 365 days, mean ET0 3.21 mm/day

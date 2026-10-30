@@ -1,0 +1,70 @@
+[test.sh] lock ok: /logs/verifier 0:0 755, /logs 0:0 755, owner before 0:0; protected_symlinks=1 protected_hardlinks=1 protected_regular=2; setid files left: 0
+[kit] python 3.12.16, sqlite 3.40.1
+[kit] SHA256SUMS ok (8 files)
+[kit] submission copied to /work/sub; removed 0 auto-run entries; skipped 0 special files
+[kit] staged /tests/original for uid 1001 at /work/original
+[kit] staged /tests/hidden/orders.db for uid 1001 at /work/db_original
+[kit] service on 127.0.0.1:38053 answered after 0.22s
+[kit] original service on port 38053: up after 0.22s
+[kit] original: 301 requests, answers equal the hidden database
+[kit] original phase 0.56s
+[kit] staged /tests/hidden/orders.db for uid 1001 at /work/db_agent
+[kit] service on 127.0.0.1:58363 answered after 0.20s
+[kit] agent service on port 58363: up after 0.21s
+[kit]   FAIL c1_order: /orders limit=50: 28500 orders (28500 distinct) for 30000 expected; first difference at position 21968: got id 6533, expected id 28585
+[kit] walk /orders limit=50: 571 pages, 28500 orders, 1.14s
+[kit]   FAIL c1_order: /orders limit=200: 28500 orders (28500 distinct) for 30000 expected; first difference at position 21968: got id 6533, expected id 28585
+[kit] walk /orders limit=200: 143 pages, 28500 orders, 0.32s
+[kit]   FAIL c1_order: /orders limit=500: 28500 orders (28500 distinct) for 30000 expected; first difference at position 21968: got id 6533, expected id 28585
+[kit] walk /orders limit=500: 58 pages, 28500 orders, 0.25s
+[kit] walk /orders limit=7 (newest 5000): 715 pages, 5005 orders, 0.83s
+[kit] walk /orders limit=1 (newest 2000): 2000 pages, 2000 orders, 2.31s
+[kit] walk /customers/6/orders limit=3: 138 pages, 413 orders, 0.22s
+[kit] walk /customers/6/orders limit=20: 21 pages, 413 orders, 0.02s
+[kit] walk /customers/16/orders limit=3: 94 pages, 281 orders, 0.09s
+[kit] walk /customers/16/orders limit=20: 15 pages, 281 orders, 0.02s
+[kit] walk /customers/1/orders limit=3: 81 pages, 242 orders, 0.08s
+[kit] walk /customers/1/orders limit=20: 13 pages, 242 orders, 0.02s
+[kit] walk /customers/27/orders limit=3: 71 pages, 211 orders, 0.10s
+[kit] walk /customers/27/orders limit=20: 11 pages, 211 orders, 0.01s
+[kit] walk /customers/4/orders limit=3: 66 pages, 196 orders, 0.09s
+[kit] walk /customers/4/orders limit=20: 10 pages, 196 orders, 0.01s
+[kit] walk /customers/35/orders limit=3: 64 pages, 190 orders, 0.07s
+[kit] walk /customers/35/orders limit=20: 10 pages, 190 orders, 0.01s
+[kit]   FAIL c3_customers: /customers/441/orders limit=3: 51 orders (51 distinct) for 53 expected; first difference at position 41: got id 5444, expected id 28642
+[kit] walk /customers/441/orders limit=3: 18 pages, 51 orders, 0.03s
+[kit]   FAIL c3_customers: /customers/441/orders limit=20: 51 orders (51 distinct) for 53 expected; first difference at position 41: got id 5444, expected id 28642
+[kit] walk /customers/441/orders limit=20: 3 pages, 51 orders, 0.01s
+[kit]   FAIL c3_customers: /customers/456/orders limit=3: 14 orders (14 distinct) for 17 expected; first difference at position 13: got id 4052, expected id 28585
+[kit] walk /customers/456/orders limit=3: 5 pages, 14 orders, 0.01s
+[kit] walk /customers/456/orders limit=20: 1 pages, 17 orders, 0.00s
+[kit]   FAIL c3_customers: /customers/1645/orders limit=3: 25 orders (25 distinct) for 26 expected; first difference at position 25: got id 1218, expected id 29516
+[kit] walk /customers/1645/orders limit=3: 9 pages, 25 orders, 0.02s
+[kit]   FAIL c3_customers: /customers/1645/orders limit=20: 25 orders (25 distinct) for 26 expected; first difference at position 25: got id 1218, expected id 29516
+[kit] walk /customers/1645/orders limit=20: 2 pages, 25 orders, 0.00s
+[kit] walk /customers/2063/orders limit=3: 8 pages, 23 orders, 0.01s
+[kit] walk /customers/2063/orders limit=20: 2 pages, 23 orders, 0.00s
+[kit] ran ['/usr/local/bin/python3', '-I', '-S', '-c']... rc=0 timed_out=False 0.035s net=host strays_killed=0
+[kit] ran ['/usr/local/bin/python3', '-I', '-S', '-c']... rc=0 timed_out=False 0.035s net=host strays_killed=0
+[kit]   FAIL c4_inserts: /orders limit=100 with orders inserted after pages [3, 10]: 28500 older orders returned (28500 distinct) for 30000; position 21968: got id 6533, expected id 28585
+[kit] walk /orders limit=100 with orders inserted after pages [3, 10]: 286 pages, 28500 orders (0 of 50 new)
+[kit] ran ['/usr/local/bin/python3', '-I', '-S', '-c']... rc=0 timed_out=False 0.035s net=host strays_killed=0
+[kit] ran ['/usr/local/bin/python3', '-I', '-S', '-c']... rc=0 timed_out=False 0.036s net=host strays_killed=0
+[kit]   FAIL c4_inserts: /customers/6/orders limit=3 with orders inserted after pages [2, 5]: 423 older orders returned (423 distinct) for 436; position 11: got id 23378, expected id 30048
+[kit] walk /customers/6/orders limit=3 with orders inserted after pages [2, 5]: 142 pages, 423 orders (0 of 6 new)
+[kit]   FAIL c4_inserts: /orders limit=150: 28525 orders (28525 distinct) for 30056 expected; first difference at position 408: got id 28118, expected id 30050
+[kit] walk /orders limit=150: 191 pages, 28525 orders, 0.53s
+[kit]   FAIL c4_inserts: /customers/6/orders limit=3: 425 orders (425 distinct) for 442 expected; first difference at position 13: got id 23378, expected id 30048
+[kit] walk /customers/6/orders limit=3: 142 pages, 425 orders, 0.14s
+[kit]   FAIL c4_inserts: /customers/16/orders limit=20: 286 orders (286 distinct) for 294 expected; first difference at position 60: got id 27528, expected id 30046
+[kit] walk /customers/16/orders limit=20: 15 pages, 286 orders, 0.02s
+[kit] agent: 5225 requests in 7.74s
+[kit] check c1_order: 2 passed, 3 failed
+[kit] check c2_pages: 58 passed, 0 failed
+[kit] check c3_customers: 16 passed, 5 failed
+[kit] check c4_inserts: 9 passed, 5 failed
+[kit] check c5_errors: 11 passed, 0 failed
+[kit] check c6_fields: 31 passed, 0 failed
+[kit] check c7_public: 5 passed, 0 failed
+[kit] check db: 3 passed, 0 failed
+[kit] reward=0.0 (killed 0 runner processes) metrics={'reward': 0.0, 'c1_order_ok': 0, 'c2_pages_ok': 1, 'c3_customers_ok': 0, 'c4_inserts_ok': 0, 'c5_errors_ok': 1, 'c6_fields_ok': 1, 'c7_public_ok': 1, 'db_ok': 1, 'failed_checks': 13, 'agent_seconds': 7.74, 'grading_seconds': 8.64}

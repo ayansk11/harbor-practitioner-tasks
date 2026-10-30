@@ -1,0 +1,17 @@
+{
+    "task": {
+        "path": "<submission>/tasks/orders-export-missing-rows"
+    },
+    "trial_name": "orders-export-missing-rows__GzNoNNN",
+    "trials_dir": "<submission>/jobs/orders-export-missing-rows/orders-export-missing-rows-snapshot_at_startup-full1",
+    "agent": {
+        "name": "oracle",
+        "env": {
+            "SOLUTION": "snapshot_at_startup"
+        }
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "c7b820be-7833-496a-a545-a2cbfd65ff33"
+}

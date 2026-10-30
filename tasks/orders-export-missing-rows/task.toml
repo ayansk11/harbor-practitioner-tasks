@@ -1,0 +1,22 @@
+schema_version = "1.4"
+artifacts = [{ source = "/app", exclude = ["data", "__pycache__", ".venv"] }]
+
+[task]
+name = "diffuse-labs/orders-export-missing-rows"
+description = "Find why a merchant's nightly order export silently drops orders and fix the paginated orders API so every listing returns each order exactly once, in the documented order, also while new orders arrive."
+keywords = ["production-debugging", "backend", "api", "pagination", "keyset", "sqlite", "flask"]
+
+[metadata]
+category = "production-debugging"
+difficulty = "easy"
+
+[agent]
+timeout_sec = 1200.0
+
+[verifier]
+environment_mode = "separate"
+timeout_sec = 2400.0
+
+[environment]
+cpus = 1
+memory_mb = 2048

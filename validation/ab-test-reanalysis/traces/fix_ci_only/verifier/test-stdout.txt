@@ -1,0 +1,71 @@
+[test.sh] lock ok: /logs/verifier 0:0 755, /logs 0:0 755, owner before 0:0; protected_symlinks=1 protected_hardlinks=1 protected_regular=2; setid files left: 0
+[kit] verifier resources: res_os_cpu_count=48, res_cpu_affinity=48, res_cgroup_cpus=1, res_cgroup_mem_mib=2048, res_host_memtotal_mib=386324
+[kit] SHA256SUMS: 21 files verified
+[kit] submission copied to /work/sub; removed 0 auto-run entries; skipped 0 special files
+[kit] visible: n_users.A=20042 expected 19612
+[kit] visible: pageviews.A=198876 expected 189582
+[kit] visible: clicks.A=15079 expected 15041
+[kit] visible: ctr.A=0.075821114664414 expected 0.079337700837
+[kit] visible: diff=0.0031139523640361516 expected -0.000402633808
+[kit] visible: srm_p=0.008425386221731269 expected 0.634647
+[kit] visible: ci_95=[-0.0010639610241953042, 0.007291865752267607] expected about [-0.004659, 0.003854] (errors 0.845, 0.808 half-widths; band 0.25)
+[kit] visible: FAIL (7 problems)
+[kit] staged /tmp/kit-scratch-3iiz039h/plain/h_null for uid 1001 at /work/exp1
+[kit] staged (empty) for uid 1001 at /work/out1
+[kit] network isolation: ON (private namespace, loopback only); probe rc=0 out=b'NETNS-OK' err=b''
+[kit] ran ['python3', '-m', 'abtest.report', '--data']... rc=0 timed_out=False 1.119s net=private strays_killed=0
+[kit] h_null: n_users.A=18905 expected 18648
+[kit] h_null: pageviews.A=152715 expected 147296
+[kit] h_null: clicks.A=16595 expected 16578
+[kit] h_null: ctr.A=0.10866647022230953 expected 0.112548881164
+[kit] h_null: diff=0.0004974485097402476 expected -0.003384962432
+[kit] h_null: srm_p=0.63203366602901 expected 0.396803
+[kit] h_null: ci_95=[-0.010179997131895775, 0.01117489415137627] expected about [-0.014216, 0.007446] (errors 0.373, 0.344 half-widths; band 0.25)
+[kit] h_null: FAIL (7 problems)
+[kit] staged /tmp/kit-scratch-3iiz039h/plain/h_pos for uid 1001 at /work/exp2
+[kit] staged (empty) for uid 1001 at /work/out2
+[kit] ran ['python3', '-m', 'abtest.report', '--data']... rc=0 timed_out=False 1.169s net=private strays_killed=0
+[kit] h_pos: n_users.A=20006 expected 19705
+[kit] h_pos: pageviews.A=161044 expected 155212
+[kit] h_pos: clicks.A=18967 expected 18944
+[kit] h_pos: ctr.A=0.11777526638682596 expected 0.122052418627
+[kit] h_pos: diff=0.01640191571591272 expected 0.012124763475
+[kit] h_pos: srm_p=0.13092444351142313 expected 1
+[kit] h_pos: ci_95=[0.010665802463851357, 0.022138028967974087] expected about [0.006319, 0.017931] (errors 0.749, 0.725 half-widths; band 0.25)
+[kit] h_pos: FAIL (7 problems)
+[kit] staged /tmp/kit-scratch-3iiz039h/plain/h_srm for uid 1001 at /work/exp3
+[kit] staged (empty) for uid 1001 at /work/out3
+[kit] ran ['python3', '-m', 'abtest.report', '--data']... rc=0 timed_out=False 1.119s net=private strays_killed=0
+[kit] h_srm: n_users.A=19422 expected 19136
+[kit] h_srm: pageviews.A=157152 expected 151859
+[kit] h_srm: clicks.A=15101 expected 15083
+[kit] h_srm: ctr.A=0.0960916819385054 expected 0.099322397751
+[kit] h_srm: diff=0.01338510023060642 expected 0.010154384419
+[kit] h_srm: srm_p=1.419529117591114e-05 expected 6.75268e-09
+[kit] h_srm: ci_95=[0.007832708533132615, 0.018937491928080225] expected about [0.004532, 0.015776] (errors 0.587, 0.562 half-widths; band 0.25)
+[kit] h_srm: FAIL (7 problems)
+[kit] staged /tmp/kit-scratch-3iiz039h/plain/h_bots for uid 1001 at /work/exp4
+[kit] staged (empty) for uid 1001 at /work/out4
+[kit] ran ['python3', '-m', 'abtest.report', '--data']... rc=0 timed_out=False 1.12s net=private strays_killed=0
+[kit] h_bots: n_users.A=17130 expected 16068
+[kit] h_bots: pageviews.A=166792 expected 125688
+[kit] h_bots: clicks.A=11418 expected 11295
+[kit] h_bots: ctr.A=0.06845652069643628 expected 0.089865380943
+[kit] h_bots: diff=0.020599559124676606 expected -0.000809301122
+[kit] h_bots: srm_p=2.9271657070993564e-11 expected 0.411136
+[kit] h_bots: srm_flag=True expected False
+[kit] h_bots: ci_95=[0.014885131026266622, 0.026313987223086588] expected about [-0.007085, 0.005466] (errors 3.501, 3.322 half-widths; band 0.25)
+[kit] h_bots: decision='invalid' expected 'no_ship'
+[kit] h_bots: FAIL (9 problems)
+[kit] staged /tmp/kit-scratch-3iiz039h/plain/h_twin for uid 1001 at /work/exp5
+[kit] staged (empty) for uid 1001 at /work/out5
+[kit] ran ['python3', '-m', 'abtest.report', '--data']... rc=0 timed_out=False 1.119s net=private strays_killed=0
+[kit] h_twin: n_users.A=18905 expected 18648
+[kit] h_twin: pageviews.A=152715 expected 147296
+[kit] h_twin: clicks.A=16138 expected 16122
+[kit] h_twin: ctr.A=0.10567396784860689 expected 0.109453074082
+[kit] h_twin: diff=0.017118820152669578 expected 0.013339713919
+[kit] h_twin: srm_p=0.63203366602901 expected 0.396803
+[kit] h_twin: ci_95=[0.01190605421350167, 0.022331586091837486] expected about [0.008075, 0.018605] (errors 0.728, 0.708 half-widths; band 0.25)
+[kit] h_twin: FAIL (7 problems)
+[kit] reward=0.0 (killed 0 runner processes) metrics={'reward': 0.0, 'band_hw': 0.25, 'run_cap_sec': 120, 'res_os_cpu_count': 48, 'res_cpu_affinity': 48, 'res_cgroup_cpus': 1.0, 'res_cgroup_mem_mib': 2048.0, 'res_host_memtotal_mib': 386324.2421875, 'visible_ok': 0, 'visible_problems': 7, 'visible_ctr_max_err': 0.0035165861721633135, 'visible_diff_err': 0.0035165861721633135, 'visible_srm_p_rel_err': 0.9867242985151418, 'visible_ci_lo_err_hw': 0.844640166861119, 'visible_ci_hi_err_hw': 0.8076016512632841, 'h_null_run_rc': 0, 'h_null_run_timed_out': 0, 'h_null_run_seconds': 1.119, 'h_null_ok': 0, 'h_null_problems': 7, 'h_null_ctr_max_err': 0.0038824109421484315, 'h_null_diff_err': 0.0038824109421484315, 'h_null_srm_p_rel_err': 0.5928139834535001, 'h_null_ci_lo_err_hw': 0.37262570713499443, 'h_null_ci_hi_err_hw': 0.3442874293425599, 'h_pos_run_rc': 0, 'h_pos_run_timed_out': 0, 'h_pos_run_seconds': 1.169, 'h_pos_ok': 0, 'h_pos_problems': 7, 'h_pos_ctr_max_err': 0.004277152240599755, 'h_pos_diff_err': 0.004277152240599755, 'h_pos_srm_p_rel_err': 0.8690755564885768, 'h_pos_ci_lo_err_hw': 0.7487039938402311, 'h_pos_ci_hi_err_hw': 0.7247161556444255, 'h_srm_run_rc': 0, 'h_srm_run_timed_out': 0, 'h_srm_run_seconds': 1.119, 'h_srm_ok': 0, 'h_srm_problems': 7, 'h_srm_ctr_max_err': 0.003230715812039514, 'h_srm_diff_err': 0.003230715812039514, 'h_srm_srm_p_rel_err': 2101.1715950700514, 'h_srm_ci_lo_err_hw': 0.5870443147878327, 'h_srm_ci_hi_err_hw': 0.5622482891080788, 'h_bots_run_rc': 0, 'h_bots_run_timed_out': 0, 'h_bots_run_seconds': 1.12, 'h_bots_ok': 0, 'h_bots_problems': 9, 'h_bots_ctr_max_err': 0.02140886024685186, 'h_bots_diff_err': 0.02140886024685186, 'h_bots_srm_p_rel_err': 0.9999999999288031, 'h_bots_ci_lo_err_hw': 3.501022064951134, 'h_bots_ci_hi_err_hw': 3.3222935359446235, 'h_twin_run_rc': 0, 'h_twin_run_timed_out': 0, 'h_twin_run_seconds': 1.119, 'h_twin_ok': 0, 'h_twin_problems': 7, 'h_twin_ctr_max_err': 0.003779106233513463, 'h_twin_diff_err': 0.003779106233513463, 'h_twin_srm_p_rel_err': 0.5928139834535001, 'h_twin_ci_lo_err_hw': 0.7277000081687626, 'h_twin_ci_hi_err_hw': 0.7078576663009227, 'sets_passed': 0}

@@ -1,0 +1,5 @@
+# Sensor conversions used by et0/ingest.py (METHOD.md 3.3 and 3.4).
+eq47_numerator: 4.87
+eq47_a: 67.8
+eq47_b: 5.42
+w_m2_to_mj_day: 0.0864

@@ -1,0 +1,247 @@
+{
+    "id": "846db9dd-ed5a-4bb0-86ad-7e797ad3e842",
+    "started_at": "2026-10-28T21:26:18.872552",
+    "updated_at": "2026-10-28T21:29:35.135793",
+    "finished_at": "2026-10-28T21:29:35.135793",
+    "n_total_trials": 10,
+    "stats": {
+        "n_completed_trials": 10,
+        "n_errored_trials": 0,
+        "n_running_trials": 0,
+        "n_pending_trials": 0,
+        "n_cancelled_trials": 0,
+        "n_retries": 0,
+        "evals": {
+            "oracle__adhoc": {
+                "n_trials": 10,
+                "n_errors": 0,
+                "metrics": [
+                    {
+                        "agent_seconds": 5.676,
+                        "c1_order_ok": 1.0,
+                        "c2_pages_ok": 1.0,
+                        "c3_customers_ok": 1.0,
+                        "c4_inserts_ok": 1.0,
+                        "c5_errors_ok": 1.0,
+                        "c6_fields_ok": 1.0,
+                        "c7_public_ok": 1.0,
+                        "db_ok": 1.0,
+                        "failed_checks": 0.0,
+                        "grading_seconds": 6.473999999999999,
+                        "reward": 1.0
+                    }
+                ],
+                "pass_at_k": {},
+                "reward_stats": {
+                    "reward": {
+                        "1.0": [
+                            "orders-export-missing-rows__XxnEpQc",
+                            "orders-export-missing-rows__7jXvhvC",
+                            "orders-export-missing-rows__iAxfd5M",
+                            "orders-export-missing-rows__dY6rCpt",
+                            "orders-export-missing-rows__9RihKQc",
+                            "orders-export-missing-rows__7jM9yXX",
+                            "orders-export-missing-rows__G8zSERs",
+                            "orders-export-missing-rows__zPdDEbV",
+                            "orders-export-missing-rows__HXRRM4p",
+                            "orders-export-missing-rows__8rVyBqF"
+                        ]
+                    },
+                    "c1_order_ok": {
+                        "1": [
+                            "orders-export-missing-rows__XxnEpQc",
+                            "orders-export-missing-rows__7jXvhvC",
+                            "orders-export-missing-rows__iAxfd5M",
+                            "orders-export-missing-rows__dY6rCpt",
+                            "orders-export-missing-rows__9RihKQc",
+                            "orders-export-missing-rows__7jM9yXX",
+                            "orders-export-missing-rows__G8zSERs",
+                            "orders-export-missing-rows__zPdDEbV",
+                            "orders-export-missing-rows__HXRRM4p",
+                            "orders-export-missing-rows__8rVyBqF"
+                        ]
+                    },
+                    "c2_pages_ok": {
+                        "1": [
+                            "orders-export-missing-rows__XxnEpQc",
+                            "orders-export-missing-rows__7jXvhvC",
+                            "orders-export-missing-rows__iAxfd5M",
+                            "orders-export-missing-rows__dY6rCpt",
+                            "orders-export-missing-rows__9RihKQc",
+                            "orders-export-missing-rows__7jM9yXX",
+                            "orders-export-missing-rows__G8zSERs",
+                            "orders-export-missing-rows__zPdDEbV",
+                            "orders-export-missing-rows__HXRRM4p",
+                            "orders-export-missing-rows__8rVyBqF"
+                        ]
+                    },
+                    "c3_customers_ok": {
+                        "1": [
+                            "orders-export-missing-rows__XxnEpQc",
+                            "orders-export-missing-rows__7jXvhvC",
+                            "orders-export-missing-rows__iAxfd5M",
+                            "orders-export-missing-rows__dY6rCpt",
+                            "orders-export-missing-rows__9RihKQc",
+                            "orders-export-missing-rows__7jM9yXX",
+                            "orders-export-missing-rows__G8zSERs",
+                            "orders-export-missing-rows__zPdDEbV",
+                            "orders-export-missing-rows__HXRRM4p",
+                            "orders-export-missing-rows__8rVyBqF"
+                        ]
+                    },
+                    "c4_inserts_ok": {
+                        "1": [
+                            "orders-export-missing-rows__XxnEpQc",
+                            "orders-export-missing-rows__7jXvhvC",
+                            "orders-export-missing-rows__iAxfd5M",
+                            "orders-export-missing-rows__dY6rCpt",
+                            "orders-export-missing-rows__9RihKQc",
+                            "orders-export-missing-rows__7jM9yXX",
+                            "orders-export-missing-rows__G8zSERs",
+                            "orders-export-missing-rows__zPdDEbV",
+                            "orders-export-missing-rows__HXRRM4p",
+                            "orders-export-missing-rows__8rVyBqF"
+                        ]
+                    },
+                    "c5_errors_ok": {
+                        "1": [
+                            "orders-export-missing-rows__XxnEpQc",
+                            "orders-export-missing-rows__7jXvhvC",
+                            "orders-export-missing-rows__iAxfd5M",
+                            "orders-export-missing-rows__dY6rCpt",
+                            "orders-export-missing-rows__9RihKQc",
+                            "orders-export-missing-rows__7jM9yXX",
+                            "orders-export-missing-rows__G8zSERs",
+                            "orders-export-missing-rows__zPdDEbV",
+                            "orders-export-missing-rows__HXRRM4p",
+                            "orders-export-missing-rows__8rVyBqF"
+                        ]
+                    },
+                    "c6_fields_ok": {
+                        "1": [
+                            "orders-export-missing-rows__XxnEpQc",
+                            "orders-export-missing-rows__7jXvhvC",
+                            "orders-export-missing-rows__iAxfd5M",
+                            "orders-export-missing-rows__dY6rCpt",
+                            "orders-export-missing-rows__9RihKQc",
+                            "orders-export-missing-rows__7jM9yXX",
+                            "orders-export-missing-rows__G8zSERs",
+                            "orders-export-missing-rows__zPdDEbV",
+                            "orders-export-missing-rows__HXRRM4p",
+                            "orders-export-missing-rows__8rVyBqF"
+                        ]
+                    },
+                    "c7_public_ok": {
+                        "1": [
+                            "orders-export-missing-rows__XxnEpQc",
+                            "orders-export-missing-rows__7jXvhvC",
+                            "orders-export-missing-rows__iAxfd5M",
+                            "orders-export-missing-rows__dY6rCpt",
+                            "orders-export-missing-rows__9RihKQc",
+                            "orders-export-missing-rows__7jM9yXX",
+                            "orders-export-missing-rows__G8zSERs",
+                            "orders-export-missing-rows__zPdDEbV",
+                            "orders-export-missing-rows__HXRRM4p",
+                            "orders-export-missing-rows__8rVyBqF"
+                        ]
+                    },
+                    "db_ok": {
+                        "1": [
+                            "orders-export-missing-rows__XxnEpQc",
+                            "orders-export-missing-rows__7jXvhvC",
+                            "orders-export-missing-rows__iAxfd5M",
+                            "orders-export-missing-rows__dY6rCpt",
+                            "orders-export-missing-rows__9RihKQc",
+                            "orders-export-missing-rows__7jM9yXX",
+                            "orders-export-missing-rows__G8zSERs",
+                            "orders-export-missing-rows__zPdDEbV",
+                            "orders-export-missing-rows__HXRRM4p",
+                            "orders-export-missing-rows__8rVyBqF"
+                        ]
+                    },
+                    "failed_checks": {
+                        "0": [
+                            "orders-export-missing-rows__XxnEpQc",
+                            "orders-export-missing-rows__7jXvhvC",
+                            "orders-export-missing-rows__iAxfd5M",
+                            "orders-export-missing-rows__dY6rCpt",
+                            "orders-export-missing-rows__9RihKQc",
+                            "orders-export-missing-rows__7jM9yXX",
+                            "orders-export-missing-rows__G8zSERs",
+                            "orders-export-missing-rows__zPdDEbV",
+                            "orders-export-missing-rows__HXRRM4p",
+                            "orders-export-missing-rows__8rVyBqF"
+                        ]
+                    },
+                    "agent_seconds": {
+                        "5.54": [
+                            "orders-export-missing-rows__XxnEpQc"
+                        ],
+                        "5.63": [
+                            "orders-export-missing-rows__7jXvhvC"
+                        ],
+                        "5.26": [
+                            "orders-export-missing-rows__iAxfd5M"
+                        ],
+                        "5.45": [
+                            "orders-export-missing-rows__dY6rCpt",
+                            "orders-export-missing-rows__HXRRM4p"
+                        ],
+                        "5.62": [
+                            "orders-export-missing-rows__9RihKQc"
+                        ],
+                        "5.48": [
+                            "orders-export-missing-rows__7jM9yXX"
+                        ],
+                        "6.46": [
+                            "orders-export-missing-rows__G8zSERs"
+                        ],
+                        "6.4": [
+                            "orders-export-missing-rows__zPdDEbV"
+                        ],
+                        "5.47": [
+                            "orders-export-missing-rows__8rVyBqF"
+                        ]
+                    },
+                    "grading_seconds": {
+                        "6.43": [
+                            "orders-export-missing-rows__XxnEpQc"
+                        ],
+                        "6.4": [
+                            "orders-export-missing-rows__7jXvhvC"
+                        ],
+                        "6.01": [
+                            "orders-export-missing-rows__iAxfd5M"
+                        ],
+                        "6.22": [
+                            "orders-export-missing-rows__dY6rCpt"
+                        ],
+                        "6.41": [
+                            "orders-export-missing-rows__9RihKQc"
+                        ],
+                        "6.28": [
+                            "orders-export-missing-rows__7jM9yXX"
+                        ],
+                        "7.26": [
+                            "orders-export-missing-rows__G8zSERs"
+                        ],
+                        "7.28": [
+                            "orders-export-missing-rows__zPdDEbV"
+                        ],
+                        "6.21": [
+                            "orders-export-missing-rows__HXRRM4p"
+                        ],
+                        "6.24": [
+                            "orders-export-missing-rows__8rVyBqF"
+                        ]
+                    }
+                },
+                "exception_stats": {}
+            }
+        },
+        "n_input_tokens": null,
+        "n_cache_tokens": null,
+        "n_output_tokens": null,
+        "cost_usd": null
+    }
+}

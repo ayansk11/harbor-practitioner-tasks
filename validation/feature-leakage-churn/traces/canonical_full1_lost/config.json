@@ -1,0 +1,11 @@
+{
+    "task": {
+        "path": "<submission>/tasks/feature-leakage-churn"
+    },
+    "trial_name": "feature-leakage-churn__dtTSGvN",
+    "trials_dir": "<submission>/jobs/feature-leakage-churn/feature-leakage-churn-canonical-full1",
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "78683dcf-8509-441d-88c2-1669b135669a"
+}

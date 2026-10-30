@@ -1,0 +1,17 @@
+{
+    "task": {
+        "path": "<submission>/tasks/feature-leakage-churn"
+    },
+    "trial_name": "feature-leakage-churn__sTvSj6W",
+    "trials_dir": "<submission>/jobs/feature-leakage-churn/feature-leakage-churn-miss_imputation-full1",
+    "agent": {
+        "name": "oracle",
+        "env": {
+            "SOLUTION": "miss_imputation"
+        }
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "ba7a27da-7440-4952-aa3a-b290af6ea8b8"
+}

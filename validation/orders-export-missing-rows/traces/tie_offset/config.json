@@ -1,0 +1,17 @@
+{
+    "task": {
+        "path": "<submission>/tasks/orders-export-missing-rows"
+    },
+    "trial_name": "orders-export-missing-rows__K3uUmMx",
+    "trials_dir": "<submission>/jobs/orders-export-missing-rows/orders-export-missing-rows-tie_offset-full1",
+    "agent": {
+        "name": "oracle",
+        "env": {
+            "SOLUTION": "tie_offset"
+        }
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "c54b39d8-0253-4e43-94ca-517b0544e793"
+}

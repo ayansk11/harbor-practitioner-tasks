@@ -1,0 +1,17 @@
+{
+    "task": {
+        "path": "<submission>/tasks/ab-test-reanalysis"
+    },
+    "trial_name": "ab-test-reanalysis__3EUBTMa",
+    "trials_dir": "<submission>/jobs/ab-test-reanalysis/ab-test-reanalysis-hardcode_no_ship-full2",
+    "agent": {
+        "name": "oracle",
+        "env": {
+            "SOLUTION": "hardcode_no_ship"
+        }
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "e539a3ca-9689-48ff-95bc-e495c84c50d2"
+}

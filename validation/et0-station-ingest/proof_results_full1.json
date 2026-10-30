@@ -1,0 +1,197 @@
+{
+ "slug": "et0-station-ingest",
+ "tag": "full1",
+ "rows": [
+  {
+   "variant": "canonical",
+   "args": "-a oracle -k 10",
+   "expected": 1,
+   "rewards": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "exceptions": [],
+   "trials": 10,
+   "pass": true,
+   "job": "jobs/et0-station-ingest/et0-station-ingest-canonical-full1",
+   "started": "2026-10-28 19:45:25",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "alt",
+   "args": "-a oracle --ae SOLUTION=alt",
+   "expected": 1,
+   "rewards": [
+    1.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/et0-station-ingest/et0-station-ingest-alt-full1",
+   "started": "2026-10-28 19:49:00",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "nop",
+   "args": "-a nop",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/et0-station-ingest/et0-station-ingest-nop-full1",
+   "started": "2026-10-28 19:49:38",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "abs_app_path",
+   "args": "-a oracle --ae SOLUTION=abs_app_path",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/et0-station-ingest/et0-station-ingest-abs_app_path-full1",
+   "started": "2026-10-28 19:50:16",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "fit_to_metservice",
+   "args": "-a oracle --ae SOLUTION=fit_to_metservice",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/et0-station-ingest/et0-station-ingest-fit_to_metservice-full1",
+   "started": "2026-10-28 19:50:52",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "fix_altitude",
+   "args": "-a oracle --ae SOLUTION=fix_altitude",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/et0-station-ingest/et0-station-ingest-fix_altitude-full1",
+   "started": "2026-10-28 19:51:29",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "hardcode_output",
+   "args": "-a oracle --ae SOLUTION=hardcode_output",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/et0-station-ingest/et0-station-ingest-hardcode_output-full1",
+   "started": "2026-10-28 19:52:05",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "linear_wind",
+   "args": "-a oracle --ae SOLUTION=linear_wind",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/et0-station-ingest/et0-station-ingest-linear_wind-full1",
+   "started": "2026-10-28 19:52:42",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "nearest_height",
+   "args": "-a oracle --ae SOLUTION=nearest_height",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/et0-station-ingest/et0-station-ingest-nearest_height-full1",
+   "started": "2026-10-28 19:53:17",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "read_answers",
+   "args": "-a oracle --ae SOLUTION=read_answers",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/et0-station-ingest/et0-station-ingest-read_answers-full1",
+   "started": "2026-10-28 19:53:53",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "symlink_output",
+   "args": "-a oracle --ae SOLUTION=symlink_output",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/et0-station-ingest/et0-station-ingest-symlink_output-full1",
+   "started": "2026-10-28 19:54:33",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "units_not_latitude",
+   "args": "-a oracle --ae SOLUTION=units_not_latitude",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/et0-station-ingest/et0-station-ingest-units_not_latitude-full1",
+   "started": "2026-10-28 19:55:08",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "force-build",
+   "args": "-a oracle --force-build",
+   "expected": 1,
+   "rewards": [
+    1.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/et0-station-ingest/et0-station-ingest-force-build-full1",
+   "started": "2026-10-28 19:55:43",
+   "harbor_rc": 0
+  }
+ ]
+}

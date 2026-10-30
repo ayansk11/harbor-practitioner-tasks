@@ -1,0 +1,239 @@
+{
+ "slug": "orders-export-missing-rows",
+ "tag": "full1",
+ "rows": [
+  {
+   "variant": "canonical",
+   "args": "-a oracle -k 10",
+   "expected": 1,
+   "rewards": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "exceptions": [],
+   "trials": 10,
+   "pass": true,
+   "job": "jobs/orders-export-missing-rows/orders-export-missing-rows-canonical-full1",
+   "started": "2026-10-28 21:26:17",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "alt",
+   "args": "-a oracle --ae SOLUTION=alt",
+   "expected": 1,
+   "rewards": [
+    1.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/orders-export-missing-rows/orders-export-missing-rows-alt-full1",
+   "started": "2026-10-28 21:29:38",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "nop",
+   "args": "-a nop",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/orders-export-missing-rows/orders-export-missing-rows-nop-full1",
+   "started": "2026-10-28 21:30:06",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "and_predicate",
+   "args": "-a oracle --ae SOLUTION=and_predicate",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/orders-export-missing-rows/orders-export-missing-rows-and_predicate-full1",
+   "started": "2026-10-28 21:30:33",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "customer_offset",
+   "args": "-a oracle --ae SOLUTION=customer_offset",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/orders-export-missing-rows/orders-export-missing-rows-customer_offset-full1",
+   "started": "2026-10-28 21:31:09",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "fix_helper_only",
+   "args": "-a oracle --ae SOLUTION=fix_helper_only",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/orders-export-missing-rows/orders-export-missing-rows-fix_helper_only-full1",
+   "started": "2026-10-28 21:31:43",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "ignore_limit",
+   "args": "-a oracle --ae SOLUTION=ignore_limit",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/orders-export-missing-rows/orders-export-missing-rows-ignore_limit-full1",
+   "started": "2026-10-28 21:32:19",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "lte_cursor",
+   "args": "-a oracle --ae SOLUTION=lte_cursor",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/orders-export-missing-rows/orders-export-missing-rows-lte_cursor-full1",
+   "started": "2026-10-28 21:32:49",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "offset_cursor",
+   "args": "-a oracle --ae SOLUTION=offset_cursor",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/orders-export-missing-rows/orders-export-missing-rows-offset_cursor-full1",
+   "started": "2026-10-28 21:33:14",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "order_by_id",
+   "args": "-a oracle --ae SOLUTION=order_by_id",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/orders-export-missing-rows/orders-export-missing-rows-order_by_id-full1",
+   "started": "2026-10-28 21:33:48",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "rank_from_bottom",
+   "args": "-a oracle --ae SOLUTION=rank_from_bottom",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/orders-export-missing-rows/orders-export-missing-rows-rank_from_bottom-full1",
+   "started": "2026-10-28 21:34:19",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "rewrite_timestamps_at_startup",
+   "args": "-a oracle --ae SOLUTION=rewrite_timestamps_at_startup",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/orders-export-missing-rows/orders-export-missing-rows-rewrite_timestamps_at_startup-full1",
+   "started": "2026-10-28 21:34:56",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "snapshot_at_startup",
+   "args": "-a oracle --ae SOLUTION=snapshot_at_startup",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/orders-export-missing-rows/orders-export-missing-rows-snapshot_at_startup-full1",
+   "started": "2026-10-28 21:35:27",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "tie_offset",
+   "args": "-a oracle --ae SOLUTION=tie_offset",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/orders-export-missing-rows/orders-export-missing-rows-tie_offset-full1",
+   "started": "2026-10-28 21:36:00",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "unique_timestamps_dev_db",
+   "args": "-a oracle --ae SOLUTION=unique_timestamps_dev_db",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/orders-export-missing-rows/orders-export-missing-rows-unique_timestamps_dev_db-full1",
+   "started": "2026-10-28 21:36:29",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "force-build",
+   "args": "-a oracle --force-build",
+   "expected": 1,
+   "rewards": [
+    1.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/orders-export-missing-rows/orders-export-missing-rows-force-build-full1",
+   "started": "2026-10-28 21:37:06",
+   "harbor_rc": 0
+  }
+ ]
+}

@@ -1,0 +1,34 @@
+{
+ "slug": "et0-station-ingest",
+ "tag": "smoke",
+ "rows": [
+  {
+   "variant": "canonical",
+   "args": "-a oracle -k 1",
+   "expected": 1,
+   "rewards": [
+    1.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/et0-station-ingest/et0-station-ingest-canonical-smoke",
+   "started": "2026-10-28 19:43:18",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "nop",
+   "args": "-a nop",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/et0-station-ingest/et0-station-ingest-nop-smoke",
+   "started": "2026-10-28 19:44:36",
+   "harbor_rc": 0
+  }
+ ]
+}

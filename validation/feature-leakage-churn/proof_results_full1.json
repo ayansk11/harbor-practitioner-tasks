@@ -1,0 +1,213 @@
+{
+ "slug": "feature-leakage-churn",
+ "tag": "full1",
+ "rows": [
+  {
+   "variant": "canonical",
+   "args": "-a oracle -k 10",
+   "expected": 1,
+   "rewards": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    null,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "exceptions": [
+    "DaytonaConnectionError"
+   ],
+   "trials": 10,
+   "pass": false,
+   "job": "jobs/feature-leakage-churn/feature-leakage-churn-canonical-full1",
+   "started": "2026-10-28 19:57:05",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "alt",
+   "args": "-a oracle --ae SOLUTION=alt",
+   "expected": 1,
+   "rewards": [
+    1.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/feature-leakage-churn/feature-leakage-churn-alt-full1",
+   "started": "2026-10-28 20:49:42",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "nop",
+   "args": "-a nop",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/feature-leakage-churn/feature-leakage-churn-nop-full1",
+   "started": "2026-10-28 20:50:21",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "cache_visible",
+   "args": "-a oracle --ae SOLUTION=cache_visible",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/feature-leakage-churn/feature-leakage-churn-cache_visible-full1",
+   "started": "2026-10-28 20:50:53",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "closed_right",
+   "args": "-a oracle --ae SOLUTION=closed_right",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/feature-leakage-churn/feature-leakage-churn-closed_right-full1",
+   "started": "2026-10-28 20:51:33",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "drop_leaky",
+   "args": "-a oracle --ae SOLUTION=drop_leaky",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/feature-leakage-churn/feature-leakage-churn-drop_leaky-full1",
+   "started": "2026-10-28 20:52:14",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "label_at_t",
+   "args": "-a oracle --ae SOLUTION=label_at_t",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/feature-leakage-churn/feature-leakage-churn-label_at_t-full1",
+   "started": "2026-10-28 20:52:40",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "loo_encoding",
+   "args": "-a oracle --ae SOLUTION=loo_encoding",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/feature-leakage-churn/feature-leakage-churn-loo_encoding-full1",
+   "started": "2026-10-28 20:53:12",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "miss_imputation",
+   "args": "-a oracle --ae SOLUTION=miss_imputation",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/feature-leakage-churn/feature-leakage-churn-miss_imputation-full1",
+   "started": "2026-10-28 20:53:42",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "open_left_30d",
+   "args": "-a oracle --ae SOLUTION=open_left_30d",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/feature-leakage-churn/feature-leakage-churn-open_left_30d-full1",
+   "started": "2026-10-28 20:54:12",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "status_same_day",
+   "args": "-a oracle --ae SOLUTION=status_same_day",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/feature-leakage-churn/feature-leakage-churn-status_same_day-full1",
+   "started": "2026-10-28 20:54:41",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "tune_model",
+   "args": "-a oracle --ae SOLUTION=tune_model",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/feature-leakage-churn/feature-leakage-churn-tune_model-full1",
+   "started": "2026-10-28 20:55:12",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "zero_features",
+   "args": "-a oracle --ae SOLUTION=zero_features",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/feature-leakage-churn/feature-leakage-churn-zero_features-full1",
+   "started": "2026-10-28 20:55:42",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "force-build",
+   "args": "-a oracle --force-build",
+   "expected": 1,
+   "rewards": [
+    1.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/feature-leakage-churn/feature-leakage-churn-force-build-full1",
+   "started": "2026-10-28 20:56:11",
+   "harbor_rc": 0
+  }
+ ]
+}

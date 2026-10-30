@@ -1,0 +1,10 @@
+numpy
+pandas
+scipy
+pyarrow
+scikit-learn
+flask
+waitress
+pyyaml
+pytest
+requests

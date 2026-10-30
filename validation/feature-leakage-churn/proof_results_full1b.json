@@ -1,0 +1,29 @@
+{
+ "slug": "feature-leakage-churn",
+ "tag": "full1b",
+ "rows": [
+  {
+   "variant": "canonical",
+   "args": "-a oracle -k 10",
+   "expected": 1,
+   "rewards": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "exceptions": [],
+   "trials": 10,
+   "pass": true,
+   "job": "jobs/feature-leakage-churn/feature-leakage-churn-canonical-full1b",
+   "started": "2026-10-28 20:57:23",
+   "harbor_rc": 0
+  }
+ ]
+}

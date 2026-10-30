@@ -1,0 +1,8 @@
+# Redacted 2026-10-29: machine-specific paths replaced (<submission> x2). <submission> = the submission folder on the authoring Mac, <home> = the author's home folder, <local-scratch> = the session scratch folder. Nothing else changed: no reward, count or timing.
+Selected strategy: _DaytonaDirect
+Building environment from <submission>/tasks/feature-leakage-churn/environment/Dockerfile
+Collecting main service artifacts
+Selected strategy: _DaytonaDirect
+Building environment from <submission>/tasks/feature-leakage-churn/tests/Dockerfile
+Error stopping sandbox 53f747f0-1d28-4180-9796-483b974658c9: Failed to remove sandbox: Cannot connect to host app.daytona.io:443 ssl:default [nodename nor servname provided, or not known]
+Trial feature-leakage-churn__dtTSGvN failed: Failed to get session command: Cannot connect to host proxy.app.daytona.io:443 ssl:default [nodename nor servname provided, or not known]

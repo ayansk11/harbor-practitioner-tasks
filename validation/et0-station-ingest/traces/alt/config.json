@@ -1,0 +1,17 @@
+{
+    "task": {
+        "path": "<submission>/tasks/et0-station-ingest"
+    },
+    "trial_name": "et0-station-ingest__iveydVi",
+    "trials_dir": "<submission>/jobs/et0-station-ingest/et0-station-ingest-alt-full1",
+    "agent": {
+        "name": "oracle",
+        "env": {
+            "SOLUTION": "alt"
+        }
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "74ae6cb0-db5b-4155-850b-b988c7326104"
+}

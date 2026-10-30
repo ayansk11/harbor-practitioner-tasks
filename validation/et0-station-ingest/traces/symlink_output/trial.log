@@ -1,0 +1,41 @@
+# Redacted 2026-10-29: machine-specific paths replaced (<submission> x2, <home> x10). <submission> = the submission folder on the authoring Mac, <home> = the author's home folder, <local-scratch> = the session scratch folder. Nothing else changed: no reward, count or timing.
+Selected strategy: _DaytonaDirect
+Building environment from <submission>/tasks/et0-station-ingest/environment/Dockerfile
+Collecting main service artifacts
+Failed to download artifact '/app' from service 'main' (best-effort)
+Traceback (most recent call last):
+  File "<home>/.local/share/uv/tools/harbor/lib/python3.13/site-packages/harbor/trial/artifact_handler.py", line 336, in _download_artifact
+    await source_env.service_download_dir_with_exclusions(
+    ...<4 lines>...
+    )
+  File "<home>/.local/share/uv/tools/harbor/lib/python3.13/site-packages/harbor/environments/base.py", line 1494, in service_download_dir_with_exclusions
+    await self.download_dir_with_exclusions(
+    ...<3 lines>...
+    )
+  File "<home>/.local/share/uv/tools/harbor/lib/python3.13/site-packages/harbor/environments/base.py", line 1172, in download_dir_with_exclusions
+    await self._download_dir_with_exclusions_impl(
+    ...<4 lines>...
+    )
+  File "<home>/.local/share/uv/tools/harbor/lib/python3.13/site-packages/harbor/environments/base.py", line 1220, in _download_dir_with_exclusions_impl
+    tf.extractall(path=target, filter=transfer_tar_filter)
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<home>/.local/share/uv/python/cpython-3.13-macos-aarch64-none/lib/python3.13/tarfile.py", line 2346, in extractall
+    tarinfo, unfiltered = self._get_extract_tarinfo(
+                          ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        member, filter_function, path)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<home>/.local/share/uv/python/cpython-3.13-macos-aarch64-none/lib/python3.13/tarfile.py", line 2435, in _get_extract_tarinfo
+    self._handle_fatal_error(e)
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^^
+  File "<home>/.local/share/uv/python/cpython-3.13-macos-aarch64-none/lib/python3.13/tarfile.py", line 2433, in _get_extract_tarinfo
+    filtered = filter_function(unfiltered, path)
+  File "<home>/.local/share/uv/tools/harbor/lib/python3.13/site-packages/harbor/environments/base.py", line 82, in transfer_tar_filter
+    return tarfile.data_filter(member, dest_path)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "<home>/.local/share/uv/python/cpython-3.13-macos-aarch64-none/lib/python3.13/tarfile.py", line 848, in data_filter
+    new_attrs = _get_filtered_attrs(member, dest_path, True)
+  File "<home>/.local/share/uv/python/cpython-3.13-macos-aarch64-none/lib/python3.13/tarfile.py", line 821, in _get_filtered_attrs
+    raise AbsoluteLinkError(member)
+tarfile.AbsoluteLinkError: './output/et0.csv' is a link to an absolute path
+Selected strategy: _DaytonaDirect
+Building environment from <submission>/tasks/et0-station-ingest/tests/Dockerfile

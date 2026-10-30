@@ -1,0 +1,12 @@
+{
+    "task": {
+        "path": "<submission>/tasks/et0-station-ingest"
+    },
+    "trial_name": "et0-station-ingest__p2Z8pSw",
+    "trials_dir": "<submission>/jobs/et0-station-ingest/et0-station-ingest-force-build-full1",
+    "environment": {
+        "type": "daytona",
+        "force_build": true
+    },
+    "job_id": "035e18ae-d408-463b-a3de-a2c440a06bba"
+}

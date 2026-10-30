@@ -1,0 +1,58 @@
+# Redacted 2026-10-29: machine-specific paths replaced (<submission> x2, <local-scratch> x1). <submission> = the submission folder on the authoring Mac, <home> = the author's home folder, <local-scratch> = the session scratch folder. The scratch sub-folder name under <local-scratch> was also dropped. Nothing else changed: no reward, count or timing.
+# local_check.py results for orders-export-missing-rows
+started 2026-10-28 21:12:00 MST (Mac clock); python 3.12.13
+command: <submission>/.venv/bin/python <submission>/authoring/orders-export-missing-rows/local_check.py
+scratch: <local-scratch>/run_full
+
+SHA256SUMS: ok
+tests/original equals the shipped code: yes
+__pycache__ in the package: none
+
+| Variant | Expected | Got | Grade time (s) | Failed checks | Visible suite | First failure |
+|---|---|---|---|---|---|---|
+| canonical | 1 | 1.0 | 2.72 | - | pass (21 passed in 0.29s) | - |
+| alt | 1 | 1.0 | 2.78 | - | pass (14 passed in 0.21s) | - |
+| original | 0 | 0.0 | 2.33 | c1_order, c3_customers, c4_inserts | pass (14 passed in 0.21s) | c1_order: /orders limit=50: 25791 orders (25791 distinct) for 30000 expected; first difference at position 151: got id 28195, expected id 28350 |
+| and_predicate | 0 | 0.0 | 2.86 | c1_order, c3_customers, c4_inserts | pass (14 passed in 0.21s) | c1_order: /orders limit=50: 28500 orders (28500 distinct) for 30000 expected; first difference at position 21968: got id 6533, expected id 28585 |
+| customer_offset | 0 | 0.0 | 2.6 | c4_inserts | pass (14 passed in 0.21s) | c4_inserts: /customers/6/orders limit=3 with orders inserted after pages [2, 5]: 438 older orders returned (436 distinct) for 436; position 7: got id 30006, exp |
+| fix_helper_only | 0 | 0.0 | 2.38 | c3_customers, c4_inserts | pass (14 passed in 0.21s) | c3_customers: /customers/6/orders limit=3: 18 orders (18 distinct) for 413 expected; first difference at position 4: got id 14203, expected id 23375 |
+| ignore_limit | 0 | 0.0 | 1.26 | c1_order, c2_pages, c3_customers, c4_inserts, c7_public | pass (14 passed in 0.19s) | c7_public: GET /orders: status 200, page has 30000 orders, more than limit=100 |
+| lte_cursor | 0 | 0.0 | 0.95 | c1_order, c2_pages, c3_customers, c4_inserts | FAIL (5 failed, 9 passed in 0.38s) | c2_pages: /orders limit=50: page 4: next_cursor repeats an earlier cursor (loop) |
+| offset_cursor | 0 | 0.0 | 2.94 | c4_inserts | pass (14 passed in 0.21s) | c4_inserts: /orders limit=100 with orders inserted after pages [3, 10]: 30027 older orders returned (30000 distinct) for 30000; position 301: got id 28215, expe |
+| order_by_id | 0 | 0.0 | 2.6 | c1_order, c3_customers, c4_inserts, c7_public | pass (14 passed in 0.20s) | c7_public: GET /orders without parameters: not the newest 100 orders with a next_cursor |
+| rank_from_bottom | 0 | 0.0 | 4.09 | c4_inserts | pass (14 passed in 0.20s) | c4_inserts: /orders limit=100 with orders inserted after pages [3, 10]: 29978 older orders returned (29978 distinct) for 30000; position 301: got id 28190, expe |
+| rewrite_timestamps_at_startup | 0 | 0.0 | 2.85 | c4_inserts, db | pass (14 passed in 0.21s) | c4_inserts: /customers/6/orders limit=3 with orders inserted after pages [2, 5]: 429 older orders returned (429 distinct) for 436; position 4: got id 30048, exp |
+| snapshot_at_startup | 0 | 0.0 | 2.13 | c4_inserts | pass (14 passed in 0.21s) | c4_inserts: /customers/6/orders limit=3 with orders inserted after pages [2, 5]: 413 older orders returned (413 distinct) for 436; position 1: got id 23378, exp |
+| tie_offset | 0 | 0.0 | 2.63 | c4_inserts | pass (14 passed in 0.21s) | c4_inserts: /orders limit=100 with orders inserted after pages [3, 10]: 30001 older orders returned (30000 distinct) for 30000; position 301: got id 28201, expe |
+| unique_timestamps_dev_db | 0 | 0.0 | 2.41 | c1_order, c3_customers, c4_inserts | pass (14 passed in 0.21s) | c1_order: /orders limit=50: 25791 orders (25791 distinct) for 30000 expected; first difference at position 151: got id 28195, expected id 28350 |
+| slow_valid_no_index | 1 | 1.0 | 4.69 | - | pass (21 passed in 0.26s) | - |
+| naive_full_load_valid | 1 | 1.0 | 211.95 | - | pass (14 passed in 0.21s) | - |
+| wal_mode_valid | 1 | 1.0 | 2.75 | - | pass (21 passed in 0.31s) | - |
+| snapshot_bound_valid | 1 | 1.0 | 2.74 | - | pass (21 passed in 0.28s) | - |
+| slow_service_short_cap | 0 | 0.0 | 6.02 | c1_order, c2_pages, c3_customers, c4_inserts, c5_errors, c6_fields | pass (21 passed in 8.81s) | c1_order: time budget used up before GET /orders?limit=50&cursor=MjAyNS0xMS0wNVQyMzowMDozOVp8MjA0NTE (all requests share a 5 s budget) |
+| original_more_tests | 0 | 0.0 | 2.84 | c1_order, c3_customers, c4_inserts | pass (15 passed in 0.22s) | c1_order: /orders limit=50: 25791 orders (25791 distinct) for 30000 expected; first difference at position 151: got id 28195, expected id 28350 |
+
+ALL AS EXPECTED: yes
+
+metrics per run:
+- canonical: {"reward": 1.0, "c1_order_ok": 1, "c2_pages_ok": 1, "c3_customers_ok": 1, "c4_inserts_ok": 1, "c5_errors_ok": 1, "c6_fields_ok": 1, "c7_public_ok": 1, "db_ok": 1, "failed_checks": 0, "agent_seconds": 2.07, "grading_seconds": 2.66}
+- alt: {"reward": 1.0, "c1_order_ok": 1, "c2_pages_ok": 1, "c3_customers_ok": 1, "c4_inserts_ok": 1, "c5_errors_ok": 1, "c6_fields_ok": 1, "c7_public_ok": 1, "db_ok": 1, "failed_checks": 0, "agent_seconds": 2.14, "grading_seconds": 2.72}
+- original: {"reward": 0.0, "c1_order_ok": 0, "c2_pages_ok": 1, "c3_customers_ok": 0, "c4_inserts_ok": 0, "c5_errors_ok": 1, "c6_fields_ok": 1, "c7_public_ok": 1, "db_ok": 1, "failed_checks": 23, "agent_seconds": 1.68, "grading_seconds": 2.27}
+- and_predicate: {"reward": 0.0, "c1_order_ok": 0, "c2_pages_ok": 1, "c3_customers_ok": 0, "c4_inserts_ok": 0, "c5_errors_ok": 1, "c6_fields_ok": 1, "c7_public_ok": 1, "db_ok": 1, "failed_checks": 13, "agent_seconds": 1.97, "grading_seconds": 2.8}
+- customer_offset: {"reward": 0.0, "c1_order_ok": 1, "c2_pages_ok": 1, "c3_customers_ok": 1, "c4_inserts_ok": 0, "c5_errors_ok": 1, "c6_fields_ok": 1, "c7_public_ok": 1, "db_ok": 1, "failed_checks": 1, "agent_seconds": 1.96, "grading_seconds": 2.55}
+- fix_helper_only: {"reward": 0.0, "c1_order_ok": 1, "c2_pages_ok": 1, "c3_customers_ok": 0, "c4_inserts_ok": 0, "c5_errors_ok": 1, "c6_fields_ok": 1, "c7_public_ok": 1, "db_ok": 1, "failed_checks": 16, "agent_seconds": 1.75, "grading_seconds": 2.33}
+- ignore_limit: {"reward": 0.0, "c1_order_ok": 0, "c2_pages_ok": 0, "c3_customers_ok": 0, "c4_inserts_ok": 0, "c5_errors_ok": 1, "c6_fields_ok": 1, "c7_public_ok": 0, "db_ok": 1, "failed_checks": 55, "agent_seconds": 0.62, "grading_seconds": 1.2}
+- lte_cursor: {"reward": 0.0, "c1_order_ok": 0, "c2_pages_ok": 0, "c3_customers_ok": 0, "c4_inserts_ok": 0, "c5_errors_ok": 1, "c6_fields_ok": 1, "c7_public_ok": 1, "db_ok": 1, "failed_checks": 48, "agent_seconds": 0.32, "grading_seconds": 0.89}
+- offset_cursor: {"reward": 0.0, "c1_order_ok": 1, "c2_pages_ok": 1, "c3_customers_ok": 1, "c4_inserts_ok": 0, "c5_errors_ok": 1, "c6_fields_ok": 1, "c7_public_ok": 1, "db_ok": 1, "failed_checks": 2, "agent_seconds": 2.31, "grading_seconds": 2.88}
+- order_by_id: {"reward": 0.0, "c1_order_ok": 0, "c2_pages_ok": 1, "c3_customers_ok": 0, "c4_inserts_ok": 0, "c5_errors_ok": 1, "c6_fields_ok": 1, "c7_public_ok": 0, "db_ok": 1, "failed_checks": 18, "agent_seconds": 1.98, "grading_seconds": 2.55}
+- rank_from_bottom: {"reward": 0.0, "c1_order_ok": 1, "c2_pages_ok": 1, "c3_customers_ok": 1, "c4_inserts_ok": 0, "c5_errors_ok": 1, "c6_fields_ok": 1, "c7_public_ok": 1, "db_ok": 1, "failed_checks": 2, "agent_seconds": 3.45, "grading_seconds": 4.03}
+- rewrite_timestamps_at_startup: {"reward": 0.0, "c1_order_ok": 1, "c2_pages_ok": 1, "c3_customers_ok": 1, "c4_inserts_ok": 0, "c5_errors_ok": 1, "c6_fields_ok": 1, "c7_public_ok": 1, "db_ok": 0, "failed_checks": 3, "agent_seconds": 2.0, "grading_seconds": 2.79}
+- snapshot_at_startup: {"reward": 0.0, "c1_order_ok": 1, "c2_pages_ok": 1, "c3_customers_ok": 1, "c4_inserts_ok": 0, "c5_errors_ok": 1, "c6_fields_ok": 1, "c7_public_ok": 1, "db_ok": 1, "failed_checks": 7, "agent_seconds": 1.28, "grading_seconds": 2.07}
+- tie_offset: {"reward": 0.0, "c1_order_ok": 1, "c2_pages_ok": 1, "c3_customers_ok": 1, "c4_inserts_ok": 0, "c5_errors_ok": 1, "c6_fields_ok": 1, "c7_public_ok": 1, "db_ok": 1, "failed_checks": 2, "agent_seconds": 1.98, "grading_seconds": 2.57}
+- unique_timestamps_dev_db: {"reward": 0.0, "c1_order_ok": 0, "c2_pages_ok": 1, "c3_customers_ok": 0, "c4_inserts_ok": 0, "c5_errors_ok": 1, "c6_fields_ok": 1, "c7_public_ok": 1, "db_ok": 1, "failed_checks": 23, "agent_seconds": 1.76, "grading_seconds": 2.35}
+- slow_valid_no_index: {"reward": 1.0, "c1_order_ok": 1, "c2_pages_ok": 1, "c3_customers_ok": 1, "c4_inserts_ok": 1, "c5_errors_ok": 1, "c6_fields_ok": 1, "c7_public_ok": 1, "db_ok": 1, "failed_checks": 0, "agent_seconds": 4.04, "grading_seconds": 4.63}
+- naive_full_load_valid: {"reward": 1.0, "c1_order_ok": 1, "c2_pages_ok": 1, "c3_customers_ok": 1, "c4_inserts_ok": 1, "c5_errors_ok": 1, "c6_fields_ok": 1, "c7_public_ok": 1, "db_ok": 1, "failed_checks": 0, "agent_seconds": 210.83, "grading_seconds": 211.9}
+- wal_mode_valid: {"reward": 1.0, "c1_order_ok": 1, "c2_pages_ok": 1, "c3_customers_ok": 1, "c4_inserts_ok": 1, "c5_errors_ok": 1, "c6_fields_ok": 1, "c7_public_ok": 1, "db_ok": 1, "failed_checks": 0, "agent_seconds": 2.1, "grading_seconds": 2.69}
+- snapshot_bound_valid: {"reward": 1.0, "c1_order_ok": 1, "c2_pages_ok": 1, "c3_customers_ok": 1, "c4_inserts_ok": 1, "c5_errors_ok": 1, "c6_fields_ok": 1, "c7_public_ok": 1, "db_ok": 1, "failed_checks": 0, "agent_seconds": 2.11, "grading_seconds": 2.69}
+- slow_service_short_cap: {"reward": 0.0, "c1_order_ok": 0, "c2_pages_ok": 0, "c3_customers_ok": 0, "c4_inserts_ok": 0, "c5_errors_ok": 0, "c6_fields_ok": 0, "c7_public_ok": 1, "db_ok": 1, "failed_checks": 1, "agent_seconds": 5.03, "grading_seconds": 5.96}
+- original_more_tests: {"reward": 0.0, "c1_order_ok": 0, "c2_pages_ok": 1, "c3_customers_ok": 0, "c4_inserts_ok": 0, "c5_errors_ok": 1, "c6_fields_ok": 1, "c7_public_ok": 1, "db_ok": 1, "failed_checks": 23, "agent_seconds": 1.73, "grading_seconds": 2.78}

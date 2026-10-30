@@ -1,0 +1,17 @@
+{
+    "task": {
+        "path": "<submission>/tasks/feature-leakage-churn"
+    },
+    "trial_name": "feature-leakage-churn__GFS2UqZ",
+    "trials_dir": "<submission>/jobs/feature-leakage-churn/feature-leakage-churn-drop_leaky-full1",
+    "agent": {
+        "name": "oracle",
+        "env": {
+            "SOLUTION": "drop_leaky"
+        }
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "cca6820b-fadf-4e37-9f99-7f3a93d19d42"
+}

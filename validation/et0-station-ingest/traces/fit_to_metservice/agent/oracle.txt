@@ -1,0 +1,17 @@
+VNT: 365 days, mean ET0 3.55 mm/day
+PAL: 365 days, mean ET0 3.10 mm/day
+CDB: 365 days, mean ET0 3.60 mm/day
+LGN: 365 days, mean ET0 4.35 mm/day
+RSD: 365 days, mean ET0 3.70 mm/day
+MRS: 365 days, mean ET0 4.11 mm/day
+HLT: 365 days, mean ET0 4.11 mm/day
+ARN: 365 days, mean ET0 3.21 mm/day
+fitted 24 station-month factors
+VNT: 365 days, mean ET0 3.55 mm/day
+PAL: 365 days, mean ET0 2.88 mm/day
+CDB: 365 days, mean ET0 3.59 mm/day
+LGN: 365 days, mean ET0 4.35 mm/day
+RSD: 365 days, mean ET0 3.70 mm/day
+MRS: 365 days, mean ET0 4.11 mm/day
+HLT: 365 days, mean ET0 4.11 mm/day
+ARN: 365 days, mean ET0 3.21 mm/day

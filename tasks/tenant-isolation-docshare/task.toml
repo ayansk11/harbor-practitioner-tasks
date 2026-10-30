@@ -1,0 +1,22 @@
+schema_version = "1.4"
+artifacts = [{ source = "/app", exclude = ["data", "__pycache__", ".venv"] }]
+
+[task]
+name = "diffuse-labs/tenant-isolation-docshare"
+description = "Close a reported cross-organisation file leak in a multi-tenant document API, and every sibling of it, while share links, org switching and support's read-only access keep working."
+keywords = ["security", "authorization", "multi-tenant", "access-control", "flask", "sqlite"]
+
+[metadata]
+category = "cybersecurity"
+difficulty = "medium"
+
+[agent]
+timeout_sec = 1800.0
+
+[verifier]
+environment_mode = "separate"
+timeout_sec = 900.0
+
+[environment]
+cpus = 1
+memory_mb = 1024

@@ -1,0 +1,133 @@
+{
+    "id": "0a32a5b3-e829-49bb-8ed2-7a0f36b9f69a",
+    "task_name": "diffuse-labs/feature-leakage-churn",
+    "trial_name": "feature-leakage-churn__GFS2UqZ",
+    "trial_uri": "file://<submission>/jobs/feature-leakage-churn/feature-leakage-churn-drop_leaky-full1/feature-leakage-churn__GFS2UqZ",
+    "task_id": {
+        "path": "<submission>/tasks/feature-leakage-churn"
+    },
+    "source": null,
+    "task_checksum": "356c933be4afbde41a7bd1848962ef6ccae022d11277b2d4b7271c18be993f9a",
+    "config": {
+        "task": {
+            "path": "<submission>/tasks/feature-leakage-churn",
+            "git_url": null,
+            "git_commit_id": null,
+            "name": null,
+            "ref": null,
+            "overwrite": false,
+            "download_dir": null,
+            "source": null
+        },
+        "trial_name": "feature-leakage-churn__GFS2UqZ",
+        "trials_dir": "<submission>/jobs/feature-leakage-churn/feature-leakage-churn-drop_leaky-full1",
+        "install_only": false,
+        "timeout_multiplier": 1.0,
+        "agent_timeout_multiplier": null,
+        "verifier_timeout_multiplier": null,
+        "agent_setup_timeout_multiplier": null,
+        "environment_build_timeout_multiplier": null,
+        "agent": {
+            "name": "oracle",
+            "import_path": null,
+            "model_name": null,
+            "base_url": null,
+            "model_api_key_name": null,
+            "model_api_format": null,
+            "skip_model_parsing": false,
+            "n_concurrent": null,
+            "concurrency_group": null,
+            "skills": [],
+            "override_timeout_sec": null,
+            "override_setup_timeout_sec": null,
+            "max_timeout_sec": null,
+            "resume_trajectory": false,
+            "load_trajectory": null,
+            "extra_allowed_hosts": [],
+            "kwargs": {},
+            "env": {
+                "SOLUTION": "drop_leaky"
+            },
+            "mcp_servers": []
+        },
+        "user_agent": null,
+        "environment": {
+            "type": "daytona",
+            "import_path": null,
+            "force_build": false,
+            "delete": true,
+            "stream": false,
+            "cpu_enforcement_policy": "auto",
+            "memory_enforcement_policy": "auto",
+            "override_cpus": null,
+            "override_memory_mb": null,
+            "override_storage_mb": null,
+            "override_gpus": null,
+            "override_tpu": null,
+            "mounts": null,
+            "extra_docker_compose": [],
+            "kwargs": {},
+            "extra_allowed_hosts": []
+        },
+        "verifier": {
+            "override_timeout_sec": null,
+            "max_timeout_sec": null,
+            "disable": false
+        },
+        "artifacts": [],
+        "extra_instruction_paths": [],
+        "extra_instructions": [],
+        "job_id": "cca6820b-fadf-4e37-9f99-7f3a93d19d42",
+        "source_trial": null
+    },
+    "agent_info": {
+        "name": "oracle",
+        "version": "1.0.0",
+        "model_info": null
+    },
+    "agent_result": {
+        "n_input_tokens": null,
+        "n_cache_tokens": null,
+        "n_output_tokens": null,
+        "cost_usd": null,
+        "model_usage": null,
+        "rollout_details": null,
+        "metadata": null
+    },
+    "verifier_result": {
+        "rewards": {
+            "reward": 0.0,
+            "check_A": 0,
+            "check_B_cut1": 0,
+            "check_B_cut2": 0,
+            "verifier_cpus_visible": 48,
+            "verifier_cpu_quota": 2.0,
+            "verifier_memory_limit_mib": 4096.0,
+            "verifier_memtotal_mib": 386464.3,
+            "seconds_H": 0.675,
+            "net_private_H": 1,
+            "bad_output_H": 1
+        }
+    },
+    "verifier_environment_mode": "separate",
+    "exception_info": null,
+    "started_at": "2026-10-29T03:52:16.415386Z",
+    "finished_at": "2026-10-29T03:52:37.828281Z",
+    "environment_setup": {
+        "started_at": "2026-10-29T03:52:16.456257Z",
+        "finished_at": "2026-10-29T03:52:18.627720Z"
+    },
+    "agent_setup": {
+        "started_at": "2026-10-29T03:52:18.627752Z",
+        "finished_at": "2026-10-29T03:52:18.627785Z"
+    },
+    "agent_execution": {
+        "started_at": "2026-10-29T03:52:18.627823Z",
+        "finished_at": "2026-10-29T03:52:21.575904Z"
+    },
+    "verifier": {
+        "started_at": "2026-10-29T03:52:26.559616Z",
+        "finished_at": "2026-10-29T03:52:37.828261Z"
+    },
+    "step_results": null
+}

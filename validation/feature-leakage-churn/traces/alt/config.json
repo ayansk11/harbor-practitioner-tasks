@@ -1,0 +1,17 @@
+{
+    "task": {
+        "path": "<submission>/tasks/feature-leakage-churn"
+    },
+    "trial_name": "feature-leakage-churn__qbRxNMV",
+    "trials_dir": "<submission>/jobs/feature-leakage-churn/feature-leakage-churn-alt-full1",
+    "agent": {
+        "name": "oracle",
+        "env": {
+            "SOLUTION": "alt"
+        }
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "6d39c765-0149-4663-835a-121d30e237ed"
+}

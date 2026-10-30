@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+.pytest_cache/
+jobs/
+.claude-flow/
+.localruns/
+.gen/
+.calib_*

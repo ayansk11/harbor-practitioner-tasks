@@ -1,0 +1,66 @@
+{
+    "schema_version": 3,
+    "created_at": "2026-10-29T03:56:12.856567Z",
+    "harbor": {
+        "version": "0.25.0",
+        "is_editable": false
+    },
+    "n_concurrent_trials": 1,
+    "retry": {
+        "max_retries": 0,
+        "exclude_exceptions": [
+            "AgentAuthenticationError",
+            "VerifierTimeoutError",
+            "ApiUsageLimitError",
+            "UnsupportedModelParametersError",
+            "RewardFileNotFoundError",
+            "AgentSafetyRefusalError",
+            "VerifierOutputParseError",
+            "ModelNotFoundError",
+            "RewardFileEmptyError",
+            "AgentTimeoutError"
+        ],
+        "wait_multiplier": 1.0,
+        "min_wait_sec": 1.0,
+        "max_wait_sec": 60.0
+    },
+    "trials": [
+        {
+            "schema_version": 2,
+            "task": {
+                "name": "feature-leakage-churn",
+                "type": "local",
+                "digest": "sha256:00371b77162a4c186fbf375f4547c2b4c98f1e238d67304c3ceeef08fee3410a",
+                "path": "<submission>/tasks/feature-leakage-churn"
+            },
+            "install_only": false,
+            "timeout_multiplier": 1.0,
+            "agent": {
+                "name": "oracle",
+                "skip_model_parsing": false,
+                "skills": [],
+                "resume_trajectory": false,
+                "extra_allowed_hosts": [],
+                "kwargs": {},
+                "mcp_servers": []
+            },
+            "bridge_inputs": {},
+            "skills": [],
+            "environment": {
+                "type": "daytona",
+                "force_build": true,
+                "delete": true,
+                "stream": false,
+                "cpu_enforcement_policy": "auto",
+                "memory_enforcement_policy": "auto",
+                "extra_docker_compose": [],
+                "kwargs": {},
+                "extra_allowed_hosts": []
+            },
+            "verifier": {
+                "disable": false,
+                "environment_mode": "separate"
+            }
+        }
+    ]
+}

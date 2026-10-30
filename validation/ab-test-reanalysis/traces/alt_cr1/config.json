@@ -1,0 +1,17 @@
+{
+    "task": {
+        "path": "<submission>/tasks/ab-test-reanalysis"
+    },
+    "trial_name": "ab-test-reanalysis__tz3x2yq",
+    "trials_dir": "<submission>/jobs/ab-test-reanalysis/ab-test-reanalysis-alt_cr1-full2",
+    "agent": {
+        "name": "oracle",
+        "env": {
+            "SOLUTION": "alt_cr1"
+        }
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "e5140b3b-63e7-4c2e-ba49-10397efa4206"
+}

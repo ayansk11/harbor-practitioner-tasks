@@ -1,0 +1,17 @@
+{
+    "task": {
+        "path": "<submission>/tasks/feature-leakage-churn"
+    },
+    "trial_name": "feature-leakage-churn__ucGbHmA",
+    "trials_dir": "<submission>/jobs/feature-leakage-churn/feature-leakage-churn-loo_encoding-full1",
+    "agent": {
+        "name": "oracle",
+        "env": {
+            "SOLUTION": "loo_encoding"
+        }
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "cee57bc1-7f06-4bbf-a8f0-2e367ad925dc"
+}

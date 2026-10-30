@@ -1,0 +1,17 @@
+{
+    "task": {
+        "path": "<submission>/tasks/ab-test-reanalysis"
+    },
+    "trial_name": "ab-test-reanalysis__4hocD2L",
+    "trials_dir": "<submission>/jobs/ab-test-reanalysis/ab-test-reanalysis-mean_of_ratios-full2",
+    "agent": {
+        "name": "oracle",
+        "env": {
+            "SOLUTION": "mean_of_ratios"
+        }
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "6286be37-18c0-4c01-9bb6-aecc226feb50"
+}

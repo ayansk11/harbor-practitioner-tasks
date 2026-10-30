@@ -1,0 +1,156 @@
+{
+    "id": "a92e06e8-3dc6-4f5a-b11a-66f1c4af3718",
+    "started_at": "2026-10-28T19:45:27.776108",
+    "updated_at": "2026-10-28T19:50:10.146574",
+    "finished_at": "2026-10-28T19:50:10.146574",
+    "n_total_trials": 10,
+    "stats": {
+        "n_completed_trials": 10,
+        "n_errored_trials": 0,
+        "n_running_trials": 0,
+        "n_pending_trials": 0,
+        "n_cancelled_trials": 0,
+        "n_retries": 0,
+        "evals": {
+            "oracle__adhoc": {
+                "n_trials": 10,
+                "n_errors": 0,
+                "metrics": [
+                    {
+                        "grading_seconds": 7.037999999999999,
+                        "leaking_refusals": 0.0,
+                        "reward": 1.0,
+                        "run1_checks": 2475.0,
+                        "run1_failed": 0.0,
+                        "run2_checks": 1231.0,
+                        "run2_failed": 0.0
+                    }
+                ],
+                "pass_at_k": {},
+                "reward_stats": {
+                    "reward": {
+                        "1.0": [
+                            "tenant-isolation-docshare__rCxcLLy",
+                            "tenant-isolation-docshare__kxS7LFM",
+                            "tenant-isolation-docshare__UxmQzvc",
+                            "tenant-isolation-docshare__GzddaLy",
+                            "tenant-isolation-docshare__oxV3RaA",
+                            "tenant-isolation-docshare__mj9Ha2D",
+                            "tenant-isolation-docshare__ttkjxDq",
+                            "tenant-isolation-docshare__hzjERpR",
+                            "tenant-isolation-docshare__9FbF79B",
+                            "tenant-isolation-docshare__gA4EeKu"
+                        ]
+                    },
+                    "run1_checks": {
+                        "2475": [
+                            "tenant-isolation-docshare__rCxcLLy",
+                            "tenant-isolation-docshare__kxS7LFM",
+                            "tenant-isolation-docshare__UxmQzvc",
+                            "tenant-isolation-docshare__GzddaLy",
+                            "tenant-isolation-docshare__oxV3RaA",
+                            "tenant-isolation-docshare__mj9Ha2D",
+                            "tenant-isolation-docshare__ttkjxDq",
+                            "tenant-isolation-docshare__hzjERpR",
+                            "tenant-isolation-docshare__9FbF79B",
+                            "tenant-isolation-docshare__gA4EeKu"
+                        ]
+                    },
+                    "run1_failed": {
+                        "0": [
+                            "tenant-isolation-docshare__rCxcLLy",
+                            "tenant-isolation-docshare__kxS7LFM",
+                            "tenant-isolation-docshare__UxmQzvc",
+                            "tenant-isolation-docshare__GzddaLy",
+                            "tenant-isolation-docshare__oxV3RaA",
+                            "tenant-isolation-docshare__mj9Ha2D",
+                            "tenant-isolation-docshare__ttkjxDq",
+                            "tenant-isolation-docshare__hzjERpR",
+                            "tenant-isolation-docshare__9FbF79B",
+                            "tenant-isolation-docshare__gA4EeKu"
+                        ]
+                    },
+                    "run2_checks": {
+                        "1231": [
+                            "tenant-isolation-docshare__rCxcLLy",
+                            "tenant-isolation-docshare__kxS7LFM",
+                            "tenant-isolation-docshare__UxmQzvc",
+                            "tenant-isolation-docshare__GzddaLy",
+                            "tenant-isolation-docshare__oxV3RaA",
+                            "tenant-isolation-docshare__mj9Ha2D",
+                            "tenant-isolation-docshare__ttkjxDq",
+                            "tenant-isolation-docshare__hzjERpR",
+                            "tenant-isolation-docshare__9FbF79B",
+                            "tenant-isolation-docshare__gA4EeKu"
+                        ]
+                    },
+                    "run2_failed": {
+                        "0": [
+                            "tenant-isolation-docshare__rCxcLLy",
+                            "tenant-isolation-docshare__kxS7LFM",
+                            "tenant-isolation-docshare__UxmQzvc",
+                            "tenant-isolation-docshare__GzddaLy",
+                            "tenant-isolation-docshare__oxV3RaA",
+                            "tenant-isolation-docshare__mj9Ha2D",
+                            "tenant-isolation-docshare__ttkjxDq",
+                            "tenant-isolation-docshare__hzjERpR",
+                            "tenant-isolation-docshare__9FbF79B",
+                            "tenant-isolation-docshare__gA4EeKu"
+                        ]
+                    },
+                    "leaking_refusals": {
+                        "0": [
+                            "tenant-isolation-docshare__rCxcLLy",
+                            "tenant-isolation-docshare__kxS7LFM",
+                            "tenant-isolation-docshare__UxmQzvc",
+                            "tenant-isolation-docshare__GzddaLy",
+                            "tenant-isolation-docshare__oxV3RaA",
+                            "tenant-isolation-docshare__mj9Ha2D",
+                            "tenant-isolation-docshare__ttkjxDq",
+                            "tenant-isolation-docshare__hzjERpR",
+                            "tenant-isolation-docshare__9FbF79B",
+                            "tenant-isolation-docshare__gA4EeKu"
+                        ]
+                    },
+                    "grading_seconds": {
+                        "8.58": [
+                            "tenant-isolation-docshare__rCxcLLy"
+                        ],
+                        "7.02": [
+                            "tenant-isolation-docshare__kxS7LFM"
+                        ],
+                        "11.28": [
+                            "tenant-isolation-docshare__UxmQzvc"
+                        ],
+                        "5.65": [
+                            "tenant-isolation-docshare__GzddaLy"
+                        ],
+                        "5.52": [
+                            "tenant-isolation-docshare__oxV3RaA"
+                        ],
+                        "7.19": [
+                            "tenant-isolation-docshare__mj9Ha2D"
+                        ],
+                        "5.63": [
+                            "tenant-isolation-docshare__ttkjxDq"
+                        ],
+                        "6.71": [
+                            "tenant-isolation-docshare__hzjERpR"
+                        ],
+                        "6.97": [
+                            "tenant-isolation-docshare__9FbF79B"
+                        ],
+                        "5.83": [
+                            "tenant-isolation-docshare__gA4EeKu"
+                        ]
+                    }
+                },
+                "exception_stats": {}
+            }
+        },
+        "n_input_tokens": null,
+        "n_cache_tokens": null,
+        "n_output_tokens": null,
+        "cost_usd": null
+    }
+}

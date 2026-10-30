@@ -1,0 +1,183 @@
+{
+    "id": "ee348c4f-0de2-4449-847c-4db0ca81f43b",
+    "started_at": "2026-10-28T19:53:33.789188",
+    "updated_at": "2026-10-28T19:54:41.073014",
+    "finished_at": "2026-10-28T19:54:41.073014",
+    "n_total_trials": 1,
+    "stats": {
+        "n_completed_trials": 1,
+        "n_errored_trials": 0,
+        "n_running_trials": 0,
+        "n_pending_trials": 0,
+        "n_cancelled_trials": 0,
+        "n_retries": 0,
+        "evals": {
+            "oracle__adhoc": {
+                "n_trials": 1,
+                "n_errors": 0,
+                "metrics": [
+                    {
+                        "grading_seconds": 6.6,
+                        "leaking_refusals": 130.0,
+                        "reward": 0.0,
+                        "run1_checks": 2475.0,
+                        "run1_fail_db_changed": 1.0,
+                        "run1_fail_leak_export": 52.0,
+                        "run1_fail_leak_thumb": 32.0,
+                        "run1_fail_status_delete": 25.0,
+                        "run1_fail_status_export": 52.0,
+                        "run1_fail_status_share": 32.0,
+                        "run1_fail_status_thumb": 32.0,
+                        "run1_fail_sweep": 25.0,
+                        "run1_failed": 251.0,
+                        "run2_checks": 1231.0,
+                        "run2_fail_leak_export": 16.0,
+                        "run2_fail_leak_thumb": 11.0,
+                        "run2_fail_noise_leak_export": 13.0,
+                        "run2_fail_noise_leak_thumb": 6.0,
+                        "run2_fail_noise_status_delete": 6.0,
+                        "run2_fail_noise_status_export": 13.0,
+                        "run2_fail_noise_status_share": 5.0,
+                        "run2_fail_noise_status_thumb": 6.0,
+                        "run2_fail_status_export": 16.0,
+                        "run2_fail_status_thumb": 11.0,
+                        "run2_failed": 103.0
+                    }
+                ],
+                "pass_at_k": {},
+                "reward_stats": {
+                    "reward": {
+                        "0.0": [
+                            "tenant-isolation-docshare__pACZ8Qu"
+                        ]
+                    },
+                    "run1_checks": {
+                        "2475": [
+                            "tenant-isolation-docshare__pACZ8Qu"
+                        ]
+                    },
+                    "run1_failed": {
+                        "251": [
+                            "tenant-isolation-docshare__pACZ8Qu"
+                        ]
+                    },
+                    "run2_checks": {
+                        "1231": [
+                            "tenant-isolation-docshare__pACZ8Qu"
+                        ]
+                    },
+                    "run2_failed": {
+                        "103": [
+                            "tenant-isolation-docshare__pACZ8Qu"
+                        ]
+                    },
+                    "leaking_refusals": {
+                        "130": [
+                            "tenant-isolation-docshare__pACZ8Qu"
+                        ]
+                    },
+                    "grading_seconds": {
+                        "6.6": [
+                            "tenant-isolation-docshare__pACZ8Qu"
+                        ]
+                    },
+                    "run1_fail_status_thumb": {
+                        "32": [
+                            "tenant-isolation-docshare__pACZ8Qu"
+                        ]
+                    },
+                    "run1_fail_leak_thumb": {
+                        "32": [
+                            "tenant-isolation-docshare__pACZ8Qu"
+                        ]
+                    },
+                    "run1_fail_status_export": {
+                        "52": [
+                            "tenant-isolation-docshare__pACZ8Qu"
+                        ]
+                    },
+                    "run1_fail_leak_export": {
+                        "52": [
+                            "tenant-isolation-docshare__pACZ8Qu"
+                        ]
+                    },
+                    "run1_fail_status_share": {
+                        "32": [
+                            "tenant-isolation-docshare__pACZ8Qu"
+                        ]
+                    },
+                    "run1_fail_status_delete": {
+                        "25": [
+                            "tenant-isolation-docshare__pACZ8Qu"
+                        ]
+                    },
+                    "run1_fail_sweep": {
+                        "25": [
+                            "tenant-isolation-docshare__pACZ8Qu"
+                        ]
+                    },
+                    "run1_fail_db_changed": {
+                        "1": [
+                            "tenant-isolation-docshare__pACZ8Qu"
+                        ]
+                    },
+                    "run2_fail_status_thumb": {
+                        "11": [
+                            "tenant-isolation-docshare__pACZ8Qu"
+                        ]
+                    },
+                    "run2_fail_leak_thumb": {
+                        "11": [
+                            "tenant-isolation-docshare__pACZ8Qu"
+                        ]
+                    },
+                    "run2_fail_status_export": {
+                        "16": [
+                            "tenant-isolation-docshare__pACZ8Qu"
+                        ]
+                    },
+                    "run2_fail_leak_export": {
+                        "16": [
+                            "tenant-isolation-docshare__pACZ8Qu"
+                        ]
+                    },
+                    "run2_fail_noise_status_export": {
+                        "13": [
+                            "tenant-isolation-docshare__pACZ8Qu"
+                        ]
+                    },
+                    "run2_fail_noise_leak_export": {
+                        "13": [
+                            "tenant-isolation-docshare__pACZ8Qu"
+                        ]
+                    },
+                    "run2_fail_noise_status_share": {
+                        "5": [
+                            "tenant-isolation-docshare__pACZ8Qu"
+                        ]
+                    },
+                    "run2_fail_noise_status_thumb": {
+                        "6": [
+                            "tenant-isolation-docshare__pACZ8Qu"
+                        ]
+                    },
+                    "run2_fail_noise_leak_thumb": {
+                        "6": [
+                            "tenant-isolation-docshare__pACZ8Qu"
+                        ]
+                    },
+                    "run2_fail_noise_status_delete": {
+                        "6": [
+                            "tenant-isolation-docshare__pACZ8Qu"
+                        ]
+                    }
+                },
+                "exception_stats": {}
+            }
+        },
+        "n_input_tokens": null,
+        "n_cache_tokens": null,
+        "n_output_tokens": null,
+        "cost_usd": null
+    }
+}

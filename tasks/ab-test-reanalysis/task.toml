@@ -1,0 +1,22 @@
+schema_version = "1.4"
+artifacts = [{ source = "/app", exclude = ["data", "__pycache__", ".venv"] }]
+
+[task]
+name = "diffuse-labs/ab-test-reanalysis"
+description = "Audit an A/B readout that declared a false win: bots filtered from one arm only, a pageview-level CI for a user-randomized test, no SRM check; fix the pipeline so it follows the analysis plan on any experiment export."
+keywords = ["data-analysis", "ab-testing", "experimentation", "statistics", "audit"]
+
+[metadata]
+category = "data-analysis"
+difficulty = "easy-medium"
+
+[agent]
+timeout_sec = 1800.0
+
+[verifier]
+environment_mode = "separate"
+timeout_sec = 950.0
+
+[environment]
+cpus = 1
+memory_mb = 2048

@@ -1,0 +1,1 @@
+wrote output/result.json: decision=no_ship

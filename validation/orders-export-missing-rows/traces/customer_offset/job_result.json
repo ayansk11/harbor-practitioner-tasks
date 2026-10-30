@@ -1,0 +1,105 @@
+{
+    "id": "32d42be2-982b-42ae-831e-fc367022f616",
+    "started_at": "2026-10-28T21:31:10.770982",
+    "updated_at": "2026-10-28T21:31:41.001771",
+    "finished_at": "2026-10-28T21:31:41.001771",
+    "n_total_trials": 1,
+    "stats": {
+        "n_completed_trials": 1,
+        "n_errored_trials": 0,
+        "n_running_trials": 0,
+        "n_pending_trials": 0,
+        "n_cancelled_trials": 0,
+        "n_retries": 0,
+        "evals": {
+            "oracle__adhoc": {
+                "n_trials": 1,
+                "n_errors": 0,
+                "metrics": [
+                    {
+                        "agent_seconds": 8.05,
+                        "c1_order_ok": 1.0,
+                        "c2_pages_ok": 1.0,
+                        "c3_customers_ok": 1.0,
+                        "c4_inserts_ok": 0.0,
+                        "c5_errors_ok": 1.0,
+                        "c6_fields_ok": 1.0,
+                        "c7_public_ok": 1.0,
+                        "db_ok": 1.0,
+                        "failed_checks": 1.0,
+                        "grading_seconds": 8.95,
+                        "reward": 0.0
+                    }
+                ],
+                "pass_at_k": {},
+                "reward_stats": {
+                    "reward": {
+                        "0.0": [
+                            "orders-export-missing-rows__fhtFEef"
+                        ]
+                    },
+                    "c1_order_ok": {
+                        "1": [
+                            "orders-export-missing-rows__fhtFEef"
+                        ]
+                    },
+                    "c2_pages_ok": {
+                        "1": [
+                            "orders-export-missing-rows__fhtFEef"
+                        ]
+                    },
+                    "c3_customers_ok": {
+                        "1": [
+                            "orders-export-missing-rows__fhtFEef"
+                        ]
+                    },
+                    "c4_inserts_ok": {
+                        "0": [
+                            "orders-export-missing-rows__fhtFEef"
+                        ]
+                    },
+                    "c5_errors_ok": {
+                        "1": [
+                            "orders-export-missing-rows__fhtFEef"
+                        ]
+                    },
+                    "c6_fields_ok": {
+                        "1": [
+                            "orders-export-missing-rows__fhtFEef"
+                        ]
+                    },
+                    "c7_public_ok": {
+                        "1": [
+                            "orders-export-missing-rows__fhtFEef"
+                        ]
+                    },
+                    "db_ok": {
+                        "1": [
+                            "orders-export-missing-rows__fhtFEef"
+                        ]
+                    },
+                    "failed_checks": {
+                        "1": [
+                            "orders-export-missing-rows__fhtFEef"
+                        ]
+                    },
+                    "agent_seconds": {
+                        "8.05": [
+                            "orders-export-missing-rows__fhtFEef"
+                        ]
+                    },
+                    "grading_seconds": {
+                        "8.95": [
+                            "orders-export-missing-rows__fhtFEef"
+                        ]
+                    }
+                },
+                "exception_stats": {}
+            }
+        },
+        "n_input_tokens": null,
+        "n_cache_tokens": null,
+        "n_output_tokens": null,
+        "cost_usd": null
+    }
+}

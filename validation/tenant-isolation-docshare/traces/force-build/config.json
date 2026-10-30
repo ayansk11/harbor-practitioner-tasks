@@ -1,0 +1,12 @@
+{
+    "task": {
+        "path": "<submission>/tasks/tenant-isolation-docshare"
+    },
+    "trial_name": "tenant-isolation-docshare__JXRGo7G",
+    "trials_dir": "<submission>/jobs/tenant-isolation-docshare/tenant-isolation-docshare-force-build-full1",
+    "environment": {
+        "type": "daytona",
+        "force_build": true
+    },
+    "job_id": "ad2e90eb-cd55-425d-ac0e-23ae217622be"
+}

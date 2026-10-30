@@ -1,0 +1,7 @@
+# Proof matrix: feature-leakage-churn (run full1b, Daytona, Harbor 0.25.0; Mac clock MST)
+
+Overall: ALL AS EXPECTED
+
+| Variant | Command | Expected | Rewards | Exceptions | Result | Job folder |
+|---|---|---|---|---|---|---|
+| canonical | `-a oracle -k 10` | 1 | [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0] | - | PASS | `jobs/feature-leakage-churn/feature-leakage-churn-canonical-full1b` |

@@ -1,0 +1,15 @@
+tenant-isolation-docshare: variants graded with the grader as it was before the review fix (2026-10-28, Mac, KIT_LOCAL=1)
+Old grader: tests/grade.py as of 2026-10-28 18:44 MST (two runs, each with one kind of request), kept in a scratch copy, not shipped.
+Command: a scratch script that builds each variant with authoring/tenant-isolation-docshare/local_check.py make_app() and runs the old grade.py on it.
+Every variant below except canonical scores 0 on the current grader (local_results.txt); canonical scores 1 on both.
+
+[old grader] canonical                          reward=1.0 deny_failed=0/2065 allow_failed=0/424
+[old grader] phase_gate                         reward=1.0 deny_failed=0/2065 allow_failed=0/424
+[old grader] ablate_phase_strict_first_start    reward=1.0 deny_failed=0/2065 allow_failed=0/424
+[old grader] ablate_phase_by_request_count      reward=1.0 deny_failed=0/2065 allow_failed=0/424
+[old grader] gap_revoke_only_in_home_org        reward=1.0 deny_failed=0/2065 allow_failed=0/424
+[old grader] gap_delete_leaves_shares_fk        reward=1.0 deny_failed=0/2065 allow_failed=0/424
+[old grader] gap_support_list_no_header_200     reward=1.0 deny_failed=0/2065 allow_failed=0/424
+[old grader] gap_share_response_fields          reward=1.0 deny_failed=0/2065 allow_failed=0/424
+[old grader] gap_no_rename_validation           reward=1.0 deny_failed=0/2065 allow_failed=0/424
+[old grader] gap_download_headers_dropped       reward=1.0 deny_failed=0/2065 allow_failed=0/424

@@ -1,0 +1,14 @@
+{
+    "task": {
+        "path": "<submission>/tasks/et0-station-ingest"
+    },
+    "trial_name": "et0-station-ingest__KVxKDWV",
+    "trials_dir": "<submission>/jobs/et0-station-ingest/et0-station-ingest-nop-full1",
+    "agent": {
+        "name": "nop"
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "228f4758-698d-438c-ba83-6d266b8dd3ed"
+}

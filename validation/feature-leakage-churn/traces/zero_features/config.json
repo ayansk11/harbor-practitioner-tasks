@@ -1,0 +1,17 @@
+{
+    "task": {
+        "path": "<submission>/tasks/feature-leakage-churn"
+    },
+    "trial_name": "feature-leakage-churn__wfMN7Rx",
+    "trials_dir": "<submission>/jobs/feature-leakage-churn/feature-leakage-churn-zero_features-full1",
+    "agent": {
+        "name": "oracle",
+        "env": {
+            "SOLUTION": "zero_features"
+        }
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "78dd690f-5317-4f53-9f66-18c58bd6be44"
+}

@@ -1,0 +1,55 @@
+> Status (2026-10-28, DESIGN.md section 13): superseded. This is the calibration of the four-hidden-set data, copied here before
+> the fifth set (h_lowicc) was added and `calibration_study.py` was re-run; the current record is
+> `calibration_study.out.md`. Numbers below are unchanged.
+
+# calibration_study.out.md (calibration_study.py)
+
+Bound errors in reference half-widths (reference = delta method in tests/expected/). Seeds: B=2000 x 200; B=5000 and pooled x 30. Run time 676.7 s.
+
+## Per set
+
+| set | DE | sqrt(DE) | lower/hw | SRM p | decision | max valid error | fix_bots_only error | constant_inflation error (K=2.466) |
+|---|---|---|---|---|---|---|---|---|
+| visible | 6.08 | 2.466 | -1.095 | 0.635 | no_ship | 0.0809 | 0.5944 | 0.0002 |
+| h_null | 23.05 | 4.801 | -1.313 | 0.397 | no_ship | 0.1039 | 0.7917 | 0.4864 |
+| h_pos | 6.05 | 2.460 | +1.088 | 1 | ship | 0.0916 | 0.5936 | 0.0023 |
+| h_srm | 6.81 | 2.610 | +0.806 | 6.75e-09 | invalid | 0.0883 | 0.6169 | 0.0553 |
+| h_bots | 7.85 | 2.802 | -1.129 | 0.411 | no_ship | 0.0859 | 0.6431 | 0.1199 |
+
+## Valid methods, worst bound error per set
+
+| method | visible | h_null | h_pos | h_srm | h_bots |
+|---|---|---|---|---|---|
+| delta_refb | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
+| delta_no_N_factor | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
+| cr1 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
+| bootstrap B=2000 percentile (200 seeds) | 0.0809 | 0.1039 | 0.0916 | 0.0883 | 0.0859 |
+| bootstrap B=2000 basic (200 seeds) | 0.0809 | 0.1039 | 0.0916 | 0.0883 | 0.0859 |
+| bootstrap B=2000 normal (200 seeds) | 0.0376 | 0.0455 | 0.0428 | 0.0439 | 0.0438 |
+| bootstrap B=5000 percentile (30 seeds) | 0.0524 | 0.0593 | 0.0472 | 0.0426 | 0.0531 |
+| pooled bootstrap B=2000 percentile (30 seeds) | 0.0718 | 0.0878 | 0.0849 | 0.0802 | 0.0760 |
+
+Bootstrap B=2000 percentile, mean and SD of the bound error (lo; hi):
+
+- visible: lo mean -0.0024 sd 0.0278; hi mean -0.0020 sd 0.0281
+- h_null: lo mean +0.0220 sd 0.0283; hi mean +0.0131 sd 0.0326
+- h_pos: lo mean +0.0013 sd 0.0283; hi mean -0.0024 sd 0.0314
+- h_srm: lo mean +0.0071 sd 0.0284; hi mean +0.0009 sd 0.0289
+- h_bots: lo mean +0.0020 sd 0.0278; hi mean -0.0006 sd 0.0288
+
+## Band
+
+- spread (worst valid-method bound error, all sets): 0.1039
+- rule band (next whole percent strictly above 2 x spread): 0.21
+- band checked below (the one grade.py uses): 0.25
+- fix_bots_only, smallest miss over the sets: 0.5936 (needs >= 2 x band = 0.50)
+- best constant K, worst-set error: 0.3224 (needs > band)
+- smallest decision margin |lower|/hw: 0.806 (needs >= max(0.35, band))
+
+## Checks
+
+- PASS: band > 2 x spread
+- PASS: fix_bots_only misses by >= 2 x band on every set
+- PASS: no constant K fits every set (best K's worst error > band)
+- PASS: every decision bound >= 0.35 hw from 0, and farther than band
+- PASS: SRM set: 1e-12 < srm_p < 0.001; other sets srm_p >= 0.05

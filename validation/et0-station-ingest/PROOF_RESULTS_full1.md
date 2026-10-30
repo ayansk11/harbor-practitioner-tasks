@@ -1,0 +1,19 @@
+# Proof matrix: et0-station-ingest (run full1, Daytona, Harbor 0.25.0; Mac clock MST)
+
+Overall: ALL AS EXPECTED
+
+| Variant | Command | Expected | Rewards | Exceptions | Result | Job folder |
+|---|---|---|---|---|---|---|
+| canonical | `-a oracle -k 10` | 1 | [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0] | - | PASS | `jobs/et0-station-ingest/et0-station-ingest-canonical-full1` |
+| alt | `-a oracle --ae SOLUTION=alt` | 1 | [1.0] | - | PASS | `jobs/et0-station-ingest/et0-station-ingest-alt-full1` |
+| nop | `-a nop` | 0 | [0.0] | - | PASS | `jobs/et0-station-ingest/et0-station-ingest-nop-full1` |
+| abs_app_path | `-a oracle --ae SOLUTION=abs_app_path` | 0 | [0.0] | - | PASS | `jobs/et0-station-ingest/et0-station-ingest-abs_app_path-full1` |
+| fit_to_metservice | `-a oracle --ae SOLUTION=fit_to_metservice` | 0 | [0.0] | - | PASS | `jobs/et0-station-ingest/et0-station-ingest-fit_to_metservice-full1` |
+| fix_altitude | `-a oracle --ae SOLUTION=fix_altitude` | 0 | [0.0] | - | PASS | `jobs/et0-station-ingest/et0-station-ingest-fix_altitude-full1` |
+| hardcode_output | `-a oracle --ae SOLUTION=hardcode_output` | 0 | [0.0] | - | PASS | `jobs/et0-station-ingest/et0-station-ingest-hardcode_output-full1` |
+| linear_wind | `-a oracle --ae SOLUTION=linear_wind` | 0 | [0.0] | - | PASS | `jobs/et0-station-ingest/et0-station-ingest-linear_wind-full1` |
+| nearest_height | `-a oracle --ae SOLUTION=nearest_height` | 0 | [0.0] | - | PASS | `jobs/et0-station-ingest/et0-station-ingest-nearest_height-full1` |
+| read_answers | `-a oracle --ae SOLUTION=read_answers` | 0 | [0.0] | - | PASS | `jobs/et0-station-ingest/et0-station-ingest-read_answers-full1` |
+| symlink_output | `-a oracle --ae SOLUTION=symlink_output` | 0 | [0.0] | - | PASS | `jobs/et0-station-ingest/et0-station-ingest-symlink_output-full1` |
+| units_not_latitude | `-a oracle --ae SOLUTION=units_not_latitude` | 0 | [0.0] | - | PASS | `jobs/et0-station-ingest/et0-station-ingest-units_not_latitude-full1` |
+| force-build | `-a oracle --force-build` | 1 | [1.0] | - | PASS | `jobs/et0-station-ingest/et0-station-ingest-force-build-full1` |

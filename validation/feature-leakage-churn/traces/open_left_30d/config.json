@@ -1,0 +1,17 @@
+{
+    "task": {
+        "path": "<submission>/tasks/feature-leakage-churn"
+    },
+    "trial_name": "feature-leakage-churn__JexSAvp",
+    "trials_dir": "<submission>/jobs/feature-leakage-churn/feature-leakage-churn-open_left_30d-full1",
+    "agent": {
+        "name": "oracle",
+        "env": {
+            "SOLUTION": "open_left_30d"
+        }
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "9a9a1b96-228f-4ccc-857b-795236d8f0b4"
+}

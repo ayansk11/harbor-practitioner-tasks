@@ -1,0 +1,25 @@
+schema_version = "1.4"
+artifacts = [{ source = "/app", exclude = ["data", "__pycache__", ".venv"] }]
+
+[task]
+name = "diffuse-labs/feature-leakage-churn"
+description = "Make a churn model's feature pipeline point-in-time correct: find and fix four kinds of future-information leak against a written spec."
+keywords = ["ml-systems", "data-leakage", "feature-engineering", "pandas", "point-in-time"]
+
+[metadata]
+difficulty = "hard"  # author estimate until the Daytona agent trials give a pass rate (DESIGN.md s11)
+category = "ml-systems"
+tags = ["leakage", "as-of-join", "target-encoding", "time-windows"]
+
+[agent]
+timeout_sec = 3600.0
+
+[verifier]
+environment_mode = "separate"
+# (3 runs x 60 s cap (grade.py RUN_CAP_SEC) + 6.9 s, the worst grading time measured outside the runs) x 1.5
+# = 280.35, rounded up (DESIGN.md s7)
+timeout_sec = 281.0
+
+[environment]
+cpus = 2
+memory_mb = 4096

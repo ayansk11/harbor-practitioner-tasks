@@ -1,0 +1,17 @@
+{
+    "task": {
+        "path": "<submission>/tasks/orders-export-missing-rows"
+    },
+    "trial_name": "orders-export-missing-rows__scvdEut",
+    "trials_dir": "<submission>/jobs/orders-export-missing-rows/orders-export-missing-rows-unique_timestamps_dev_db-full1",
+    "agent": {
+        "name": "oracle",
+        "env": {
+            "SOLUTION": "unique_timestamps_dev_db"
+        }
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "fdf14d39-19ba-43b2-a488-b02009d4c9d8"
+}

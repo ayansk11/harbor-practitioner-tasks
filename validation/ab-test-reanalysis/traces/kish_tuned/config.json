@@ -1,0 +1,17 @@
+{
+    "task": {
+        "path": "<submission>/tasks/ab-test-reanalysis"
+    },
+    "trial_name": "ab-test-reanalysis__s9ExD9T",
+    "trials_dir": "<submission>/jobs/ab-test-reanalysis/ab-test-reanalysis-kish_tuned-full2",
+    "agent": {
+        "name": "oracle",
+        "env": {
+            "SOLUTION": "kish_tuned"
+        }
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "a8eb53b9-5981-4caf-a90b-5309eb97e4ac"
+}

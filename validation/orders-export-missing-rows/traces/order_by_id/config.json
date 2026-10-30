@@ -1,0 +1,17 @@
+{
+    "task": {
+        "path": "<submission>/tasks/orders-export-missing-rows"
+    },
+    "trial_name": "orders-export-missing-rows__9QffFyX",
+    "trials_dir": "<submission>/jobs/orders-export-missing-rows/orders-export-missing-rows-order_by_id-full1",
+    "agent": {
+        "name": "oracle",
+        "env": {
+            "SOLUTION": "order_by_id"
+        }
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "dcb056cd-fa1a-4927-91fe-0667c4a58b3f"
+}

@@ -1,0 +1,211 @@
+{
+ "slug": "ab-test-reanalysis",
+ "tag": "full2",
+ "rows": [
+  {
+   "variant": "canonical",
+   "args": "-a oracle -k 10",
+   "expected": 1,
+   "rewards": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "exceptions": [],
+   "trials": 10,
+   "pass": true,
+   "job": "jobs/ab-test-reanalysis/ab-test-reanalysis-canonical-full2",
+   "started": "2026-10-29 03:38:19",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "alt",
+   "args": "-a oracle --ae SOLUTION=alt",
+   "expected": 1,
+   "rewards": [
+    1.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/ab-test-reanalysis/ab-test-reanalysis-alt-full2",
+   "started": "2026-10-29 03:42:07",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "alt_cr1",
+   "args": "-a oracle --ae SOLUTION=alt_cr1",
+   "expected": 1,
+   "rewards": [
+    1.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/ab-test-reanalysis/ab-test-reanalysis-alt_cr1-full2",
+   "started": "2026-10-29 03:42:55",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "nop",
+   "args": "-a nop",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/ab-test-reanalysis/ab-test-reanalysis-nop-full2",
+   "started": "2026-10-29 03:43:38",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "constant_inflation",
+   "args": "-a oracle --ae SOLUTION=constant_inflation",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/ab-test-reanalysis/ab-test-reanalysis-constant_inflation-full2",
+   "started": "2026-10-29 03:44:14",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "fix_bots_only",
+   "args": "-a oracle --ae SOLUTION=fix_bots_only",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/ab-test-reanalysis/ab-test-reanalysis-fix_bots_only-full2",
+   "started": "2026-10-29 03:44:57",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "fix_ci_only",
+   "args": "-a oracle --ae SOLUTION=fix_ci_only",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/ab-test-reanalysis/ab-test-reanalysis-fix_ci_only-full2",
+   "started": "2026-10-29 03:45:38",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "fix_visible_result_only",
+   "args": "-a oracle --ae SOLUTION=fix_visible_result_only",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/ab-test-reanalysis/ab-test-reanalysis-fix_visible_result_only-full2",
+   "started": "2026-10-29 03:46:24",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "hardcode_no_ship",
+   "args": "-a oracle --ae SOLUTION=hardcode_no_ship",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/ab-test-reanalysis/ab-test-reanalysis-hardcode_no_ship-full2",
+   "started": "2026-10-29 03:47:06",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "icc_tuned",
+   "args": "-a oracle --ae SOLUTION=icc_tuned",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/ab-test-reanalysis/ab-test-reanalysis-icc_tuned-full2",
+   "started": "2026-10-29 03:47:49",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "kish_tuned",
+   "args": "-a oracle --ae SOLUTION=kish_tuned",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/ab-test-reanalysis/ab-test-reanalysis-kish_tuned-full2",
+   "started": "2026-10-29 03:48:31",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "mean_of_ratios",
+   "args": "-a oracle --ae SOLUTION=mean_of_ratios",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/ab-test-reanalysis/ab-test-reanalysis-mean_of_ratios-full2",
+   "started": "2026-10-29 03:49:13",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "no_srm_gate",
+   "args": "-a oracle --ae SOLUTION=no_srm_gate",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/ab-test-reanalysis/ab-test-reanalysis-no_srm_gate-full2",
+   "started": "2026-10-29 03:49:54",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "force-build",
+   "args": "-a oracle --force-build",
+   "expected": 1,
+   "rewards": [
+    1.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/ab-test-reanalysis/ab-test-reanalysis-force-build-full2",
+   "started": "2026-10-29 03:50:35",
+   "harbor_rc": 0
+  }
+ ]
+}

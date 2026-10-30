@@ -1,0 +1,20 @@
+[test.sh] lock ok: /logs/verifier 0:0 755, /logs 0:0 755, owner before 0:0; protected_symlinks=1 protected_hardlinks=1 protected_regular=2; setid files left: 0
+[kit] submission copied to /work/sub; removed 0 auto-run entries; skipped 0 special files
+[kit] 2012 refusal cases, 402 permitted reads
+[kit] staged /tests/original for uid 1001 at /work/w0c1658b2
+[kit] staged /tests/hidden/seed.db for uid 1001 at /work/w0b0e9037
+[kit] service on 127.0.0.1:40295 answered after 0.20s
+[kit] service from /work/w0c1658b2 on port 40295: up in 0.21s
+[kit] phase original: 356 checks, 0 failed, 0.60s; failed by check: {}
+[kit] staged /tests/hidden/seed.db for uid 1001 at /work/w1c409066
+[kit] service on 127.0.0.1:33891 answered after 0.20s
+[kit] service from /work/sub on port 33891: up in 0.21s
+[kit] network isolation: ON (private namespace, loopback only); probe rc=0 out=b'NETNS-OK' err=b''
+[kit] ran ['/usr/local/bin/python3', '-I', '-c', "import sqlite3, sys, urllib.parse\nc = sqlite3.connect('file:' + urllib.parse.quote(sys.argv[1]) + '?mode=rw', uri=True)\nr = c.execute('PRAGMA wal_checkpoint(TRUNCATE)').fetchone()\nc.close()\nsys.exit(0 if r[0] == 0 else 3)\n"]... rc=0 timed_out=False 0.037s net=private strays_killed=0
+[kit] phase run1: 2475 checks, 0 failed, 3.24s; failed by check: {}
+[kit] staged /tests/hidden/seed.db for uid 1001 at /work/w28ddb9cc
+[kit] service on 127.0.0.1:32837 answered after 0.20s
+[kit] service from /work/sub on port 32837: up in 0.21s
+[kit] write list: 50 requests, with 379 refused requests mixed in; 0 steps skipped
+[kit] phase run2: 1231 checks, 0 failed, 1.61s; failed by check: {}
+[kit] reward=1.0 (killed 0 runner processes) metrics={'reward': 1.0, 'run1_checks': 2475, 'run1_failed': 0, 'run2_checks': 1231, 'run2_failed': 0, 'leaking_refusals': 0, 'grading_seconds': 5.48}

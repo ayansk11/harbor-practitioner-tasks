@@ -1,0 +1,92 @@
+[test.sh] lock ok: /logs/verifier 0:0 755, /logs 0:0 755, owner before 0:0; protected_symlinks=1 protected_hardlinks=1 protected_regular=2; setid files left: 0
+[kit] python 3.12.16, sqlite 3.40.1
+[kit] SHA256SUMS ok (8 files)
+[kit] submission copied to /work/sub; removed 0 auto-run entries; skipped 0 special files
+[kit] staged /tests/original for uid 1001 at /work/original
+[kit] staged /tests/hidden/orders.db for uid 1001 at /work/db_original
+[kit] service on 127.0.0.1:56263 answered after 0.22s
+[kit] original service on port 56263: up after 0.22s
+[kit] original: 301 requests, answers equal the hidden database
+[kit] original phase 0.43s
+[kit] staged /tests/hidden/orders.db for uid 1001 at /work/db_agent
+[kit] service on 127.0.0.1:48205 answered after 0.20s
+[kit] agent service on port 48205: up after 0.21s
+[kit]   FAIL c2_pages: /orders limit=50: page 4: next_cursor repeats an earlier cursor (loop)
+[kit]   FAIL c1_order: /orders limit=50: 200 orders (156 distinct) for 30000 expected; first difference at position 51: got id 28451, expected id 28450
+[kit] walk /orders limit=50: 4 pages, 200 orders, 0.00s
+[kit]   FAIL c2_pages: /orders limit=200: page 4: next_cursor repeats an earlier cursor (loop)
+[kit]   FAIL c1_order: /orders limit=200: 800 orders (587 distinct) for 30000 expected; first difference at position 201: got id 28394, expected id 28300
+[kit] walk /orders limit=200: 4 pages, 800 orders, 0.01s
+[kit]   FAIL c1_order: /orders limit=500: 30572 orders (30000 distinct) for 30000 expected; first difference at position 501: got id 28113, expected id 28000
+[kit] walk /orders limit=500: 62 pages, 30572 orders, 0.22s
+[kit]   FAIL c2_pages: /orders limit=7 (newest 5000): page 5: next_cursor repeats an earlier cursor (loop)
+[kit]   FAIL c1_order: /orders limit=7 (newest 5000): position 8: got id 28494, expected id 28493
+[kit] walk /orders limit=7 (newest 5000): 5 pages, 35 orders, 0.00s
+[kit]   FAIL c2_pages: /orders limit=1 (newest 2000): page 2: next_cursor repeats an earlier cursor (loop)
+[kit]   FAIL c1_order: /orders limit=1 (newest 2000): position 2: got id 28500, expected id 28499
+[kit] walk /orders limit=1 (newest 2000): 2 pages, 2 orders, 0.00s
+[kit]   FAIL c2_pages: /customers/6/orders limit=3: page 2: next_cursor repeats an earlier cursor (loop)
+[kit]   FAIL c3_customers: /customers/6/orders limit=3: 6 orders (3 distinct) for 413 expected; first difference at position 4: got id 23378, expected id 23375
+[kit] walk /customers/6/orders limit=3: 2 pages, 6 orders, 0.00s
+[kit]   FAIL c2_pages: /customers/6/orders limit=20: page 2: next_cursor repeats an earlier cursor (loop)
+[kit]   FAIL c3_customers: /customers/6/orders limit=20: 40 orders (32 distinct) for 413 expected; first difference at position 21: got id 14203, expected id 14195
+[kit] walk /customers/6/orders limit=20: 2 pages, 40 orders, 0.00s
+[kit]   FAIL c2_pages: /customers/16/orders limit=3: page 2: next_cursor repeats an earlier cursor (loop)
+[kit]   FAIL c3_customers: /customers/16/orders limit=3: 6 orders (3 distinct) for 281 expected; first difference at position 4: got id 28182, expected id 28179
+[kit] walk /customers/16/orders limit=3: 2 pages, 6 orders, 0.00s
+[kit]   FAIL c2_pages: /customers/16/orders limit=20: page 2: next_cursor repeats an earlier cursor (loop)
+[kit]   FAIL c3_customers: /customers/16/orders limit=20: 40 orders (20 distinct) for 281 expected; first difference at position 21: got id 28182, expected id 28162
+[kit] walk /customers/16/orders limit=20: 2 pages, 40 orders, 0.00s
+[kit]   FAIL c2_pages: /customers/1/orders limit=3: page 2: next_cursor repeats an earlier cursor (loop)
+[kit]   FAIL c3_customers: /customers/1/orders limit=3: 6 orders (3 distinct) for 242 expected; first difference at position 4: got id 26576, expected id 26573
+[kit] walk /customers/1/orders limit=3: 2 pages, 6 orders, 0.00s
+[kit]   FAIL c2_pages: /customers/1/orders limit=20: page 2: next_cursor repeats an earlier cursor (loop)
+[kit]   FAIL c3_customers: /customers/1/orders limit=20: 40 orders (20 distinct) for 242 expected; first difference at position 21: got id 26576, expected id 26556
+[kit] walk /customers/1/orders limit=20: 2 pages, 40 orders, 0.00s
+[kit]   FAIL c2_pages: /customers/27/orders limit=3: page 2: next_cursor repeats an earlier cursor (loop)
+[kit]   FAIL c3_customers: /customers/27/orders limit=3: 6 orders (3 distinct) for 211 expected; first difference at position 4: got id 14897, expected id 14894
+[kit] walk /customers/27/orders limit=3: 2 pages, 6 orders, 0.00s
+[kit]   FAIL c2_pages: /customers/27/orders limit=20: page 2: next_cursor repeats an earlier cursor (loop)
+[kit]   FAIL c3_customers: /customers/27/orders limit=20: 40 orders (20 distinct) for 211 expected; first difference at position 21: got id 14897, expected id 14877
+[kit] walk /customers/27/orders limit=20: 2 pages, 40 orders, 0.00s
+[kit]   FAIL c2_pages: /customers/4/orders limit=3: page 2: next_cursor repeats an earlier cursor (loop)
+[kit]   FAIL c3_customers: /customers/4/orders limit=3: 6 orders (3 distinct) for 196 expected; first difference at position 4: got id 26819, expected id 26816
+[kit] walk /customers/4/orders limit=3: 2 pages, 6 orders, 0.00s
+[kit]   FAIL c2_pages: /customers/4/orders limit=20: page 2: next_cursor repeats an earlier cursor (loop)
+[kit]   FAIL c3_customers: /customers/4/orders limit=20: 40 orders (20 distinct) for 196 expected; first difference at position 21: got id 26819, expected id 26799
+[kit] walk /customers/4/orders limit=20: 2 pages, 40 orders, 0.00s
+[kit]   FAIL c2_pages: /customers/35/orders limit=3: page 2: next_cursor repeats an earlier cursor (loop)
+[kit]   FAIL c3_customers: /customers/35/orders limit=3: 6 orders (3 distinct) for 190 expected; first difference at position 4: got id 27167, expected id 27164
+[kit] walk /customers/35/orders limit=3: 2 pages, 6 orders, 0.00s
+[kit]   FAIL c2_pages: /customers/35/orders limit=20: page 2: next_cursor repeats an earlier cursor (loop)
+[kit]   FAIL c3_customers: /customers/35/orders limit=20: 40 orders (30 distinct) for 190 expected; first difference at position 21: got id 18175, expected id 18165
+[kit] walk /customers/35/orders limit=20: 2 pages, 40 orders, 0.00s
+[kit]   FAIL c2_pages: /customers/441/orders limit=3: more than 20 pages
+[kit]   FAIL c3_customers: /customers/441/orders limit=3: 60 orders (41 distinct) for 53 expected; first difference at position 4: got id 27418, expected id 27387
+[kit] walk /customers/441/orders limit=3: 20 pages, 60 orders, 0.01s
+[kit]   FAIL c3_customers: /customers/441/orders limit=20: 55 orders (53 distinct) for 53 expected; first difference at position 21: got id 16528, expected id 15724
+[kit] walk /customers/441/orders limit=20: 3 pages, 55 orders, 0.00s
+[kit]   FAIL c2_pages: /customers/456/orders limit=3: more than 8 pages
+[kit]   FAIL c3_customers: /customers/456/orders limit=3: 24 orders (17 distinct) for 17 expected; first difference at position 4: got id 24194, expected id 23754
+[kit] walk /customers/456/orders limit=3: 8 pages, 24 orders, 0.00s
+[kit] walk /customers/456/orders limit=20: 1 pages, 17 orders, 0.00s
+[kit]   FAIL c2_pages: /customers/1645/orders limit=3: more than 11 pages
+[kit]   FAIL c3_customers: /customers/1645/orders limit=3: 33 orders (23 distinct) for 26 expected; first difference at position 4: got id 26668, expected id 26196
+[kit] walk /customers/1645/orders limit=3: 11 pages, 33 orders, 0.01s
+[kit] walk /customers/1645/orders limit=20: 2 pages, 27 orders, 0.00s
+[kit] walk /customers/2063/orders limit=3: 10 pages, 30 orders, 0.01s
+[kit] walk /customers/2063/orders limit=20: 2 pages, 24 orders, 0.01s
+[kit] ran ['/usr/local/bin/python3', '-I', '-S', '-c']... rc=0 timed_out=False 0.068s net=host strays_killed=0
+[kit] walk /orders limit=100 with orders inserted after pages [3, 10]: 3 pages, 300 orders (0 of 50 new)
+[kit] ran ['/usr/local/bin/python3', '-I', '-S', '-c']... rc=0 timed_out=False 0.037s net=host strays_killed=0
+[kit] walk /customers/6/orders limit=3 with orders inserted after pages [2, 5]: 2 pages, 6 orders (0 of 6 new)
+[kit] agent: 480 requests in 0.64s
+[kit] check c1_order: 0 passed, 5 failed
+[kit] check c2_pages: 10 passed, 22 failed
+[kit] check c3_customers: 2 passed, 19 failed
+[kit] check c4_inserts: 4 passed, 2 failed
+[kit] check c5_errors: 11 passed, 0 failed
+[kit] check c6_fields: 28 passed, 0 failed
+[kit] check c7_public: 5 passed, 0 failed
+[kit] check db: 3 passed, 0 failed
+[kit] reward=0.0 (killed 0 runner processes) metrics={'reward': 0.0, 'c1_order_ok': 0, 'c2_pages_ok': 0, 'c3_customers_ok': 0, 'c4_inserts_ok': 0, 'c5_errors_ok': 1, 'c6_fields_ok': 1, 'c7_public_ok': 1, 'db_ok': 1, 'failed_checks': 48, 'agent_seconds': 0.64, 'grading_seconds': 1.41}

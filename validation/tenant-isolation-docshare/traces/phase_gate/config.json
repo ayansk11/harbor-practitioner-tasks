@@ -1,0 +1,17 @@
+{
+    "task": {
+        "path": "<submission>/tasks/tenant-isolation-docshare"
+    },
+    "trial_name": "tenant-isolation-docshare__G9e8F8p",
+    "trials_dir": "<submission>/jobs/tenant-isolation-docshare/tenant-isolation-docshare-phase_gate-full1",
+    "agent": {
+        "name": "oracle",
+        "env": {
+            "SOLUTION": "phase_gate"
+        }
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "4445b162-9fc0-4778-81eb-231850809e8e"
+}

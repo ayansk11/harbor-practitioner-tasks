@@ -1,0 +1,51 @@
+[test.sh] lock ok: /logs/verifier 0:0 755, /logs 0:0 755, owner before 0:0; protected_symlinks=1 protected_hardlinks=1 protected_regular=2; setid files left: 0
+[kit] verifier resources: res_os_cpu_count=64, res_cpu_affinity=64, res_cgroup_cpus=1, res_cgroup_mem_mib=2048, res_host_memtotal_mib=773331
+[kit] SHA256SUMS: 21 files verified
+[kit] submission copied to /work/sub; removed 0 auto-run entries; skipped 0 special files
+[kit] visible: ctr.A=0.08055522884426758 expected 0.079337700837
+[kit] visible: ctr.B=0.07873419930747917 expected 0.078935067028
+[kit] visible: diff=-0.0018210295367884072 expected -0.000402633808
+[kit] visible: ci_95=[-0.00541019083855096, 0.0017681317649741453] expected about [-0.004659, 0.003854] (errors 0.176, 0.490 half-widths; band 0.25)
+[kit] visible: FAIL (4 problems)
+[kit] staged /tmp/kit-scratch-9u5nyda5/plain/h_null for uid 1001 at /work/exp1
+[kit] staged (empty) for uid 1001 at /work/out1
+[kit] network isolation: ON (private namespace, loopback only); probe rc=0 out=b'NETNS-OK' err=b''
+[kit] ran ['python3', '-m', 'abtest.report', '--data']... rc=0 timed_out=False 1.274s net=private strays_killed=0
+[kit] h_null: ctr.A=0.10897586717818704 expected 0.112548881164
+[kit] h_null: ctr.B=0.10764171188705308 expected 0.109163918732
+[kit] h_null: diff=-0.0013341552911339538 expected -0.003384962432
+[kit] h_null: ci_95=[-0.006964447395542893, 0.004296136813274985] expected about [-0.014216, 0.007446] (errors 0.670, 0.291 half-widths; band 0.25)
+[kit] h_null: FAIL (4 problems)
+[kit] staged /tmp/kit-scratch-9u5nyda5/plain/h_pos for uid 1001 at /work/exp2
+[kit] staged (empty) for uid 1001 at /work/out2
+[kit] ran ['python3', '-m', 'abtest.report', '--data']... rc=0 timed_out=False 1.273s net=private strays_killed=0
+[kit] h_pos: ctr.A=0.1184420662078212 expected 0.122052418627
+[kit] h_pos: ctr.B=0.1322919030073974 expected 0.134177182103
+[kit] h_pos: diff=0.013849836799576201 expected 0.012124763475
+[kit] h_pos: ci_95=[0.009210951329319917, 0.018488722269832485] expected about [0.006319, 0.017931] (errors 0.498, 0.096 half-widths; band 0.25)
+[kit] h_pos: FAIL (4 problems)
+[kit] staged /tmp/kit-scratch-9u5nyda5/plain/h_srm for uid 1001 at /work/exp3
+[kit] staged (empty) for uid 1001 at /work/out3
+[kit] ran ['python3', '-m', 'abtest.report', '--data']... rc=0 timed_out=False 1.273s net=private strays_killed=0
+[kit] h_srm: ctr.A=0.10095742048356479 expected 0.099322397751
+[kit] h_srm: ctr.B=0.10939338532005054 expected 0.109476782169
+[kit] h_srm: diff=0.008435964836485746 expected 0.010154384419
+[kit] h_srm: ci_95=[0.003963704412241975, 0.012908225260729517] expected about [0.004532, 0.015776] (errors 0.101, 0.510 half-widths; band 0.25)
+[kit] h_srm: FAIL (4 problems)
+[kit] staged /tmp/kit-scratch-9u5nyda5/plain/h_bots for uid 1001 at /work/exp4
+[kit] staged (empty) for uid 1001 at /work/out4
+[kit] ran ['python3', '-m', 'abtest.report', '--data']... rc=0 timed_out=False 1.221s net=private strays_killed=0
+[kit] h_bots: ctr.A=0.09090654437946652 expected 0.089865380943
+[kit] h_bots: ctr.B=0.0880071211345319 expected 0.089056079821
+[kit] h_bots: diff=-0.0028994232449346263 expected -0.000809301122
+[kit] h_bots: ci_95=[-0.007571518254285425, 0.0017726717644161727] expected about [-0.007085, 0.005466] (errors 0.078, 0.589 half-widths; band 0.25)
+[kit] h_bots: FAIL (4 problems)
+[kit] staged /tmp/kit-scratch-9u5nyda5/plain/h_twin for uid 1001 at /work/exp5
+[kit] staged (empty) for uid 1001 at /work/out5
+[kit] ran ['python3', '-m', 'abtest.report', '--data']... rc=0 timed_out=False 1.275s net=private strays_killed=0
+[kit] h_twin: ctr.A=0.10978604170587374 expected 0.109453074082
+[kit] h_twin: ctr.B=0.1209491821854283 expected 0.122792788001
+[kit] h_twin: diff=0.011163140479554565 expected 0.013339713919
+[kit] h_twin: ci_95=[0.006423989290166706, 0.01590229166894242] expected about [0.008075, 0.018605] (errors 0.314, 0.513 half-widths; band 0.25)
+[kit] h_twin: FAIL (4 problems)
+[kit] reward=0.0 (killed 0 runner processes) metrics={'reward': 0.0, 'band_hw': 0.25, 'run_cap_sec': 120, 'res_os_cpu_count': 64, 'res_cpu_affinity': 64, 'res_cgroup_cpus': 1.0, 'res_cgroup_mem_mib': 2048.0, 'res_host_memtotal_mib': 773330.671875, 'visible_ok': 0, 'visible_problems': 4, 'visible_ctr_max_err': 0.0012175280076902606, 'visible_diff_err': 0.0014183957286612453, 'visible_srm_p_rel_err': 3.498709511624357e-16, 'visible_ci_lo_err_hw': 0.17638168485706243, 'visible_ci_hi_err_hw': 0.4900409826988026, 'h_null_run_rc': 0, 'h_null_run_timed_out': 0, 'h_null_run_seconds': 1.274, 'h_null_ok': 0, 'h_null_problems': 4, 'h_null_ctr_max_err': 0.003573013986270926, 'h_null_diff_err': 0.00205080714127423, 'h_null_srm_p_rel_err': 0.0, 'h_null_ci_lo_err_hw': 0.6695120853853912, 'h_null_ci_hi_err_hw': 0.2908168359979386, 'h_pos_run_rc': 0, 'h_pos_run_timed_out': 0, 'h_pos_run_seconds': 1.273, 'h_pos_ok': 0, 'h_pos_problems': 4, 'h_pos_ctr_max_err': 0.003610352419604515, 'h_pos_diff_err': 0.001725073324263235, 'h_pos_srm_p_rel_err': 0.0, 'h_pos_ci_lo_err_hw': 0.4981158857327379, 'h_pos_ci_hi_err_hw': 0.0961481601389412, 'h_srm_run_rc': 0, 'h_srm_run_timed_out': 0, 'h_srm_run_seconds': 1.273, 'h_srm_ok': 0, 'h_srm_problems': 4, 'h_srm_ctr_max_err': 0.0016350227330198808, 'h_srm_diff_err': 0.0017184195820811599, 'h_srm_srm_p_rel_err': 7.349798885361754e-16, 'h_srm_ci_lo_err_hw': 0.10113410746951175, 'h_srm_ci_hi_err_hw': 0.5101752836926304, 'h_bots_run_rc': 0, 'h_bots_run_timed_out': 0, 'h_bots_run_seconds': 1.221, 'h_bots_ok': 0, 'h_bots_problems': 4, 'h_bots_ctr_max_err': 0.0010489586865809891, 'h_bots_diff_err': 0.002090122122759372, 'h_bots_srm_p_rel_err': 1.3501896912334313e-16, 'h_bots_ci_lo_err_hw': 0.07760854903419773, 'h_bots_ci_hi_err_hw': 0.5885438160875524, 'h_twin_run_rc': 0, 'h_twin_run_timed_out': 0, 'h_twin_run_seconds': 1.275, 'h_twin_ok': 0, 'h_twin_problems': 4, 'h_twin_ctr_max_err': 0.001843605815848165, 'h_twin_diff_err': 0.0021765734396015507, 'h_twin_srm_p_rel_err': 0.0, 'h_twin_ci_lo_err_hw': 0.3135277169007633, 'h_twin_ci_hi_err_hw': 0.5132806637575192, 'sets_passed': 0}

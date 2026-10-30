@@ -1,0 +1,17 @@
+{
+    "task": {
+        "path": "<submission>/tasks/et0-station-ingest"
+    },
+    "trial_name": "et0-station-ingest__UuEkT2z",
+    "trials_dir": "<submission>/jobs/et0-station-ingest/et0-station-ingest-units_not_latitude-full1",
+    "agent": {
+        "name": "oracle",
+        "env": {
+            "SOLUTION": "units_not_latitude"
+        }
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "33d7410f-06fa-4120-a416-45a1d18f7114"
+}

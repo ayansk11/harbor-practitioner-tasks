@@ -1,0 +1,92 @@
+# Station register (same format as /app/config/stations.yaml).
+stations:
+  - id: H01
+    name: Delta Verde
+    latitude: "12.35N"
+    longitude: -16.2
+    elevation_m: 5
+    wind_height_m: 2.0
+    radiation_units: "W/m2"
+    humidity: dewpoint
+    network: coastal-aws
+  - id: H02
+    name: Planalto
+    latitude: -23.55
+    longitude: -46.63
+    elevation_m: 760
+    wind_height_m: 3.0
+    radiation_units: "MJ/m2/day"
+    humidity: rh_minmax
+    network: plateau-aws
+  - id: H03
+    name: Col Haut
+    latitude: "45.80N"
+    longitude: 6.95
+    elevation_m: 1960
+    wind_height_m: 6.0
+    radiation_units: "MJ/m2/day"
+    humidity: rh_minmax
+    network: mountain-synop
+  - id: H04
+    name: Bahia Fria
+    latitude: "38.10S"
+    longitude: 144.35
+    elevation_m: 30
+    wind_height_m: 10.0
+    radiation_units: "W/m2"
+    humidity: rh_minmax
+    network: southern-coast
+  - id: H05
+    name: Polder Oost
+    latitude: 52.2
+    longitude: 5.1
+    elevation_m: 15
+    wind_height_m: 2.5
+    radiation_units: "MJ/m2/day"
+    humidity: dewpoint
+    network: lowland-aws
+  - id: H06
+    name: Karoo Rand
+    latitude: "29.95S"
+    longitude: 24.5
+    elevation_m: 1250
+    wind_height_m: 4.5
+    radiation_units: "W/m2"
+    humidity: dewpoint
+    network: plateau-aws
+  - id: H07
+    name: Wadi Sahl
+    latitude: 31.6
+    longitude: 35.4
+    elevation_m: 410
+    wind_height_m: 7.5
+    radiation_units: "MJ/m2/day"
+    humidity: rh_minmax
+    network: desert-synop
+  - id: H08
+    name: Ilha Baixa
+    latitude: "6.75S"
+    longitude: 39.25
+    elevation_m: 140
+    wind_height_m: 12.0
+    radiation_units: "MJ/m2/day"
+    humidity: dewpoint
+    network: coastal-aws
+  - id: H09
+    name: Hochfeld
+    latitude: "47.30N"
+    longitude: 11.4
+    elevation_m: 880
+    wind_height_m: 20.0
+    radiation_units: "MJ/m2/day"
+    humidity: rh_minmax
+    network: mountain-synop
+  - id: H10
+    name: Llanura Sur
+    latitude: -41.2
+    longitude: -71.3
+    elevation_m: 260
+    wind_height_m: 1.0
+    radiation_units: "W/m2"
+    humidity: rh_minmax
+    network: southern-coast

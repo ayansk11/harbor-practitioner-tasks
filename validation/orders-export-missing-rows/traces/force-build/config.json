@@ -1,0 +1,12 @@
+{
+    "task": {
+        "path": "<submission>/tasks/orders-export-missing-rows"
+    },
+    "trial_name": "orders-export-missing-rows__eRMKKFa",
+    "trials_dir": "<submission>/jobs/orders-export-missing-rows/orders-export-missing-rows-force-build-full1",
+    "environment": {
+        "type": "daytona",
+        "force_build": true
+    },
+    "job_id": "36f8935b-786c-44e0-81ad-076cb2659bda"
+}

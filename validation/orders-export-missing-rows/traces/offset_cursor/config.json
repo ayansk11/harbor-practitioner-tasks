@@ -1,0 +1,17 @@
+{
+    "task": {
+        "path": "<submission>/tasks/orders-export-missing-rows"
+    },
+    "trial_name": "orders-export-missing-rows__BjNNXV3",
+    "trials_dir": "<submission>/jobs/orders-export-missing-rows/orders-export-missing-rows-offset_cursor-full1",
+    "agent": {
+        "name": "oracle",
+        "env": {
+            "SOLUTION": "offset_cursor"
+        }
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "c44ec02e-7b30-4ad4-9cf7-43c313cf3919"
+}

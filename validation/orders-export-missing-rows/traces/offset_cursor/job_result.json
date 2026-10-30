@@ -1,0 +1,105 @@
+{
+    "id": "c44ec02e-7b30-4ad4-9cf7-43c313cf3919",
+    "started_at": "2026-10-28T21:33:16.662113",
+    "updated_at": "2026-10-28T21:33:45.500954",
+    "finished_at": "2026-10-28T21:33:45.500954",
+    "n_total_trials": 1,
+    "stats": {
+        "n_completed_trials": 1,
+        "n_errored_trials": 0,
+        "n_running_trials": 0,
+        "n_pending_trials": 0,
+        "n_cancelled_trials": 0,
+        "n_retries": 0,
+        "evals": {
+            "oracle__adhoc": {
+                "n_trials": 1,
+                "n_errors": 0,
+                "metrics": [
+                    {
+                        "agent_seconds": 8.24,
+                        "c1_order_ok": 1.0,
+                        "c2_pages_ok": 1.0,
+                        "c3_customers_ok": 1.0,
+                        "c4_inserts_ok": 0.0,
+                        "c5_errors_ok": 1.0,
+                        "c6_fields_ok": 1.0,
+                        "c7_public_ok": 1.0,
+                        "db_ok": 1.0,
+                        "failed_checks": 2.0,
+                        "grading_seconds": 9.11,
+                        "reward": 0.0
+                    }
+                ],
+                "pass_at_k": {},
+                "reward_stats": {
+                    "reward": {
+                        "0.0": [
+                            "orders-export-missing-rows__BjNNXV3"
+                        ]
+                    },
+                    "c1_order_ok": {
+                        "1": [
+                            "orders-export-missing-rows__BjNNXV3"
+                        ]
+                    },
+                    "c2_pages_ok": {
+                        "1": [
+                            "orders-export-missing-rows__BjNNXV3"
+                        ]
+                    },
+                    "c3_customers_ok": {
+                        "1": [
+                            "orders-export-missing-rows__BjNNXV3"
+                        ]
+                    },
+                    "c4_inserts_ok": {
+                        "0": [
+                            "orders-export-missing-rows__BjNNXV3"
+                        ]
+                    },
+                    "c5_errors_ok": {
+                        "1": [
+                            "orders-export-missing-rows__BjNNXV3"
+                        ]
+                    },
+                    "c6_fields_ok": {
+                        "1": [
+                            "orders-export-missing-rows__BjNNXV3"
+                        ]
+                    },
+                    "c7_public_ok": {
+                        "1": [
+                            "orders-export-missing-rows__BjNNXV3"
+                        ]
+                    },
+                    "db_ok": {
+                        "1": [
+                            "orders-export-missing-rows__BjNNXV3"
+                        ]
+                    },
+                    "failed_checks": {
+                        "2": [
+                            "orders-export-missing-rows__BjNNXV3"
+                        ]
+                    },
+                    "agent_seconds": {
+                        "8.24": [
+                            "orders-export-missing-rows__BjNNXV3"
+                        ]
+                    },
+                    "grading_seconds": {
+                        "9.11": [
+                            "orders-export-missing-rows__BjNNXV3"
+                        ]
+                    }
+                },
+                "exception_stats": {}
+            }
+        },
+        "n_input_tokens": null,
+        "n_cache_tokens": null,
+        "n_output_tokens": null,
+        "cost_usd": null
+    }
+}

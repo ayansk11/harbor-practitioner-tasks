@@ -1,0 +1,14 @@
+{
+    "task": {
+        "path": "<submission>/tasks/orders-export-missing-rows"
+    },
+    "trial_name": "orders-export-missing-rows__ZsQzywo",
+    "trials_dir": "<submission>/jobs/orders-export-missing-rows/orders-export-missing-rows-nop-full1",
+    "agent": {
+        "name": "nop"
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "40754cd1-a5e0-4d38-b4d3-357ad58246ce"
+}

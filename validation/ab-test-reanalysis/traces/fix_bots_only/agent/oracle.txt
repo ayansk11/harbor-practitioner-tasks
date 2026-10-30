@@ -1,0 +1,1 @@
+wrote output/result.json: decision=no_ship diff=-0.00040 ci=[-0.00213, +0.00132] srm_p=0.635
