@@ -1,0 +1,27 @@
+[test.sh] lock ok: /logs/verifier 0:0 755, /logs 0:0 755, owner before 0:0; protected_symlinks=1 protected_hardlinks=1 protected_regular=2; setid files left: 0
+[kit] verifier resources: res_os_cpu_count=48, res_cpu_affinity=48, res_cgroup_cpus=1, res_cgroup_mem_mib=2048, res_host_memtotal_mib=386467
+[kit] SHA256SUMS: 26 files verified (20 hidden inputs, 6 expected readouts)
+[kit] submission copied to /work/sub; removed 0 auto-run entries; skipped 0 special files
+[kit] visible: PASS (0 problems)
+[kit] staged /tmp/kit-scratch-uishozv9/inputs/h_null for uid 1001 at /work/exp1
+[kit] staged (empty) for uid 1001 at /work/out1
+[kit] network isolation: ON (private namespace, loopback only); probe rc=0 out=b'NETNS-OK' err=b''
+[kit] ran ['python3', '-m', 'abtest.report', '--data']... rc=0 timed_out=False 1.582s net=private strays_killed=0
+[kit] h_null: PASS (0 problems)
+[kit] staged /tmp/kit-scratch-uishozv9/inputs/h_pos for uid 1001 at /work/exp2
+[kit] staged (empty) for uid 1001 at /work/out2
+[kit] ran ['python3', '-m', 'abtest.report', '--data']... rc=0 timed_out=False 1.73s net=private strays_killed=0
+[kit] h_pos: PASS (0 problems)
+[kit] staged /tmp/kit-scratch-uishozv9/inputs/h_srm for uid 1001 at /work/exp3
+[kit] staged (empty) for uid 1001 at /work/out3
+[kit] ran ['python3', '-m', 'abtest.report', '--data']... rc=0 timed_out=False 1.726s net=private strays_killed=0
+[kit] h_srm: PASS (0 problems)
+[kit] staged /tmp/kit-scratch-uishozv9/inputs/h_plain for uid 1001 at /work/exp4
+[kit] staged (empty) for uid 1001 at /work/out4
+[kit] ran ['python3', '-m', 'abtest.report', '--data']... rc=0 timed_out=False 1.526s net=private strays_killed=0
+[kit] h_plain: PASS (0 problems)
+[kit] staged /tmp/kit-scratch-uishozv9/inputs/h_neg for uid 1001 at /work/exp5
+[kit] staged (empty) for uid 1001 at /work/out5
+[kit] ran ['python3', '-m', 'abtest.report', '--data']... rc=0 timed_out=False 1.624s net=private strays_killed=0
+[kit] h_neg: PASS (0 problems)
+[kit] reward=1.0 (killed 0 runner processes) metrics={'reward': 1.0, 'band_hw': 0.25, 'run_cap_sec': 120, 'res_os_cpu_count': 48, 'res_cpu_affinity': 48, 'res_cgroup_cpus': 1.0, 'res_cgroup_mem_mib': 2048.0, 'res_host_memtotal_mib': 386466.5390625, 'visible_ok': 1, 'visible_problems': 0, 'visible_ctr_max_err': 0.0, 'visible_diff_err': 0.0, 'visible_srm_p_rel_err': 1.1829140680293875e-16, 'visible_ci_lo_err_hw': 3.286667476061109e-16, 'visible_ci_hi_err_hw': 3.286667476061109e-16, 'h_null_run_rc': 0, 'h_null_run_timed_out': 0, 'h_null_run_seconds': 1.582, 'h_null_ok': 1, 'h_null_problems': 0, 'h_null_ctr_max_err': 0.0, 'h_null_diff_err': 0.0, 'h_null_srm_p_rel_err': 8.902975794635376e-15, 'h_null_ci_lo_err_hw': 3.2386974051446843e-16, 'h_null_ci_hi_err_hw': 3.2386974051446843e-16, 'h_pos_run_rc': 0, 'h_pos_run_timed_out': 0, 'h_pos_run_seconds': 1.73, 'h_pos_ok': 1, 'h_pos_problems': 0, 'h_pos_ctr_max_err': 0.0, 'h_pos_diff_err': 0.0, 'h_pos_srm_p_rel_err': 1.9239355888896643e-16, 'h_pos_ci_lo_err_hw': 0.0, 'h_pos_ci_hi_err_hw': 0.0, 'h_srm_run_rc': 0, 'h_srm_run_timed_out': 0, 'h_srm_run_seconds': 1.726, 'h_srm_ok': 1, 'h_srm_problems': 0, 'h_srm_ctr_max_err': 0.0, 'h_srm_diff_err': 0.0, 'h_srm_srm_p_rel_err': 8.693279730455397e-16, 'h_srm_ci_lo_err_hw': 3.0467330944995497e-16, 'h_srm_ci_hi_err_hw': 6.093466188999099e-16, 'h_plain_run_rc': 0, 'h_plain_run_timed_out': 0, 'h_plain_run_seconds': 1.526, 'h_plain_ok': 1, 'h_plain_problems': 0, 'h_plain_ctr_max_err': 0.0, 'h_plain_diff_err': 0.0, 'h_plain_srm_p_rel_err': 1.4240168292155358e-14, 'h_plain_ci_lo_err_hw': 2.8350708528922217e-16, 'h_plain_ci_hi_err_hw': 0.0, 'h_neg_run_rc': 0, 'h_neg_run_timed_out': 0, 'h_neg_run_seconds': 1.624, 'h_neg_ok': 1, 'h_neg_problems': 0, 'h_neg_ctr_max_err': 0.0, 'h_neg_diff_err': 0.0, 'h_neg_srm_p_rel_err': 2.205587558053253e-16, 'h_neg_ci_lo_err_hw': 6.283091179353852e-16, 'h_neg_ci_hi_err_hw': 3.141545589676926e-16, 'sets_passed': 6}

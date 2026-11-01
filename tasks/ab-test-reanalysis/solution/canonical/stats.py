@@ -2,7 +2,7 @@
 import math
 
 import numpy as np
-from scipy.stats import chisquare, norm
+from scipy.stats import norm
 
 Z = float(norm.ppf(0.975))
 SRM_ALPHA = 0.001
@@ -33,5 +33,12 @@ def diff_ci(arm_a, arm_b):
 
 
 def srm_pvalue(n_a, n_b):
-    """Pearson chi-square goodness of fit of the user counts against 50/50 (1 df, no continuity correction)."""
-    return float(chisquare([n_a, n_b]).pvalue)
+    """Pearson chi-square goodness of fit of the user counts against 50/50 (1 df, no continuity correction).
+
+    With 1 df the upper tail is erfc(sqrt(chi2 / 2)); scipy.stats.chisquare([n_a, n_b]).pvalue gives the same p to
+    about 1e-14 relative.
+    """
+    n_a, n_b = int(n_a), int(n_b)
+    e = (n_a + n_b) / 2
+    chi2 = ((n_a - e) ** 2 + (n_b - e) ** 2) / e
+    return math.erfc(math.sqrt(chi2 / 2))

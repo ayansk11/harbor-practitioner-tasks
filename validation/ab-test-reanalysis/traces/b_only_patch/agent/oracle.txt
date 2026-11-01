@@ -1,0 +1,2 @@
+solve.sh: SOLUTION=b_only_patch
+wrote output/result.json: decision=no_ship diff=-0.00146 ci=[-0.00673, +0.00381] srm_p=0.469

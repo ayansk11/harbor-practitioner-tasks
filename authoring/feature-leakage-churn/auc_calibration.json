@@ -1,0 +1,18 @@
+{
+ "AUC_LIVE": 0.656,
+ "AUC_OFF": 0.805,
+ "AUC_TRUE_context": 0.768,
+ "gap": 0.149,
+ "knobs": {
+  "downgrade_p": 0.35,
+  "login_decline": 0.9,
+  "login_rate": 0.8
+ },
+ "live_churn_rate": 0.0755,
+ "live_rows": 3415,
+ "offline_rows": {
+  "train": 36490,
+  "valid": 11107,
+  "valid_churn_rate": 0.0723
+ }
+}

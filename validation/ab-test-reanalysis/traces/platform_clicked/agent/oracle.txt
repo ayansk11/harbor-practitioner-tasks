@@ -1,0 +1,2 @@
+solve.sh: SOLUTION=platform_clicked
+wrote output/result.json: decision=ship diff=+0.00723 ci=[+0.00193, +0.01252] srm_p=0.469

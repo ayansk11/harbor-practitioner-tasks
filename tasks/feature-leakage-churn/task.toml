@@ -3,22 +3,29 @@ artifacts = [{ source = "/app", exclude = ["data", "__pycache__", ".venv"] }]
 
 [task]
 name = "diffuse-labs/feature-leakage-churn"
-description = "Make a churn model's feature pipeline point-in-time correct: find and fix four kinds of future-information leak against a written spec."
-keywords = ["ml-systems", "data-leakage", "feature-engineering", "pandas", "point-in-time"]
+description = "Make a churn model's training features equal what its live scoring service computed at each past prediction."
+keywords = ["ml-systems", "training-serving-skew", "feature-engineering", "pandas", "point-in-time", "data-warehouse"]
 
 [metadata]
-difficulty = "hard"  # author estimate until the Daytona agent trials give a pass rate (DESIGN.md s11)
+difficulty = "hard"  # author estimate until the agent trials give a pass rate (DESIGN.md)
 category = "ml-systems"
-tags = ["leakage", "as-of-join", "target-encoding", "time-windows"]
+tags = ["training-serving-skew", "as-of-join", "target-encoding", "time-windows"]
 
 [agent]
 timeout_sec = 3600.0
+# No network for the agent: the hidden tests are public in this repository. Where Harbor 0.25.0 applies this, it still
+# allows an installed agent's own model host and turns the agent's web tools off; where it cannot be applied (Daytona
+# Tier 1 and 2), the trial fails, and a copy without this line is run instead (DESIGN.md, limitations).
+network_mode = "no-network"
 
 [verifier]
 environment_mode = "separate"
-# (3 runs x 60 s cap (grade.py RUN_CAP_SEC) + 6.9 s, the worst grading time measured outside the runs) x 1.5
-# = 280.35, rounded up (DESIGN.md s7)
-timeout_sec = 281.0
+# (3 runs x 60 s cap (grade.py RUN_CAP_SEC) + 5.59 s, the worst grading time outside the runs measured on the Mac)
+# x 1.5 = 278.4, rounded up to 279. grade.py in KIT_LOCAL mode, process time minus the three runs, with the records in
+# _ops/, on 2026-10-31: 5.41 s (canonical and alt) at 17:38-17:39 MST, 4.98 to 5.38 s in the full local matrix of
+# 17:41-17:44 MST (load average 2.8 to 3.7), 5.59 s for the independence probe at 17:45 MST. Not measured on the Mac:
+# test.sh's own setup and the sweeps' walks of the file system (real mode only; reward.json: seconds_sweep_<run>)
+timeout_sec = 279.0
 
 [environment]
 cpus = 2

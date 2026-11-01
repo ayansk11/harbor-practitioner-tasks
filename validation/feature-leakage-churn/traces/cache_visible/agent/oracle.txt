@@ -1,1 +1,0 @@
-wrote 48966 rows x 11 columns to /app/churn/cache_features.parquet

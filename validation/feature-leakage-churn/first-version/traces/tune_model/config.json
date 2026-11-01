@@ -1,0 +1,17 @@
+{
+    "task": {
+        "path": "<submission>/tasks/feature-leakage-churn"
+    },
+    "trial_name": "feature-leakage-churn__uRFXrAp",
+    "trials_dir": "<submission>/jobs/feature-leakage-churn/feature-leakage-churn-tune_model-full1",
+    "agent": {
+        "name": "oracle",
+        "env": {
+            "SOLUTION": "tune_model"
+        }
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "1556bd95-6cd6-445e-a86e-556772ffe947"
+}

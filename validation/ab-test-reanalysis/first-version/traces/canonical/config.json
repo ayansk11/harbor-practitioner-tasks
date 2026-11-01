@@ -1,0 +1,11 @@
+{
+    "task": {
+        "path": "<submission>/tasks/ab-test-reanalysis"
+    },
+    "trial_name": "ab-test-reanalysis__qvmVU87",
+    "trials_dir": "<submission>/jobs/ab-test-reanalysis/ab-test-reanalysis-canonical-full2",
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "f4813a3e-05ac-4c30-b014-28db7e8c3e97"
+}

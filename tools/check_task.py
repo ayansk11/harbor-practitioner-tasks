@@ -15,8 +15,13 @@ if cfg.get("artifacts") != [EXPECTED_ARTIFACT]:
     problems.append(f"artifacts must be exactly [{EXPECTED_ARTIFACT}]")
 v = cfg.get("verifier", {})
 if v.get("environment_mode") != "separate": problems.append("verifier.environment_mode must be 'separate'")
-for sect in ("agent", "verifier", "environment"):
-    if "network_mode" in cfg.get(sect, {}): problems.append(f"{sect}.network_mode must not be set (Daytona Tier 1 refuses network overrides)")
+# The agent may be denied network ([agent] network_mode = "no-network"); no other network setting is allowed: the graders
+# need no network, and Daytona Tier 1 refuses network overrides.
+if cfg.get("agent", {}).get("network_mode", "no-network") != "no-network": problems.append("agent.network_mode, if set, must be 'no-network'")
+for sect, t in (("agent", cfg.get("agent", {})), ("verifier", v), ("environment", cfg.get("environment", {})),
+                ("verifier.environment", v.get("environment", {}))):
+    for key in ("network_mode", "allowed_hosts", "allow_internet"):
+        if key in t and (sect, key) != ("agent", "network_mode"): problems.append(f"{sect}.{key} must not be set (Daytona Tier 1 refuses network overrides)")
 for df in ("environment/Dockerfile", "tests/Dockerfile"):
     f = task / df
     if f.exists():
@@ -24,9 +29,9 @@ for df in ("environment/Dockerfile", "tests/Dockerfile"):
         froms = re.findall(r"^FROM\s+(\S+)", txt, re.M)
         if not froms or any(fr != f"python:3.12-slim-bookworm@{DIGEST}" for fr in froms):
             problems.append(f"{df}: FROM must be python:3.12-slim-bookworm@{DIGEST}")
-        for line in re.findall(r"^\s*RUN .*pip install.*$", txt, re.M):
-            for pkg in re.findall(r"(?<![-\w])([A-Za-z][\w.\-]*)(==)?", line.split("pip install", 1)[1]):
-                pass
+        for line in re.findall(r"^\s*RUN .*pip install.*$", txt.replace("\\\n", " "), re.M):
+            for tok in line.split("pip install", 1)[1].split("&&")[0].split():
+                if not tok.startswith("-") and "==" not in tok: problems.append(f"{df}: pip package not pinned with ==: {tok}")
 env_df = (task / "environment/Dockerfile").read_text() if (task / "environment/Dockerfile").exists() else ""
 if re.search(r"^\s*(COPY|ADD)\b.*\b(tests|solution)\b", env_df, re.M): problems.append("environment/Dockerfile copies tests or solution")
 kit = ROOT / "base" / "verifier_kit"

@@ -1,0 +1,9 @@
+[test.sh] lock ok: /logs/verifier 0:0 755, /logs 0:0 755, owner before 0:0; protected_symlinks=1 protected_hardlinks=1 protected_regular=2; setid files left: 0
+[kit] submission copied to /work/sub; removed 0 auto-run entries; skipped 0 special files
+[kit] resources: verifier_cpus_visible=48, verifier_cpu_quota=2.0, verifier_memory_limit_mib=4096.0, verifier_memtotal_mib=386464.3
+[kit] staged /tmp/kit-scratch-t1usnbr9/H for uid 1001 at /work/in_H
+[kit] staged (empty) for uid 1001 at /work/out_H
+[kit] network isolation: ON (private namespace, loopback only); probe rc=0 out=b'NETNS-OK' err=b''
+[kit] ran ['/usr/local/bin/python3', '-m', 'churn.build_features', '--data']... rc=-9 timed_out=True 60.027s net=private strays_killed=0
+[kit] H: run failed (timed_out=True, rc=-9); stderr tail: 
+[kit] reward=0.0 (killed 0 runner processes) metrics={'reward': 0.0, 'check_A': 0, 'check_B_cut1': 0, 'check_B_cut2': 0, 'verifier_cpus_visible': 48, 'verifier_cpu_quota': 2.0, 'verifier_memory_limit_mib': 4096.0, 'verifier_memtotal_mib': 386464.3, 'seconds_H': 60.027, 'net_private_H': 1, 'run_failed_H': 1}

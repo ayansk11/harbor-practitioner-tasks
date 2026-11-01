@@ -1,0 +1,429 @@
+{
+    "id": "90ffda1b-a2af-420a-9529-67d32d9fae3a",
+    "started_at": "2026-10-31T01:48:58.452399",
+    "updated_at": "2026-10-31T01:49:30.794124",
+    "finished_at": "2026-10-31T01:49:30.794124",
+    "n_total_trials": 1,
+    "stats": {
+        "n_completed_trials": 1,
+        "n_errored_trials": 0,
+        "n_running_trials": 0,
+        "n_pending_trials": 0,
+        "n_cancelled_trials": 0,
+        "n_retries": 0,
+        "evals": {
+            "oracle__adhoc": {
+                "n_trials": 1,
+                "n_errors": 0,
+                "metrics": [
+                    {
+                        "band_hw": 0.25,
+                        "h_neg_ci_hi_err_hw": 0.15648619992814047,
+                        "h_neg_ci_lo_err_hw": 0.19746655376264155,
+                        "h_neg_ctr_max_err": 0.0038231541803133845,
+                        "h_neg_diff_err": 0.000977242146718585,
+                        "h_neg_ok": 0.0,
+                        "h_neg_problems": 10.0,
+                        "h_neg_run_rc": 0.0,
+                        "h_neg_run_seconds": 1.932,
+                        "h_neg_run_timed_out": 0.0,
+                        "h_neg_srm_p_rel_err": 0.04484403028387927,
+                        "h_null_ci_hi_err_hw": 0.03439005735123637,
+                        "h_null_ci_lo_err_hw": 0.09287556805524977,
+                        "h_null_ctr_max_err": 0.0029453606937469012,
+                        "h_null_diff_err": 0.0006816650043526967,
+                        "h_null_ok": 0.0,
+                        "h_null_problems": 10.0,
+                        "h_null_run_rc": 0.0,
+                        "h_null_run_seconds": 1.774,
+                        "h_null_run_timed_out": 0.0,
+                        "h_null_srm_p_rel_err": 0.030601294212041073,
+                        "h_plain_ci_hi_err_hw": 0.4724087851858418,
+                        "h_plain_ci_lo_err_hw": 0.3500398225447274,
+                        "h_plain_ctr_max_err": 0.010767552031264713,
+                        "h_plain_diff_err": 0.0025161997382872753,
+                        "h_plain_ok": 0.0,
+                        "h_plain_problems": 11.0,
+                        "h_plain_run_rc": 0.0,
+                        "h_plain_run_seconds": 1.626,
+                        "h_plain_run_timed_out": 0.0,
+                        "h_plain_srm_p_rel_err": 0.4299649997547495,
+                        "h_pos_ci_hi_err_hw": 0.05553443406192399,
+                        "h_pos_ci_lo_err_hw": 0.027152618859539752,
+                        "h_pos_ctr_max_err": 0.003011191141598868,
+                        "h_pos_diff_err": 0.0002664623914689357,
+                        "h_pos_ok": 0.0,
+                        "h_pos_problems": 10.0,
+                        "h_pos_run_rc": 0.0,
+                        "h_pos_run_seconds": 1.923,
+                        "h_pos_run_timed_out": 0.0,
+                        "h_pos_srm_p_rel_err": 0.13458351025315976,
+                        "h_srm_ci_hi_err_hw": 0.029023465225164108,
+                        "h_srm_ci_lo_err_hw": 0.018167828606045336,
+                        "h_srm_ctr_max_err": 0.002138122643716364,
+                        "h_srm_diff_err": 0.00013434692625112488,
+                        "h_srm_ok": 0.0,
+                        "h_srm_problems": 10.0,
+                        "h_srm_run_rc": 0.0,
+                        "h_srm_run_seconds": 1.925,
+                        "h_srm_run_timed_out": 0.0,
+                        "h_srm_srm_p_rel_err": 0.6055951853895463,
+                        "res_cgroup_cpus": 1.0,
+                        "res_cgroup_mem_mib": 2048.0,
+                        "res_cpu_affinity": 48.0,
+                        "res_host_memtotal_mib": 386466.5390625,
+                        "res_os_cpu_count": 48.0,
+                        "reward": 0.0,
+                        "run_cap_sec": 120.0,
+                        "sets_passed": 0.0,
+                        "visible_ci_hi_err_hw": 0.06802492911869612,
+                        "visible_ci_lo_err_hw": 0.02702461576587216,
+                        "visible_ctr_max_err": 0.0035578200332115895,
+                        "visible_diff_err": 0.0002508386961764947,
+                        "visible_ok": 0.0,
+                        "visible_problems": 10.0,
+                        "visible_srm_p_rel_err": 0.02455006115170576
+                    }
+                ],
+                "pass_at_k": {},
+                "reward_stats": {
+                    "reward": {
+                        "0.0": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "band_hw": {
+                        "0.25": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "run_cap_sec": {
+                        "120": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "res_os_cpu_count": {
+                        "48": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "res_cpu_affinity": {
+                        "48": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "res_cgroup_cpus": {
+                        "1.0": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "res_cgroup_mem_mib": {
+                        "2048.0": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "res_host_memtotal_mib": {
+                        "386466.5390625": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "visible_ok": {
+                        "0": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "visible_problems": {
+                        "10": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "visible_ctr_max_err": {
+                        "0.0035578200332115895": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "visible_diff_err": {
+                        "0.0002508386961764947": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "visible_srm_p_rel_err": {
+                        "0.02455006115170576": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "visible_ci_lo_err_hw": {
+                        "0.02702461576587216": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "visible_ci_hi_err_hw": {
+                        "0.06802492911869612": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_null_run_rc": {
+                        "0": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_null_run_timed_out": {
+                        "0": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_null_run_seconds": {
+                        "1.774": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_null_ok": {
+                        "0": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_null_problems": {
+                        "10": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_null_ctr_max_err": {
+                        "0.0029453606937469012": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_null_diff_err": {
+                        "0.0006816650043526967": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_null_srm_p_rel_err": {
+                        "0.030601294212041073": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_null_ci_lo_err_hw": {
+                        "0.09287556805524977": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_null_ci_hi_err_hw": {
+                        "0.03439005735123637": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_pos_run_rc": {
+                        "0": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_pos_run_timed_out": {
+                        "0": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_pos_run_seconds": {
+                        "1.923": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_pos_ok": {
+                        "0": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_pos_problems": {
+                        "10": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_pos_ctr_max_err": {
+                        "0.003011191141598868": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_pos_diff_err": {
+                        "0.0002664623914689357": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_pos_srm_p_rel_err": {
+                        "0.13458351025315976": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_pos_ci_lo_err_hw": {
+                        "0.027152618859539752": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_pos_ci_hi_err_hw": {
+                        "0.05553443406192399": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_srm_run_rc": {
+                        "0": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_srm_run_timed_out": {
+                        "0": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_srm_run_seconds": {
+                        "1.925": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_srm_ok": {
+                        "0": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_srm_problems": {
+                        "10": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_srm_ctr_max_err": {
+                        "0.002138122643716364": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_srm_diff_err": {
+                        "0.00013434692625112488": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_srm_srm_p_rel_err": {
+                        "0.6055951853895463": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_srm_ci_lo_err_hw": {
+                        "0.018167828606045336": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_srm_ci_hi_err_hw": {
+                        "0.029023465225164108": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_plain_run_rc": {
+                        "0": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_plain_run_timed_out": {
+                        "0": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_plain_run_seconds": {
+                        "1.626": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_plain_ok": {
+                        "0": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_plain_problems": {
+                        "11": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_plain_ctr_max_err": {
+                        "0.010767552031264713": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_plain_diff_err": {
+                        "0.0025161997382872753": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_plain_srm_p_rel_err": {
+                        "0.4299649997547495": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_plain_ci_lo_err_hw": {
+                        "0.3500398225447274": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_plain_ci_hi_err_hw": {
+                        "0.4724087851858418": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_neg_run_rc": {
+                        "0": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_neg_run_timed_out": {
+                        "0": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_neg_run_seconds": {
+                        "1.932": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_neg_ok": {
+                        "0": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_neg_problems": {
+                        "10": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_neg_ctr_max_err": {
+                        "0.0038231541803133845": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_neg_diff_err": {
+                        "0.000977242146718585": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_neg_srm_p_rel_err": {
+                        "0.04484403028387927": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_neg_ci_lo_err_hw": {
+                        "0.19746655376264155": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "h_neg_ci_hi_err_hw": {
+                        "0.15648619992814047": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    },
+                    "sets_passed": {
+                        "0": [
+                            "ab-test-reanalysis__ApQdPB3"
+                        ]
+                    }
+                },
+                "exception_stats": {}
+            }
+        },
+        "n_input_tokens": null,
+        "n_cache_tokens": null,
+        "n_output_tokens": null,
+        "cost_usd": null
+    }
+}

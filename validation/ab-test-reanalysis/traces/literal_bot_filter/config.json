@@ -1,0 +1,18 @@
+{
+    "task": {
+        "path": "<submission>/jobs/ab-test-reanalysis/package-rev1/ab-test-reanalysis"
+    },
+    "trial_name": "ab-test-reanalysis__uoXhhsh",
+    "trials_dir": "<submission>/jobs/ab-test-reanalysis/ab-test-reanalysis-literal_bot_filter-rev1",
+    "environment_build_timeout_multiplier": 3.0,
+    "agent": {
+        "name": "oracle",
+        "env": {
+            "SOLUTION": "literal_bot_filter"
+        }
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "8f3fd263-14aa-4707-9e4c-6cd3c053b8fa"
+}

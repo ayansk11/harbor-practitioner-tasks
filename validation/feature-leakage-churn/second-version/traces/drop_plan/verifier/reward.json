@@ -1,0 +1,1 @@
+{"reward": 0.0, "check_A": 0, "check_B_cut1": 0, "check_B_cut2": 0, "verifier_cpus_visible": 48, "verifier_cpu_quota": 2.0, "verifier_memory_limit_mib": 4096.0, "verifier_memtotal_mib": 386459.6, "seconds_H": 0.574, "net_private_H": 1, "seconds_convert_H": 0.372, "bad_output_H": 1, "seconds_grade_total": 1.0209853999549523}

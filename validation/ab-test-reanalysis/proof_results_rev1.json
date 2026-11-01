@@ -1,0 +1,226 @@
+{
+ "slug": "ab-test-reanalysis",
+ "tag": "rev1",
+ "package": "jobs/ab-test-reanalysis/package-rev1/ab-test-reanalysis, a copy of tasks/ab-test-reanalysis without its [agent] network_mode line",
+ "rows": [
+  {
+   "variant": "canonical",
+   "args": "-a oracle -k 10",
+   "expected": 1,
+   "rewards": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "exceptions": [],
+   "trials": 10,
+   "pass": true,
+   "job": "jobs/ab-test-reanalysis/ab-test-reanalysis-canonical-rev1",
+   "started": "2026-10-31 01:37:54",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "alt_recount",
+   "args": "-a oracle --ae SOLUTION=alt_recount",
+   "expected": 1,
+   "rewards": [
+    1.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/ab-test-reanalysis/ab-test-reanalysis-alt_recount-rev1",
+   "started": "2026-10-31 01:43:35",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "alt_time",
+   "args": "-a oracle --ae SOLUTION=alt_time",
+   "expected": 1,
+   "rewards": [
+    1.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/ab-test-reanalysis/ab-test-reanalysis-alt_time-rev1",
+   "started": "2026-10-31 01:44:11",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "nop",
+   "args": "-a nop",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/ab-test-reanalysis/ab-test-reanalysis-nop-rev1",
+   "started": "2026-10-31 01:44:50",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "b_only_patch",
+   "args": "-a oracle --ae SOLUTION=b_only_patch",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/ab-test-reanalysis/ab-test-reanalysis-b_only_patch-rev1",
+   "started": "2026-10-31 01:45:17",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "fix_visible_only",
+   "args": "-a oracle --ae SOLUTION=fix_visible_only",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/ab-test-reanalysis/ab-test-reanalysis-fix_visible_only-rev1",
+   "started": "2026-10-31 01:45:54",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "hardcode_no_ship",
+   "args": "-a oracle --ae SOLUTION=hardcode_no_ship",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/ab-test-reanalysis/ab-test-reanalysis-hardcode_no_ship-rev1",
+   "started": "2026-10-31 01:46:29",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "item_click_events",
+   "args": "-a oracle --ae SOLUTION=item_click_events",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/ab-test-reanalysis/ab-test-reanalysis-item_click_events-rev1",
+   "started": "2026-10-31 01:47:03",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "keep_overrides",
+   "args": "-a oracle --ae SOLUTION=keep_overrides",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/ab-test-reanalysis/ab-test-reanalysis-keep_overrides-rev1",
+   "started": "2026-10-31 01:47:45",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "literal_bot_filter",
+   "args": "-a oracle --ae SOLUTION=literal_bot_filter",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/ab-test-reanalysis/ab-test-reanalysis-literal_bot_filter-rev1",
+   "started": "2026-10-31 01:48:23",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "no_bot_filter",
+   "args": "-a oracle --ae SOLUTION=no_bot_filter",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/ab-test-reanalysis/ab-test-reanalysis-no_bot_filter-rev1",
+   "started": "2026-10-31 01:48:56",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "not_nav_clicked",
+   "args": "-a oracle --ae SOLUTION=not_nav_clicked",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/ab-test-reanalysis/ab-test-reanalysis-not_nav_clicked-rev1",
+   "started": "2026-10-31 01:49:33",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "pageview_ci",
+   "args": "-a oracle --ae SOLUTION=pageview_ci",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/ab-test-reanalysis/ab-test-reanalysis-pageview_ci-rev1",
+   "started": "2026-10-31 01:50:09",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "platform_clicked",
+   "args": "-a oracle --ae SOLUTION=platform_clicked",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/ab-test-reanalysis/ab-test-reanalysis-platform_clicked-rev1",
+   "started": "2026-10-31 01:50:43",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "force-build",
+   "args": "-a oracle --force-build",
+   "expected": 1,
+   "rewards": [
+    1.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/ab-test-reanalysis/ab-test-reanalysis-force-build-rev1",
+   "started": "2026-10-31 01:51:19",
+   "harbor_rc": 0
+  }
+ ]
+}

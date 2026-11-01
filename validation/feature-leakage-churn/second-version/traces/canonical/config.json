@@ -1,0 +1,12 @@
+{
+    "task": {
+        "path": "<submission>/jobs/feature-leakage-churn/package-rev1/feature-leakage-churn"
+    },
+    "trial_name": "feature-leakage-churn__SW6s555",
+    "trials_dir": "<submission>/jobs/feature-leakage-churn/feature-leakage-churn-canonical-rev1",
+    "environment_build_timeout_multiplier": 3.0,
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "e8bed968-f385-4ce0-b697-671caae5f7f2"
+}

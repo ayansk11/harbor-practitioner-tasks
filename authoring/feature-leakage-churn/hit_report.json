@@ -1,0 +1,1373 @@
+{
+ "floor": 100,
+ "points": {
+  "H": 57896,
+  "visible": 57909
+ },
+ "problems": [],
+ "rule": "A-killed attempts: cells_moved >= floor on H and on visible; B-only kills: cells > 0 at each named cut and value cells > 0 on visible",
+ "variants": {
+  "alt": {
+   "B_cut1_cells": 0,
+   "B_cut2_cells": 0,
+   "H": {
+    "cells_moved": 0,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 0,
+    "missing_columns": [],
+    "missing_rows": 0,
+    "per_feature": {},
+    "value_cells": 0
+   },
+   "checks": {
+    "A": 1,
+    "B_cut1": 1,
+    "B_cut2": 1
+   },
+   "expected_reward": 1,
+   "named_checks": [],
+   "reward": 1.0,
+   "visible": {
+    "cells_moved": 0,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 0,
+    "missing_columns": [],
+    "missing_rows": 0,
+    "per_feature": {},
+    "value_cells": 0
+   }
+  },
+  "backfill_event_time": {
+   "B_cut1_cells": 790,
+   "B_cut2_cells": 0,
+   "H": {
+    "cells_moved": 68098,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 0,
+    "missing_columns": [],
+    "missing_rows": 0,
+    "per_feature": {
+     "days_since_last_order": 17030,
+     "orders_30d": 17030,
+     "orders_7d": 17008,
+     "spend_30d_cents": 17030
+    },
+    "twin": {
+     "agrees": true,
+     "compared": "value_cells",
+     "count": 68098,
+     "mechanism": "backfill_event_time"
+    },
+    "value_cells": 68098
+   },
+   "checks": {
+    "A": 0,
+    "B_cut1": 0,
+    "B_cut2": 1
+   },
+   "expected_reward": 0,
+   "floors": {
+    "A_H": true,
+    "A_visible": true,
+    "B_cut1": true
+   },
+   "named_checks": [
+    "A",
+    "B_cut1"
+   ],
+   "reward": 0.0,
+   "visible": {
+    "cells_moved": 82006,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 0,
+    "missing_columns": [],
+    "missing_rows": 0,
+    "per_feature": {
+     "days_since_last_order": 20510,
+     "orders_30d": 20510,
+     "orders_7d": 20476,
+     "spend_30d_cents": 20510
+    },
+    "twin": {
+     "agrees": true,
+     "compared": "value_cells",
+     "count": 82006,
+     "mechanism": "backfill_event_time"
+    },
+    "value_cells": 82006
+   }
+  },
+  "cache_visible": {
+   "B_cut1_cells": 0,
+   "B_cut2_cells": 0,
+   "H": {
+    "cells_moved": 578960,
+    "duplicate_rows": 0,
+    "extra_rows": 57909,
+    "forbidden_nonnull": 0,
+    "missing_columns": [],
+    "missing_rows": 57896,
+    "per_feature": {},
+    "value_cells": 0
+   },
+   "checks": {
+    "A": 0,
+    "B_cut1": 0,
+    "B_cut2": 0
+   },
+   "expected_reward": 0,
+   "floors": {
+    "A_H": true,
+    "A_visible": "met: exception, floor 0: the shortcut returns the right table of the visible extract itself, so it moves no cell there by construction; it is not a mechanism, and H's keys defeat it"
+   },
+   "named_checks": [
+    "A"
+   ],
+   "reward": 0.0,
+   "visible": {
+    "cells_moved": 0,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 0,
+    "missing_columns": [],
+    "missing_rows": 0,
+    "per_feature": {},
+    "value_cells": 0
+   }
+  },
+  "canonical": {
+   "B_cut1_cells": 0,
+   "B_cut2_cells": 0,
+   "H": {
+    "cells_moved": 0,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 0,
+    "missing_columns": [],
+    "missing_rows": 0,
+    "per_feature": {},
+    "value_cells": 0
+   },
+   "checks": {
+    "A": 1,
+    "B_cut1": 1,
+    "B_cut2": 1
+   },
+   "expected_reward": 1,
+   "named_checks": [],
+   "reward": 1.0,
+   "visible": {
+    "cells_moved": 0,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 0,
+    "missing_columns": [],
+    "missing_rows": 0,
+    "per_feature": {},
+    "value_cells": 0
+   }
+  },
+  "clip_last_login": {
+   "B_cut1_cells": 23300,
+   "B_cut2_cells": 6063,
+   "H": {
+    "cells_moved": 1898,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 1898,
+    "missing_columns": [],
+    "missing_rows": 0,
+    "per_feature": {},
+    "twin": {
+     "agrees": true,
+     "compared": "forbidden_nonnull",
+     "count": 1898,
+     "mechanism": "clip_last_login"
+    },
+    "value_cells": 0
+   },
+   "checks": {
+    "A": 0,
+    "B_cut1": 0,
+    "B_cut2": 0
+   },
+   "expected_reward": 0,
+   "floors": {
+    "A_H": true,
+    "A_visible": true,
+    "B_cut1": true,
+    "B_cut2": true
+   },
+   "named_checks": [
+    "A",
+    "B_cut1",
+    "B_cut2"
+   ],
+   "reward": 0.0,
+   "visible": {
+    "cells_moved": 1953,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 1953,
+    "missing_columns": [],
+    "missing_rows": 0,
+    "per_feature": {},
+    "twin": {
+     "agrees": true,
+     "compared": "forbidden_nonnull",
+     "count": 1953,
+     "mechanism": "clip_last_login"
+    },
+    "value_cells": 0
+   }
+  },
+  "current_plan": {
+   "B_cut1_cells": 3063,
+   "B_cut2_cells": 8923,
+   "H": {
+    "cells_moved": 19228,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 0,
+    "missing_columns": [],
+    "missing_rows": 0,
+    "per_feature": {
+     "plan": 19228
+    },
+    "twin": {
+     "agrees": true,
+     "compared": "value_cells",
+     "count": 19228,
+     "mechanism": "current_plan"
+    },
+    "value_cells": 19228
+   },
+   "checks": {
+    "A": 0,
+    "B_cut1": 0,
+    "B_cut2": 0
+   },
+   "expected_reward": 0,
+   "floors": {
+    "A_H": true,
+    "A_visible": true,
+    "B_cut2": true
+   },
+   "named_checks": [
+    "A",
+    "B_cut2"
+   ],
+   "reward": 0.0,
+   "visible": {
+    "cells_moved": 19627,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 0,
+    "missing_columns": [],
+    "missing_rows": 0,
+    "per_feature": {
+     "plan": 19627
+    },
+    "twin": {
+     "agrees": true,
+     "compared": "value_cells",
+     "count": 19627,
+     "mechanism": "current_plan"
+    },
+    "value_cells": 19627
+   }
+  },
+  "drop_plan": {
+   "H": {
+    "cells_moved": 57896,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 0,
+    "missing_columns": [
+     "plan"
+    ],
+    "missing_rows": 0,
+    "per_feature": {},
+    "value_cells": 0
+   },
+   "checks": {
+    "A": 0,
+    "B_cut1": 0,
+    "B_cut2": 0
+   },
+   "expected_reward": 0,
+   "floors": {
+    "A_H": true,
+    "A_visible": true
+   },
+   "named_checks": [
+    "A"
+   ],
+   "reward": 0.0,
+   "visible": {
+    "cells_moved": 57909,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 0,
+    "missing_columns": [
+     "plan"
+    ],
+    "missing_rows": 0,
+    "per_feature": {},
+    "value_cells": 0
+   }
+  },
+  "hourly_schedule": {
+   "B_cut1_cells": 0,
+   "B_cut2_cells": 0,
+   "H": {
+    "cells_moved": 12,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 0,
+    "missing_columns": [],
+    "missing_rows": 0,
+    "per_feature": {
+     "days_since_last_order": 3,
+     "orders_30d": 3,
+     "orders_7d": 3,
+     "spend_30d_cents": 3
+    },
+    "twin": {
+     "agrees": true,
+     "compared": "value_cells",
+     "count": 12,
+     "mechanism": "hourly_schedule"
+    },
+    "value_cells": 12
+   },
+   "checks": {
+    "A": 0,
+    "B_cut1": 1,
+    "B_cut2": 1
+   },
+   "expected_reward": 0,
+   "floors": {
+    "A_H": "met: exception, floor 1: the stated exception to the 100-cell floor (since the operations-log revision of 2026-10-31): check A is its one kill, because a check-B copy keeps the row counts of every selection line written before its cut; it must still move at least 1 cell on each extract",
+    "A_visible": "met: exception, floor 1: the stated exception to the 100-cell floor (since the operations-log revision of 2026-10-31): check A is its one kill, because a check-B copy keeps the row counts of every selection line written before its cut; it must still move at least 1 cell on each extract"
+   },
+   "named_checks": [
+    "A"
+   ],
+   "reward": 0.0,
+   "visible": {
+    "cells_moved": 12,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 0,
+    "missing_columns": [],
+    "missing_rows": 0,
+    "per_feature": {
+     "days_since_last_order": 3,
+     "orders_30d": 3,
+     "orders_7d": 3,
+     "spend_30d_cents": 3
+    },
+    "twin": {
+     "agrees": true,
+     "compared": "value_cells",
+     "count": 12,
+     "mechanism": "hourly_schedule"
+    },
+    "value_cells": 12
+   }
+  },
+  "labels_matured": {
+   "B_cut1_cells": 152,
+   "B_cut2_cells": 2,
+   "H": {
+    "cells_moved": 57833,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 0,
+    "missing_columns": [],
+    "missing_rows": 0,
+    "per_feature": {
+     "te_district": 57833
+    },
+    "twin": {
+     "agrees": true,
+     "compared": "value_cells",
+     "count": 57833,
+     "mechanism": "labels_matured"
+    },
+    "value_cells": 57833
+   },
+   "checks": {
+    "A": 0,
+    "B_cut1": 0,
+    "B_cut2": 0
+   },
+   "expected_reward": 0,
+   "floors": {
+    "A_H": true,
+    "A_visible": true
+   },
+   "named_checks": [
+    "A"
+   ],
+   "reward": 0.0,
+   "visible": {
+    "cells_moved": 57854,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 0,
+    "missing_columns": [],
+    "missing_rows": 0,
+    "per_feature": {
+     "te_district": 57854
+    },
+    "twin": {
+     "agrees": true,
+     "compared": "value_cells",
+     "count": 57854,
+     "mechanism": "labels_matured"
+    },
+    "value_cells": 57854
+   }
+  },
+  "last_login_where_known": {
+   "B_cut1_cells": 3407,
+   "B_cut2_cells": 1493,
+   "H": {
+    "cells_moved": 1212,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 1212,
+    "missing_columns": [],
+    "missing_rows": 0,
+    "per_feature": {},
+    "twin": {
+     "agrees": true,
+     "compared": "forbidden_nonnull",
+     "count": 1212,
+     "mechanism": "last_login_where_known"
+    },
+    "value_cells": 0
+   },
+   "checks": {
+    "A": 0,
+    "B_cut1": 0,
+    "B_cut2": 0
+   },
+   "expected_reward": 0,
+   "floors": {
+    "A_H": true,
+    "A_visible": true
+   },
+   "named_checks": [
+    "A"
+   ],
+   "reward": 0.0,
+   "visible": {
+    "cells_moved": 1246,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 1246,
+    "missing_columns": [],
+    "missing_rows": 0,
+    "per_feature": {},
+    "twin": {
+     "agrees": true,
+     "compared": "forbidden_nonnull",
+     "count": 1246,
+     "mechanism": "last_login_where_known"
+    },
+    "value_cells": 0
+   }
+  },
+  "legacy_schedule": {
+   "B_cut1_cells": 214,
+   "B_cut2_cells": 0,
+   "H": {
+    "cells_moved": 1522,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 0,
+    "missing_columns": [],
+    "missing_rows": 0,
+    "per_feature": {
+     "days_since_last_order": 423,
+     "orders_30d": 423,
+     "orders_7d": 253,
+     "spend_30d_cents": 423
+    },
+    "twin": {
+     "agrees": true,
+     "compared": "value_cells",
+     "count": 1522,
+     "mechanism": "legacy_schedule"
+    },
+    "value_cells": 1522
+   },
+   "checks": {
+    "A": 0,
+    "B_cut1": 0,
+    "B_cut2": 1
+   },
+   "expected_reward": 0,
+   "floors": {
+    "A_H": true,
+    "A_visible": true,
+    "B_cut1": true
+   },
+   "named_checks": [
+    "A",
+    "B_cut1"
+   ],
+   "reward": 0.0,
+   "visible": {
+    "cells_moved": 1633,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 0,
+    "missing_columns": [],
+    "missing_rows": 0,
+    "per_feature": {
+     "days_since_last_order": 467,
+     "orders_30d": 467,
+     "orders_7d": 232,
+     "spend_30d_cents": 467
+    },
+    "twin": {
+     "agrees": true,
+     "compared": "value_cells",
+     "count": 1633,
+     "mechanism": "legacy_schedule"
+    },
+    "value_cells": 1633
+   }
+  },
+  "loaded_at_everywhere": {
+   "B_cut1_cells": 0,
+   "B_cut2_cells": 0,
+   "H": {
+    "cells_moved": 53362,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 0,
+    "missing_columns": [],
+    "missing_rows": 0,
+    "per_feature": {
+     "days_since_last_order": 16381,
+     "orders_30d": 16318,
+     "orders_7d": 4345,
+     "spend_30d_cents": 16318
+    },
+    "twin": {
+     "agrees": true,
+     "compared": "value_cells",
+     "count": 53362,
+     "mechanism": "trust_loaded_at"
+    },
+    "value_cells": 53362
+   },
+   "checks": {
+    "A": 0,
+    "B_cut1": 1,
+    "B_cut2": 1
+   },
+   "expected_reward": 0,
+   "floors": {
+    "A_H": true,
+    "A_visible": true
+   },
+   "named_checks": [
+    "A"
+   ],
+   "reward": 0.0,
+   "visible": {
+    "cells_moved": 67430,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 0,
+    "missing_columns": [],
+    "missing_rows": 0,
+    "per_feature": {
+     "days_since_last_order": 20805,
+     "orders_30d": 20689,
+     "orders_7d": 5247,
+     "spend_30d_cents": 20689
+    },
+    "twin": {
+     "agrees": true,
+     "compared": "value_cells",
+     "count": 67430,
+     "mechanism": "trust_loaded_at"
+    },
+    "value_cells": 67430
+   }
+  },
+  "log_lookup": {
+   "B_cut1_cells": 27305,
+   "B_cut2_cells": 14996,
+   "H": {
+    "cells_moved": 258813,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 1898,
+    "missing_columns": [],
+    "missing_rows": 0,
+    "per_feature": {
+     "days_since_last_order": 44848,
+     "orders_30d": 44848,
+     "orders_7d": 44826,
+     "plan": 19228,
+     "spend_30d_cents": 44848,
+     "status": 484,
+     "te_district": 57833
+    },
+    "value_cells": 256915
+   },
+   "checks": {
+    "A": 0,
+    "B_cut1": 0,
+    "B_cut2": 0
+   },
+   "expected_reward": 0,
+   "floors": {
+    "A_H": true,
+    "A_visible": true
+   },
+   "named_checks": [
+    "A"
+   ],
+   "reward": 0.0,
+   "visible": {
+    "cells_moved": 258255,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 2308,
+    "missing_columns": [],
+    "missing_rows": 0,
+    "per_feature": {
+     "days_since_last_order": 44605,
+     "orders_30d": 44605,
+     "orders_7d": 44571,
+     "plan": 19589,
+     "spend_30d_cents": 44605,
+     "status": 483,
+     "te_district": 57489
+    },
+    "value_cells": 255947
+   }
+  },
+  "min_commit": {
+   "B_cut1_cells": 0,
+   "B_cut2_cells": 0,
+   "H": {
+    "cells_moved": 492,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 0,
+    "missing_columns": [],
+    "missing_rows": 0,
+    "per_feature": {
+     "days_since_last_order": 123,
+     "orders_30d": 123,
+     "orders_7d": 123,
+     "spend_30d_cents": 123
+    },
+    "twin": {
+     "agrees": true,
+     "compared": "value_cells",
+     "count": 492,
+     "mechanism": "min_commit"
+    },
+    "value_cells": 492
+   },
+   "checks": {
+    "A": 0,
+    "B_cut1": 1,
+    "B_cut2": 1
+   },
+   "expected_reward": 0,
+   "floors": {
+    "A_H": true,
+    "A_visible": true
+   },
+   "named_checks": [
+    "A"
+   ],
+   "reward": 0.0,
+   "visible": {
+    "cells_moved": 356,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 0,
+    "missing_columns": [],
+    "missing_rows": 0,
+    "per_feature": {
+     "days_since_last_order": 89,
+     "orders_30d": 89,
+     "orders_7d": 89,
+     "spend_30d_cents": 89
+    },
+    "twin": {
+     "agrees": true,
+     "compared": "value_cells",
+     "count": 356,
+     "mechanism": "min_commit"
+    },
+    "value_cells": 356
+   }
+  },
+  "original": {
+   "B_cut1_cells": 27305,
+   "B_cut2_cells": 14996,
+   "H": {
+    "cells_moved": 258813,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 1898,
+    "missing_columns": [],
+    "missing_rows": 0,
+    "per_feature": {
+     "days_since_last_order": 44848,
+     "orders_30d": 44848,
+     "orders_7d": 44826,
+     "plan": 19228,
+     "spend_30d_cents": 44848,
+     "status": 484,
+     "te_district": 57833
+    },
+    "twin": {
+     "agrees": true,
+     "compared": "value_cells",
+     "count": 256915,
+     "mechanism": "orders_event_time+status_event_date+current_plan+labels_matured"
+    },
+    "value_cells": 256915
+   },
+   "checks": {
+    "A": 0,
+    "B_cut1": 0,
+    "B_cut2": 0
+   },
+   "expected_reward": 0,
+   "floors": {
+    "A_H": true,
+    "A_visible": true,
+    "B_cut1": true,
+    "B_cut2": true
+   },
+   "named_checks": [
+    "A",
+    "B_cut1",
+    "B_cut2"
+   ],
+   "reward": 0.0,
+   "visible": {
+    "cells_moved": 259419,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 1953,
+    "missing_columns": [],
+    "missing_rows": 0,
+    "per_feature": {
+     "days_since_last_order": 44884,
+     "orders_30d": 44884,
+     "orders_7d": 44850,
+     "plan": 19627,
+     "spend_30d_cents": 44884,
+     "status": 483,
+     "te_district": 57854
+    },
+    "twin": {
+     "agrees": true,
+     "compared": "value_cells",
+     "count": 257466,
+     "mechanism": "orders_event_time+status_event_date+current_plan+labels_matured"
+    },
+    "value_cells": 257466
+   }
+  },
+  "plan_changed_at": {
+   "B_cut1_cells": 112,
+   "B_cut2_cells": 291,
+   "H": {
+    "cells_moved": 518,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 0,
+    "missing_columns": [],
+    "missing_rows": 0,
+    "per_feature": {
+     "plan": 518
+    },
+    "twin": {
+     "agrees": true,
+     "compared": "value_cells",
+     "count": 518,
+     "mechanism": "plan_changed_at"
+    },
+    "value_cells": 518
+   },
+   "checks": {
+    "A": 0,
+    "B_cut1": 0,
+    "B_cut2": 0
+   },
+   "expected_reward": 0,
+   "floors": {
+    "A_H": true,
+    "A_visible": true,
+    "B_cut2": true
+   },
+   "named_checks": [
+    "A",
+    "B_cut2"
+   ],
+   "reward": 0.0,
+   "visible": {
+    "cells_moved": 584,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 0,
+    "missing_columns": [],
+    "missing_rows": 0,
+    "per_feature": {
+     "plan": 584
+    },
+    "twin": {
+     "agrees": true,
+     "compared": "value_cells",
+     "count": 584,
+     "mechanism": "plan_changed_at"
+    },
+    "value_cells": 584
+   }
+  },
+  "rollback_as_commit": {
+   "B_cut1_cells": 214,
+   "B_cut2_cells": 0,
+   "H": {
+    "cells_moved": 1381,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 0,
+    "missing_columns": [],
+    "missing_rows": 0,
+    "per_feature": {
+     "days_since_last_order": 388,
+     "orders_30d": 388,
+     "orders_7d": 217,
+     "spend_30d_cents": 388
+    },
+    "twin": {
+     "agrees": true,
+     "compared": "value_cells",
+     "count": 1381,
+     "mechanism": "rollback_as_commit"
+    },
+    "value_cells": 1381
+   },
+   "checks": {
+    "A": 0,
+    "B_cut1": 0,
+    "B_cut2": 1
+   },
+   "expected_reward": 0,
+   "floors": {
+    "A_H": true,
+    "A_visible": true,
+    "B_cut1": true
+   },
+   "named_checks": [
+    "A",
+    "B_cut1"
+   ],
+   "reward": 0.0,
+   "visible": {
+    "cells_moved": 1541,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 0,
+    "missing_columns": [],
+    "missing_rows": 0,
+    "per_feature": {
+     "days_since_last_order": 444,
+     "orders_30d": 444,
+     "orders_7d": 209,
+     "spend_30d_cents": 444
+    },
+    "twin": {
+     "agrees": true,
+     "compared": "value_cells",
+     "count": 1541,
+     "mechanism": "rollback_as_commit"
+    },
+    "value_cells": 1541
+   }
+  },
+  "scheduler_end": {
+   "B_cut1_cells": 0,
+   "B_cut2_cells": 0,
+   "H": {
+    "cells_moved": 296,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 0,
+    "missing_columns": [],
+    "missing_rows": 0,
+    "per_feature": {
+     "days_since_last_order": 74,
+     "orders_30d": 74,
+     "orders_7d": 74,
+     "spend_30d_cents": 74
+    },
+    "twin": {
+     "agrees": true,
+     "compared": "value_cells",
+     "count": 296,
+     "mechanism": "scheduler_end"
+    },
+    "value_cells": 296
+   },
+   "checks": {
+    "A": 0,
+    "B_cut1": 1,
+    "B_cut2": 1
+   },
+   "expected_reward": 0,
+   "floors": {
+    "A_H": true,
+    "A_visible": true
+   },
+   "named_checks": [
+    "A"
+   ],
+   "reward": 0.0,
+   "visible": {
+    "cells_moved": 372,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 0,
+    "missing_columns": [],
+    "missing_rows": 0,
+    "per_feature": {
+     "days_since_last_order": 93,
+     "orders_30d": 93,
+     "orders_7d": 93,
+     "spend_30d_cents": 93
+    },
+    "twin": {
+     "agrees": true,
+     "compared": "value_cells",
+     "count": 372,
+     "mechanism": "scheduler_end"
+    },
+    "value_cells": 372
+   }
+  },
+  "scheduler_start": {
+   "B_cut1_cells": 0,
+   "B_cut2_cells": 0,
+   "H": {
+    "cells_moved": 156,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 0,
+    "missing_columns": [],
+    "missing_rows": 0,
+    "per_feature": {
+     "days_since_last_order": 39,
+     "orders_30d": 39,
+     "orders_7d": 39,
+     "spend_30d_cents": 39
+    },
+    "twin": {
+     "agrees": true,
+     "compared": "value_cells",
+     "count": 156,
+     "mechanism": "scheduler_start"
+    },
+    "value_cells": 156
+   },
+   "checks": {
+    "A": 0,
+    "B_cut1": 1,
+    "B_cut2": 1
+   },
+   "expected_reward": 0,
+   "floors": {
+    "A_H": true,
+    "A_visible": true
+   },
+   "named_checks": [
+    "A"
+   ],
+   "reward": 0.0,
+   "visible": {
+    "cells_moved": 108,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 0,
+    "missing_columns": [],
+    "missing_rows": 0,
+    "per_feature": {
+     "days_since_last_order": 27,
+     "orders_30d": 27,
+     "orders_7d": 27,
+     "spend_30d_cents": 27
+    },
+    "twin": {
+     "agrees": true,
+     "compared": "value_cells",
+     "count": 108,
+     "mechanism": "scheduler_start"
+    },
+    "value_cells": 108
+   }
+  },
+  "status_event_date": {
+   "B_cut1_cells": 0,
+   "B_cut2_cells": 0,
+   "H": {
+    "cells_moved": 484,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 0,
+    "missing_columns": [],
+    "missing_rows": 0,
+    "per_feature": {
+     "status": 484
+    },
+    "twin": {
+     "agrees": true,
+     "compared": "value_cells",
+     "count": 484,
+     "mechanism": "status_event_date"
+    },
+    "value_cells": 484
+   },
+   "checks": {
+    "A": 0,
+    "B_cut1": 1,
+    "B_cut2": 1
+   },
+   "expected_reward": 0,
+   "floors": {
+    "A_H": true,
+    "A_visible": true
+   },
+   "named_checks": [
+    "A"
+   ],
+   "reward": 0.0,
+   "visible": {
+    "cells_moved": 483,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 0,
+    "missing_columns": [],
+    "missing_rows": 0,
+    "per_feature": {
+     "status": 483
+    },
+    "twin": {
+     "agrees": true,
+     "compared": "value_cells",
+     "count": 483,
+     "mechanism": "status_event_date"
+    },
+    "value_cells": 483
+   }
+  },
+  "status_latest_loaded": {
+   "B_cut1_cells": 0,
+   "B_cut2_cells": 0,
+   "H": {
+    "cells_moved": 113,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 0,
+    "missing_columns": [],
+    "missing_rows": 0,
+    "per_feature": {
+     "status": 113
+    },
+    "twin": {
+     "agrees": true,
+     "compared": "value_cells",
+     "count": 113,
+     "mechanism": "status_latest_loaded"
+    },
+    "value_cells": 113
+   },
+   "checks": {
+    "A": 0,
+    "B_cut1": 1,
+    "B_cut2": 1
+   },
+   "expected_reward": 0,
+   "floors": {
+    "A_H": true,
+    "A_visible": true
+   },
+   "named_checks": [
+    "A"
+   ],
+   "reward": 0.0,
+   "visible": {
+    "cells_moved": 194,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 0,
+    "missing_columns": [],
+    "missing_rows": 0,
+    "per_feature": {
+     "status": 194
+    },
+    "twin": {
+     "agrees": true,
+     "compared": "value_cells",
+     "count": 194,
+     "mechanism": "status_latest_loaded"
+    },
+    "value_cells": 194
+   }
+  },
+  "tune_model": {
+   "B_cut1_cells": 27305,
+   "B_cut2_cells": 14996,
+   "H": {
+    "cells_moved": 258813,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 1898,
+    "missing_columns": [],
+    "missing_rows": 0,
+    "per_feature": {
+     "days_since_last_order": 44848,
+     "orders_30d": 44848,
+     "orders_7d": 44826,
+     "plan": 19228,
+     "spend_30d_cents": 44848,
+     "status": 484,
+     "te_district": 57833
+    },
+    "value_cells": 256915
+   },
+   "checks": {
+    "A": 0,
+    "B_cut1": 0,
+    "B_cut2": 0
+   },
+   "expected_reward": 0,
+   "floors": {
+    "A_H": true,
+    "A_visible": true
+   },
+   "named_checks": [
+    "A"
+   ],
+   "reward": 0.0,
+   "visible": {
+    "cells_moved": 259419,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 1953,
+    "missing_columns": [],
+    "missing_rows": 0,
+    "per_feature": {
+     "days_since_last_order": 44884,
+     "orders_30d": 44884,
+     "orders_7d": 44850,
+     "plan": 19627,
+     "spend_30d_cents": 44884,
+     "status": 483,
+     "te_district": 57854
+    },
+    "value_cells": 257466
+   }
+  },
+  "v2_rule": {
+   "B_cut1_cells": 0,
+   "B_cut2_cells": 0,
+   "H": {
+    "cells_moved": 492,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 0,
+    "missing_columns": [],
+    "missing_rows": 0,
+    "per_feature": {
+     "days_since_last_order": 123,
+     "orders_30d": 123,
+     "orders_7d": 123,
+     "spend_30d_cents": 123
+    },
+    "twin": {
+     "agrees": true,
+     "compared": "value_cells",
+     "count": 492,
+     "mechanism": "v2_rule"
+    },
+    "value_cells": 492
+   },
+   "checks": {
+    "A": 0,
+    "B_cut1": 1,
+    "B_cut2": 1
+   },
+   "expected_reward": 0,
+   "floors": {
+    "A_H": true,
+    "A_visible": true
+   },
+   "named_checks": [
+    "A"
+   ],
+   "reward": 0.0,
+   "visible": {
+    "cells_moved": 356,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 0,
+    "missing_columns": [],
+    "missing_rows": 0,
+    "per_feature": {
+     "days_since_last_order": 89,
+     "orders_30d": 89,
+     "orders_7d": 89,
+     "spend_30d_cents": 89
+    },
+    "twin": {
+     "agrees": true,
+     "compared": "value_cells",
+     "count": 356,
+     "mechanism": "v2_rule"
+    },
+    "value_cells": 356
+   }
+  },
+  "window_on_loaded_at": {
+   "B_cut1_cells": 0,
+   "B_cut2_cells": 0,
+   "H": {
+    "cells_moved": 47173,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 0,
+    "missing_columns": [],
+    "missing_rows": 0,
+    "per_feature": {
+     "orders_30d": 934,
+     "orders_7d": 45305,
+     "spend_30d_cents": 934
+    },
+    "twin": {
+     "agrees": true,
+     "compared": "value_cells",
+     "count": 47173,
+     "mechanism": "window_on_loaded_at"
+    },
+    "value_cells": 47173
+   },
+   "checks": {
+    "A": 0,
+    "B_cut1": 1,
+    "B_cut2": 1
+   },
+   "expected_reward": 0,
+   "floors": {
+    "A_H": true,
+    "A_visible": true
+   },
+   "named_checks": [
+    "A"
+   ],
+   "reward": 0.0,
+   "visible": {
+    "cells_moved": 47216,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 0,
+    "missing_columns": [],
+    "missing_rows": 0,
+    "per_feature": {
+     "orders_30d": 1129,
+     "orders_7d": 44958,
+     "spend_30d_cents": 1129
+    },
+    "twin": {
+     "agrees": true,
+     "compared": "value_cells",
+     "count": 47216,
+     "mechanism": "window_on_loaded_at"
+    },
+    "value_cells": 47216
+   }
+  },
+  "zero_features": {
+   "B_cut1_cells": 0,
+   "B_cut2_cells": 0,
+   "H": {
+    "cells_moved": 422145,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 0,
+    "missing_columns": [],
+    "missing_rows": 0,
+    "per_feature": {
+     "app_minutes_7d": 57896,
+     "days_since_last_order": 57896,
+     "orders_30d": 57478,
+     "orders_7d": 16046,
+     "plan": 35625,
+     "spend_30d_cents": 57478,
+     "status": 2829,
+     "te_district": 57896,
+     "tenure_days": 57896,
+     "tickets_30d": 21105
+    },
+    "value_cells": 422145
+   },
+   "checks": {
+    "A": 0,
+    "B_cut1": 1,
+    "B_cut2": 1
+   },
+   "expected_reward": 0,
+   "floors": {
+    "A_H": true,
+    "A_visible": true
+   },
+   "named_checks": [
+    "A"
+   ],
+   "reward": 0.0,
+   "visible": {
+    "cells_moved": 422094,
+    "duplicate_rows": 0,
+    "extra_rows": 0,
+    "forbidden_nonnull": 0,
+    "missing_columns": [],
+    "missing_rows": 0,
+    "per_feature": {
+     "app_minutes_7d": 57909,
+     "days_since_last_order": 57909,
+     "orders_30d": 57449,
+     "orders_7d": 15267,
+     "plan": 36055,
+     "spend_30d_cents": 57449,
+     "status": 3075,
+     "te_district": 57909,
+     "tenure_days": 57909,
+     "tickets_30d": 21163
+    },
+    "value_cells": 422094
+   }
+  }
+ }
+}

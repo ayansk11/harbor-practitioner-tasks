@@ -1,0 +1,2517 @@
+{
+ "constants": {
+  "ALL_ASSIGNED_MIN_REL": 0.03,
+  "CAPS": {
+   "clicks": 100000,
+   "pageviews": 500000,
+   "users": 50000
+  },
+  "DASH_LIFT": [
+   0.07,
+   0.13
+  ],
+  "DE_MIN": 5.5,
+  "FLOOR": 20,
+  "H2_MARGIN": 0.5,
+  "ISO": 600,
+  "KEEP_MARGIN": 0.35,
+  "KEEP_SRM_MIN": 0.005,
+  "MARGIN": 0.5,
+  "P2ND": 0.05,
+  "SHIPPED_SRM_MAX": 1e-05,
+  "SOFT_MIN_PASS": 3,
+  "SOFT_SCAN": 300,
+  "SRM_FLAG_RANGE": [
+   1e-11,
+   1e-05
+  ],
+  "SRM_OK_MIN": 0.05
+ },
+ "sets": {
+  "h_neg": {
+   "carousel_arm": "B",
+   "checks": {
+    "floors": {
+     "pre_assignment_item": {
+      "A": 598,
+      "B": 502
+     },
+     "see_all_only_counted": {
+      "A": 409,
+      "B": 438
+     },
+     "two_item_counted": {
+      "A": 776,
+      "B": 766
+     }
+    },
+    "item_recount_users": 17,
+    "item_recount_users_all_crawlers": true,
+    "override_users": {
+     "A": 0,
+     "B": 0
+    },
+    "passed": [
+     "columns",
+     "timestamp format assigned_at",
+     "timestamp format flagged_at",
+     "timestamp format pv ts",
+     "timestamp format click ts",
+     "one assignment per user",
+     "variant and method values",
+     "flags of assigned users",
+     "pageviews of assigned users",
+     "clicks of assigned users",
+     "rules",
+     "clicked values",
+     "pageview_id unique",
+     "no repeated flag rows",
+     "caps",
+     "(a) ua_crawler flags >= 1 s before assigned_at, one per crawler",
+     "(b) velocity flags after assigned_at at 02:00:00 UTC",
+     "(g) every event has its pageview, at or after it; pre-assignment events before assigned_at",
+     "(h) clicked = has a module event",
+     "(l) only documented targets",
+     "(l) nav: only in the carousel arm, on post-assignment pageviews",
+     "(l) link:all only from 2026-09-08",
+     "(j) velocity rows = the documented rule on module_clicks (<= 60 s)",
+     "(j) the same with < 60 s",
+     "(j) one velocity row per user-day",
+     "(f) no ambiguous 8-event window",
+     "(d) no non-crawler with 5 item events within 60 s",
+     "(c) velocity-only users: carousel-arm hash humans with 8+ nav taps (8 within 60 s) that day",
+     "(e) rule route = time route = recount route",
+     "(k) override accounts: one row, no flag",
+     "reference n_users = ref_a",
+     "reference pageviews = ref_a",
+     "reference clicks = ref_a",
+     "(m) srm_all_assigned misses by >= 3% relative",
+     "(n) design effect >= 5.5",
+     "floor see_all_only_counted",
+     "floor two_item_counted",
+     "floor pre_assignment_item"
+    ],
+    "pre_assignment_pageviews_ref": 11836,
+    "rows": {
+     "assignments": 34396,
+     "bot_flags": 3026,
+     "distinct_users": 34000,
+     "exact_repeats": 396,
+     "module_clicks": 58851,
+     "pageviews": 347797
+    },
+    "srm_all_assigned_rel_miss": 0.044844030283879156,
+    "targets": {
+     "item": 33023,
+     "link": 936,
+     "nav": 24892,
+     "nav_arm": {
+      "A": 0,
+      "B": 24892
+     }
+    },
+    "ties_at_assigned_ref": 17774,
+    "ua_crawler_users": {
+     "A": 378,
+     "B": 386
+    },
+    "velocity_only_users": {
+     "A": 0,
+     "B": 2007
+    },
+    "velocity_rows": 2262,
+    "zero_view_users_ref": 3586
+   },
+   "crawler_share": 0.02,
+   "files": {
+    "assignments.csv.gz": 309712,
+    "bot_flags.csv.gz": 21871,
+    "module_clicks.csv.gz": 678454,
+    "pageviews.csv.gz": 3811645
+   },
+   "lift": -0.1,
+   "override": null,
+   "p_b": 0.5,
+   "paths": {
+    "all_assigned": {
+     "n_users": {
+      "A": 16935,
+      "B": 17065
+     },
+     "rows": {
+      "A": 17134,
+      "B": 17262
+     },
+     "srm_p": 0.4807953081776508
+    },
+    "dashboard": {
+     "ci_95": [
+      -0.0033751450628930315,
+      0.0075646531393298135
+     ],
+     "clicks": {
+      "A": 16251,
+      "B": 16963
+     },
+     "ctr": {
+      "A": 0.09788343853900641,
+      "B": 0.0999781925772248
+     },
+     "de": 7.332482647439827,
+     "decision": "no_ship",
+     "diff": 0.002094754038218391,
+     "half_width": 0.0054698991011114225,
+     "hi_hw": 1.3829602702895856,
+     "lo_hw": -0.6170397297104145,
+     "n_users": {
+      "A": 16935,
+      "B": 17065
+     },
+     "pageviews": {
+      "A": 166024,
+      "B": 169667
+     },
+     "rel_lift": 0.021400495012071197,
+     "srm_p": 0.4807953081776508
+    },
+    "dashboard_all_rows": {
+     "ci_95": [
+      -0.003946707570289182,
+      0.006718818586722475
+     ],
+     "clicks": {
+      "A": 16849,
+      "B": 17471
+     },
+     "ctr": {
+      "A": 0.09797753070338668,
+      "B": 0.09936358621160332
+     },
+     "de": 7.237391575700877,
+     "decision": "no_ship",
+     "diff": 0.0013860555082166465,
+     "half_width": 0.0053327630785058285,
+     "hi_hw": 1.2599131984323972,
+     "lo_hw": -0.7400868015676029,
+     "n_users": {
+      "A": 16935,
+      "B": 17065
+     },
+     "pageviews": {
+      "A": 171968,
+      "B": 175829
+     },
+     "rel_lift": 0.014146667080360942,
+     "srm_p": 0.4807953081776508
+    },
+    "filter_only": {
+     "ci_95": [
+      -0.0038594319590834463,
+      0.007313020354022507
+     ],
+     "clicks": {
+      "A": 16025,
+      "B": 16720
+     },
+     "ctr": {
+      "A": 0.10184237786858678,
+      "B": 0.10356917206605631
+     },
+     "de": 7.024703880110316,
+     "decision": "no_ship",
+     "diff": 0.0017267941974695306,
+     "half_width": 0.005586226156552977,
+     "hi_hw": 1.309116414029156,
+     "lo_hw": -0.6908835859708441,
+     "n_users": {
+      "A": 16557,
+      "B": 16679
+     },
+     "pageviews": {
+      "A": 157351,
+      "B": 161438
+     },
+     "rel_lift": 0.016955556553262197,
+     "srm_p": 0.503368374822121
+    },
+    "keep_overrides": {
+     "ci_95": [
+      -0.016557735057563444,
+      -0.0055139769680607196
+     ],
+     "clicks": {
+      "A": 15616,
+      "B": 14240
+     },
+     "ctr": {
+      "A": 0.09924309346619976,
+      "B": 0.08820723745338768
+     },
+     "de": 7.443808791398674,
+     "decision": "no_ship",
+     "diff": -0.011035856012812081,
+     "half_width": 0.005521879044751362,
+     "hi_hw": -0.9985689515060723,
+     "lo_hw": -2.9985689515060723,
+     "n_users": {
+      "A": 16557,
+      "B": 16679
+     },
+     "pageviews": {
+      "A": 157351,
+      "B": 161438
+     },
+     "rel_lift": -0.1112002420256144,
+     "srm_p": 0.503368374822121
+    },
+    "literal_bot_filter": {
+     "ci_95": [
+      -0.02885807700465499,
+      -0.01766382550137906
+     ],
+     "clicks": {
+      "A": 15616,
+      "B": 10535
+     },
+     "ctr": {
+      "A": 0.09924309346619976,
+      "B": 0.07598214221318274
+     },
+     "de": 7.589829637675193,
+     "decision": "invalid",
+     "diff": -0.023260951253017026,
+     "half_width": 0.005597125751637966,
+     "hi_hw": -3.1558743335737716,
+     "lo_hw": -5.155874333573771,
+     "n_users": {
+      "A": 16557,
+      "B": 14672
+     },
+     "pageviews": {
+      "A": 157351,
+      "B": 138651
+     },
+     "rel_lift": -0.23438357713969538,
+     "srm_p": 1.45623672765243e-26
+    },
+    "not_nav_clicked": {
+     "ci_95": [
+      -0.016451345753444077,
+      -0.005392703334737304
+     ],
+     "clicks": {
+      "A": 16025,
+      "B": 14678
+     },
+     "ctr": {
+      "A": 0.10184237786858678,
+      "B": 0.09092035332449609
+     },
+     "de": 7.279609117581798,
+     "decision": "no_ship",
+     "diff": -0.010922024544090692,
+     "half_width": 0.005529321209353387,
+     "hi_hw": -0.9752921073955731,
+     "lo_hw": -2.975292107395573,
+     "n_users": {
+      "A": 16557,
+      "B": 16679
+     },
+     "pageviews": {
+      "A": 157351,
+      "B": 161438
+     },
+     "rel_lift": -0.10724439837985733,
+     "srm_p": 0.503368374822121
+    },
+    "platform_clicked": {
+     "ci_95": [
+      -0.0038594319590834463,
+      0.007313020354022507
+     ],
+     "clicks": {
+      "A": 16025,
+      "B": 16720
+     },
+     "ctr": {
+      "A": 0.10184237786858678,
+      "B": 0.10356917206605631
+     },
+     "de": 7.024703880110316,
+     "decision": "no_ship",
+     "diff": 0.0017267941974695306,
+     "half_width": 0.005586226156552977,
+     "hi_hw": 1.309116414029156,
+     "lo_hw": -0.6908835859708441,
+     "n_users": {
+      "A": 16557,
+      "B": 16679
+     },
+     "pageviews": {
+      "A": 157351,
+      "B": 161438
+     },
+     "rel_lift": 0.016955556553262197,
+     "srm_p": 0.503368374822121
+    },
+    "reference": {
+     "ci_95": [
+      -0.016557735057563444,
+      -0.0055139769680607196
+     ],
+     "clicks": {
+      "A": 15616,
+      "B": 14240
+     },
+     "ctr": {
+      "A": 0.09924309346619976,
+      "B": 0.08820723745338768
+     },
+     "de": 7.443808791398674,
+     "decision": "no_ship",
+     "diff": -0.011035856012812081,
+     "half_width": 0.005521879044751362,
+     "hi_hw": -0.9985689515060723,
+     "lo_hw": -2.9985689515060723,
+     "n_users": {
+      "A": 16557,
+      "B": 16679
+     },
+     "pageviews": {
+      "A": 157351,
+      "B": 161438
+     },
+     "rel_lift": -0.1112002420256144,
+     "srm_p": 0.503368374822121
+    },
+    "shipped": {
+     "ci_95": [
+      -0.02772842839717329,
+      -0.01650562016875737
+     ],
+     "clicks": {
+      "A": 16025,
+      "B": 11054
+     },
+     "ctr": {
+      "A": 0.10184237786858678,
+      "B": 0.07972535358562145
+     },
+     "de": 7.3813574875218295,
+     "decision": "invalid",
+     "diff": -0.02211702428296533,
+     "half_width": 0.0056114041142079595,
+     "hi_hw": -2.941442076318382,
+     "lo_hw": -4.941442076318382,
+     "n_users": {
+      "A": 16557,
+      "B": 14672
+     },
+     "pageviews": {
+      "A": 157351,
+      "B": 138651
+     },
+     "rel_lift": -0.21716916617465698,
+     "srm_p": 1.45623672765243e-26
+    }
+   },
+   "ref_ab_max_abs_diff": 3.469446951953614e-18,
+   "role": "null",
+   "rows": {
+    "assignments.csv": 34396,
+    "bot_flags.csv": 3026,
+    "module_clicks.csv": 58851,
+    "pageviews.csv": 347797
+   },
+   "search": {
+    "construction_rejects": 0,
+    "scanned": 2,
+    "soft_kept": null,
+    "soft_passes_in_scan": null,
+    "soft_rule": false
+   },
+   "seed": 6001,
+   "tries": 2,
+   "versions": {
+    "A": "v1",
+    "B": "v2"
+   }
+  },
+  "h_null": {
+   "carousel_arm": "A",
+   "checks": {
+    "floors": {
+     "pre_assignment_item": {
+      "A": 629,
+      "B": 647
+     },
+     "see_all_only_counted": {
+      "A": 278,
+      "B": 276
+     },
+     "two_item_counted": {
+      "A": 700,
+      "B": 639
+     }
+    },
+    "item_recount_users": 21,
+    "item_recount_users_all_crawlers": true,
+    "override_users": {
+     "A": 150,
+     "B": 0
+    },
+    "passed": [
+     "columns",
+     "timestamp format assigned_at",
+     "timestamp format flagged_at",
+     "timestamp format pv ts",
+     "timestamp format click ts",
+     "one assignment per user",
+     "variant and method values",
+     "flags of assigned users",
+     "pageviews of assigned users",
+     "clicks of assigned users",
+     "rules",
+     "clicked values",
+     "pageview_id unique",
+     "no repeated flag rows",
+     "caps",
+     "(a) ua_crawler flags >= 1 s before assigned_at, one per crawler",
+     "(b) velocity flags after assigned_at at 02:00:00 UTC",
+     "(g) every event has its pageview, at or after it; pre-assignment events before assigned_at",
+     "(h) clicked = has a module event",
+     "(l) only documented targets",
+     "(l) nav: only in the carousel arm, on post-assignment pageviews",
+     "(l) link:all only from 2026-09-08",
+     "(j) velocity rows = the documented rule on module_clicks (<= 60 s)",
+     "(j) the same with < 60 s",
+     "(j) one velocity row per user-day",
+     "(f) no ambiguous 8-event window",
+     "(d) no non-crawler with 5 item events within 60 s",
+     "(c) velocity-only users: carousel-arm hash humans with 8+ nav taps (8 within 60 s) that day",
+     "(e) rule route = time route = recount route",
+     "(k) override accounts: one row, no flag",
+     "reference n_users = ref_a",
+     "reference pageviews = ref_a",
+     "reference clicks = ref_a",
+     "(m) srm_all_assigned misses by >= 3% relative",
+     "(n) design effect >= 5.5",
+     "floor see_all_only_counted",
+     "floor two_item_counted",
+     "floor pre_assignment_item"
+    ],
+    "pre_assignment_pageviews_ref": 11340,
+    "rows": {
+     "assignments": 32476,
+     "bot_flags": 1434,
+     "distinct_users": 32150,
+     "exact_repeats": 326,
+     "module_clicks": 40376,
+     "pageviews": 269935
+    },
+    "srm_all_assigned_rel_miss": 1.6744380674806447,
+    "targets": {
+     "item": 29656,
+     "link": 649,
+     "nav": 10071,
+     "nav_arm": {
+      "A": 10071,
+      "B": 0
+     }
+    },
+    "ties_at_assigned_ref": 14928,
+    "ua_crawler_users": {
+     "A": 241,
+     "B": 246
+    },
+    "velocity_only_users": {
+     "A": 852,
+     "B": 0
+    },
+    "velocity_rows": 947,
+    "zero_view_users_ref": 6800
+   },
+   "crawler_share": 0.015,
+   "files": {
+    "assignments.csv.gz": 294009,
+    "bot_flags.csv.gz": 11280,
+    "module_clicks.csv.gz": 519891,
+    "pageviews.csv.gz": 2950924
+   },
+   "lift": 0.0,
+   "override": {
+    "arm": "A",
+    "ctr": 0.01,
+    "kind": "qa",
+    "n": 150,
+    "pv_mean": 12.0,
+    "pv_min": 3,
+    "rho": 0.05,
+    "sigma": 0.5,
+    "start": 0
+   },
+   "p_b": 0.5,
+   "paths": {
+    "all_assigned": {
+     "n_users": {
+      "A": 16060,
+      "B": 16090
+     },
+     "rows": {
+      "A": 16207,
+      "B": 16269
+     },
+     "srm_p": 0.8671234485243061
+    },
+    "dashboard": {
+     "ci_95": [
+      -0.013972702261521891,
+      0.006702403541921892
+     ],
+     "clicks": {
+      "A": 14334,
+      "B": 13833
+     },
+     "ctr": {
+      "A": 0.11083446740071755,
+      "B": 0.10719931804091755
+     },
+     "de": 18.500185631962886,
+     "decision": "no_ship",
+     "diff": -0.0036351493597999995,
+     "half_width": 0.010337552901721891,
+     "hi_hw": 0.6483549448927604,
+     "lo_hw": -1.3516450551072396,
+     "n_users": {
+      "A": 16060,
+      "B": 16090
+     },
+     "pageviews": {
+      "A": 129328,
+      "B": 129040
+     },
+     "rel_lift": -0.032798004493108324,
+     "srm_p": 0.8671234485243061
+    },
+    "dashboard_all_rows": {
+     "ci_95": [
+      -0.013262551326070673,
+      0.006705531892019076
+     ],
+     "clicks": {
+      "A": 14964,
+      "B": 14483
+     },
+     "ctr": {
+      "A": 0.11072633635233528,
+      "B": 0.10744782663530948
+     },
+     "de": 18.018804208423372,
+     "decision": "no_ship",
+     "diff": -0.0032785097170257987,
+     "half_width": 0.009984041609044874,
+     "hi_hw": 0.6716249946258549,
+     "lo_hw": -1.328375005374145,
+     "n_users": {
+      "A": 16060,
+      "B": 16090
+     },
+     "pageviews": {
+      "A": 135144,
+      "B": 134791
+     },
+     "rel_lift": -0.029609123041815955,
+     "srm_p": 0.8671234485243061
+    },
+    "filter_only": {
+     "ci_95": [
+      -0.015092491526681346,
+      0.006196812903293847
+     ],
+     "clicks": {
+      "A": 14110,
+      "B": 13533
+     },
+     "ctr": {
+      "A": 0.11400638306467903,
+      "B": 0.10955854375298528
+     },
+     "de": 18.367303930358556,
+     "decision": "no_ship",
+     "diff": -0.004447839311693749,
+     "half_width": 0.010644652214987596,
+     "hi_hw": 0.5821526883300873,
+     "lo_hw": -1.4178473116699128,
+     "n_users": {
+      "A": 15819,
+      "B": 15844
+     },
+     "pageviews": {
+      "A": 123765,
+      "B": 123523
+     },
+     "rel_lift": -0.039013949852004015,
+     "srm_p": 0.8882681079811167
+    },
+    "keep_overrides": {
+     "ci_95": [
+      -0.009830207053037146,
+      0.011445727472851339
+     ],
+     "clicks": {
+      "A": 13183,
+      "B": 13257
+     },
+     "ctr": {
+      "A": 0.10651638185270472,
+      "B": 0.10732414206261182
+     },
+     "de": 19.07272864990937,
+     "decision": "no_ship",
+     "diff": 0.0008077602099070963,
+     "half_width": 0.010637967262944243,
+     "hi_hw": 1.0759318194859282,
+     "lo_hw": -0.9240681805140718,
+     "n_users": {
+      "A": 15819,
+      "B": 15844
+     },
+     "pageviews": {
+      "A": 123765,
+      "B": 123523
+     },
+     "rel_lift": 0.007583436424118295,
+     "srm_p": 0.8882681079811167
+    },
+    "literal_bot_filter": {
+     "ci_95": [
+      0.0037919084154647113,
+      0.025380831042683922
+     ],
+     "clicks": {
+      "A": 10599,
+      "B": 13257
+     },
+     "ctr": {
+      "A": 0.0927377723335375,
+      "B": 0.10732414206261182
+     },
+     "de": 20.0639136004218,
+     "decision": "invalid",
+     "diff": 0.014586369729074317,
+     "half_width": 0.010794461313609605,
+     "hi_hw": 2.351282783392247,
+     "lo_hw": 0.35128278339224683,
+     "n_users": {
+      "A": 14817,
+      "B": 15844
+     },
+     "pageviews": {
+      "A": 114290,
+      "B": 123523
+     },
+     "rel_lift": 0.15728617759561314,
+     "srm_p": 4.487939712318288e-09
+    },
+    "not_nav_clicked": {
+     "ci_95": [
+      -0.011244438527758348,
+      0.010142109560287481
+     ],
+     "clicks": {
+      "A": 13439,
+      "B": 13533
+     },
+     "ctr": {
+      "A": 0.11010970823672071,
+      "B": 0.10955854375298528
+     },
+     "de": 18.690390394674054,
+     "decision": "no_ship",
+     "diff": -0.0005511644837354335,
+     "half_width": 0.010693274044022915,
+     "hi_hw": 0.9484569009017859,
+     "lo_hw": -1.051543099098214,
+     "n_users": {
+      "A": 15669,
+      "B": 15844
+     },
+     "pageviews": {
+      "A": 122051,
+      "B": 123523
+     },
+     "rel_lift": -0.005005593898682492,
+     "srm_p": 0.3242264081819429
+    },
+    "platform_clicked": {
+     "ci_95": [
+      -0.016563746582353458,
+      0.004875678866326668
+     ],
+     "clicks": {
+      "A": 14085,
+      "B": 13533
+     },
+     "ctr": {
+      "A": 0.11540257761099867,
+      "B": 0.10955854375298528
+     },
+     "de": 18.39499369486677,
+     "decision": "no_ship",
+     "diff": -0.005844033858013395,
+     "half_width": 0.010719712724340063,
+     "hi_hw": 0.45483297843010334,
+     "lo_hw": -1.5451670215698967,
+     "n_users": {
+      "A": 15669,
+      "B": 15844
+     },
+     "pageviews": {
+      "A": 122051,
+      "B": 123523
+     },
+     "rel_lift": -0.050640410110358025,
+     "srm_p": 0.3242264081819429
+    },
+    "reference": {
+     "ci_95": [
+      -0.011220306218051809,
+      0.01020464658206088
+     ],
+     "clicks": {
+      "A": 13161,
+      "B": 13257
+     },
+     "ctr": {
+      "A": 0.10783197188060728,
+      "B": 0.10732414206261182
+     },
+     "de": 19.102548665032725,
+     "decision": "no_ship",
+     "diff": -0.0005078298179954643,
+     "half_width": 0.010712476400056344,
+     "hi_hw": 0.9525945449930893,
+     "lo_hw": -1.0474054550069107,
+     "n_users": {
+      "A": 15669,
+      "B": 15844
+     },
+     "pageviews": {
+      "A": 122051,
+      "B": 123523
+     },
+     "rel_lift": -0.004709454989450967,
+     "srm_p": 0.3242264081819429
+    },
+    "shipped": {
+     "ci_95": [
+      0.004598390327953743,
+      0.02599071538428556
+     ],
+     "clicks": {
+      "A": 10935,
+      "B": 13533
+     },
+     "ctr": {
+      "A": 0.09426399089686563,
+      "B": 0.10955854375298528
+     },
+     "de": 19.519590427431343,
+     "decision": "invalid",
+     "diff": 0.01529455285611965,
+     "half_width": 0.010696162528165907,
+     "hi_hw": 2.429910289400047,
+     "lo_hw": 0.42991028940004694,
+     "n_users": {
+      "A": 14967,
+      "B": 15844
+     },
+     "pageviews": {
+      "A": 116004,
+      "B": 123523
+     },
+     "rel_lift": 0.16225233740478306,
+     "srm_p": 5.84470351291854e-07
+    }
+   },
+   "ref_ab_max_abs_diff": 3.469446951953614e-18,
+   "role": "null",
+   "rows": {
+    "assignments.csv": 32476,
+    "bot_flags.csv": 1434,
+    "module_clicks.csv": 40376,
+    "pageviews.csv": 269935
+   },
+   "search": {
+    "construction_rejects": 0,
+    "scanned": 1,
+    "soft_kept": null,
+    "soft_passes_in_scan": null,
+    "soft_rule": false
+   },
+   "seed": 2000,
+   "tries": 1,
+   "versions": {
+    "A": "v2",
+    "B": "grid"
+   }
+  },
+  "h_plain": {
+   "carousel_arm": null,
+   "checks": {
+    "floors": {
+     "pre_assignment_item": {
+      "A": 492,
+      "B": 538
+     },
+     "see_all_only_counted": {
+      "A": 274,
+      "B": 268
+     },
+     "two_item_counted": {
+      "A": 476,
+      "B": 571
+     }
+    },
+    "item_recount_users": 21,
+    "item_recount_users_all_crawlers": true,
+    "override_users": {
+     "A": 0,
+     "B": 0
+    },
+    "passed": [
+     "columns",
+     "timestamp format assigned_at",
+     "timestamp format flagged_at",
+     "timestamp format pv ts",
+     "timestamp format click ts",
+     "one assignment per user",
+     "variant and method values",
+     "flags of assigned users",
+     "pageviews of assigned users",
+     "clicks of assigned users",
+     "rules",
+     "clicked values",
+     "pageview_id unique",
+     "no repeated flag rows",
+     "caps",
+     "(a) ua_crawler flags >= 1 s before assigned_at, one per crawler",
+     "(b) velocity flags after assigned_at at 02:00:00 UTC",
+     "(g) every event has its pageview, at or after it; pre-assignment events before assigned_at",
+     "(h) clicked = has a module event",
+     "(l) only documented targets",
+     "(l) nav: only in the carousel arm, on post-assignment pageviews",
+     "(l) link:all only from 2026-09-08",
+     "(j) velocity rows = the documented rule on module_clicks (<= 60 s)",
+     "(j) the same with < 60 s",
+     "(j) one velocity row per user-day",
+     "(f) no ambiguous 8-event window",
+     "(d) no non-crawler with 5 item events within 60 s",
+     "(c) velocity-only users: carousel-arm hash humans with 8+ nav taps (8 within 60 s) that day",
+     "(e) rule route = time route = recount route",
+     "(k) override accounts: one row, no flag",
+     "reference n_users = ref_a",
+     "reference pageviews = ref_a",
+     "reference clicks = ref_a",
+     "(m) srm_all_assigned misses by >= 3% relative",
+     "(n) design effect >= 5.5",
+     "floor see_all_only_counted",
+     "floor two_item_counted",
+     "floor pre_assignment_item"
+    ],
+    "pre_assignment_pageviews_ref": 10161,
+    "rows": {
+     "assignments": 30291,
+     "bot_flags": 1527,
+     "distinct_users": 30000,
+     "exact_repeats": 291,
+     "module_clicks": 24593,
+     "pageviews": 266851
+    },
+    "srm_all_assigned_rel_miss": 0.4299649997547495,
+    "targets": {
+     "item": 23979,
+     "link": 614,
+     "nav": 0,
+     "nav_arm": {
+      "A": 0,
+      "B": 0
+     }
+    },
+    "ties_at_assigned_ref": 14649,
+    "ua_crawler_users": {
+     "A": 774,
+     "B": 715
+    },
+    "velocity_only_users": {
+     "A": 0,
+     "B": 0
+    },
+    "velocity_rows": 38,
+    "zero_view_users_ref": 4157
+   },
+   "crawler_share": 0.05,
+   "files": {
+    "assignments.csv.gz": 291070,
+    "bot_flags.csv.gz": 15965,
+    "module_clicks.csv.gz": 390437,
+    "pageviews.csv.gz": 3103621
+   },
+   "lift": 0.13,
+   "override": null,
+   "p_b": 0.5,
+   "paths": {
+    "all_assigned": {
+     "n_users": {
+      "A": 15130,
+      "B": 14870
+     },
+     "rows": {
+      "A": 15273,
+      "B": 15018
+     },
+     "srm_p": 0.13332693177434943
+    },
+    "dashboard": {
+     "ci_95": [
+      0.004573621493660707,
+      0.016065788433898182
+     ],
+     "clicks": {
+      "A": 10617,
+      "B": 11763
+     },
+     "ctr": {
+      "A": 0.0822462196331185,
+      "B": 0.09256592459689794
+     },
+     "de": 6.8996093633342666,
+     "decision": "ship",
+     "diff": 0.010319704963779444,
+     "half_width": 0.005746083470118737,
+     "hi_hw": 2.7959545867102062,
+     "lo_hw": 0.7959545867102061,
+     "n_users": {
+      "A": 15130,
+      "B": 14870
+     },
+     "pageviews": {
+      "A": 129088,
+      "B": 127077
+     },
+     "rel_lift": 0.12547330454595085,
+     "srm_p": 0.13332693177434943
+    },
+    "dashboard_all_rows": {
+     "ci_95": [
+      0.004866265500939129,
+      0.016069510535379253
+     ],
+     "clicks": {
+      "A": 11109,
+      "B": 12303
+     },
+     "ctr": {
+      "A": 0.08254569772625947,
+      "B": 0.09301358574441866
+     },
+     "de": 6.803937779442578,
+     "decision": "ship",
+     "diff": 0.010467888018159191,
+     "half_width": 0.005601622517220062,
+     "hi_hw": 2.868724282291362,
+     "lo_hw": 0.8687242822913618,
+     "n_users": {
+      "A": 15130,
+      "B": 14870
+     },
+     "pageviews": {
+      "A": 134580,
+      "B": 132271
+     },
+     "rel_lift": 0.12681324777062408,
+     "srm_p": 0.13332693177434943
+    },
+    "filter_only": {
+     "ci_95": [
+      0.006700676340537231,
+      0.018929087994116127
+     ],
+     "clicks": {
+      "A": 10210,
+      "B": 11560
+     },
+     "ctr": {
+      "A": 0.09081206083785466,
+      "B": 0.10362694300518134
+     },
+     "de": 6.210148737820575,
+     "decision": "ship",
+     "diff": 0.01281488216732668,
+     "half_width": 0.006114205826789449,
+     "hi_hw": 3.0959193279326898,
+     "lo_hw": 1.0959193279326902,
+     "n_users": {
+      "A": 14356,
+      "B": 14155
+     },
+     "pageviews": {
+      "A": 112430,
+      "B": 111554
+     },
+     "rel_lift": 0.14111431949780018,
+     "srm_p": 0.23389253592671883
+    },
+    "keep_overrides": {
+     "ci_95": [
+      0.006730729047458091,
+      0.018968331322597808
+     ],
+     "clicks": {
+      "A": 9936,
+      "B": 11292
+     },
+     "ctr": {
+      "A": 0.088374988881971,
+      "B": 0.10122451906699895
+     },
+     "de": 6.361226273542581,
+     "decision": "ship",
+     "diff": 0.01284953018502795,
+     "half_width": 0.006118801137569858,
+     "hi_hw": 3.1000078113555536,
+     "lo_hw": 1.1000078113555536,
+     "n_users": {
+      "A": 14356,
+      "B": 14155
+     },
+     "pageviews": {
+      "A": 112430,
+      "B": 111554
+     },
+     "rel_lift": 0.14539781387909545,
+     "srm_p": 0.23389253592671883
+    },
+    "literal_bot_filter": {
+     "ci_95": [
+      0.006730729047458091,
+      0.018968331322597808
+     ],
+     "clicks": {
+      "A": 9936,
+      "B": 11292
+     },
+     "ctr": {
+      "A": 0.088374988881971,
+      "B": 0.10122451906699895
+     },
+     "de": 6.361226273542581,
+     "decision": "ship",
+     "diff": 0.01284953018502795,
+     "half_width": 0.006118801137569858,
+     "hi_hw": 3.1000078113555536,
+     "lo_hw": 1.1000078113555536,
+     "n_users": {
+      "A": 14356,
+      "B": 14155
+     },
+     "pageviews": {
+      "A": 112430,
+      "B": 111554
+     },
+     "rel_lift": 0.14539781387909545,
+     "srm_p": 0.23389253592671883
+    },
+    "not_nav_clicked": {
+     "ci_95": [
+      0.006700676340537231,
+      0.018929087994116127
+     ],
+     "clicks": {
+      "A": 10210,
+      "B": 11560
+     },
+     "ctr": {
+      "A": 0.09081206083785466,
+      "B": 0.10362694300518134
+     },
+     "de": 6.210148737820575,
+     "decision": "ship",
+     "diff": 0.01281488216732668,
+     "half_width": 0.006114205826789449,
+     "hi_hw": 3.0959193279326898,
+     "lo_hw": 1.0959193279326902,
+     "n_users": {
+      "A": 14356,
+      "B": 14155
+     },
+     "pageviews": {
+      "A": 112430,
+      "B": 111554
+     },
+     "rel_lift": 0.14111431949780018,
+     "srm_p": 0.23389253592671883
+    },
+    "platform_clicked": {
+     "ci_95": [
+      0.006700676340537231,
+      0.018929087994116127
+     ],
+     "clicks": {
+      "A": 10210,
+      "B": 11560
+     },
+     "ctr": {
+      "A": 0.09081206083785466,
+      "B": 0.10362694300518134
+     },
+     "de": 6.210148737820575,
+     "decision": "ship",
+     "diff": 0.01281488216732668,
+     "half_width": 0.006114205826789449,
+     "hi_hw": 3.0959193279326898,
+     "lo_hw": 1.0959193279326902,
+     "n_users": {
+      "A": 14356,
+      "B": 14155
+     },
+     "pageviews": {
+      "A": 112430,
+      "B": 111554
+     },
+     "rel_lift": 0.14111431949780018,
+     "srm_p": 0.23389253592671883
+    },
+    "reference": {
+     "ci_95": [
+      0.006730729047458091,
+      0.018968331322597808
+     ],
+     "clicks": {
+      "A": 9936,
+      "B": 11292
+     },
+     "ctr": {
+      "A": 0.088374988881971,
+      "B": 0.10122451906699895
+     },
+     "de": 6.361226273542581,
+     "decision": "ship",
+     "diff": 0.01284953018502795,
+     "half_width": 0.006118801137569858,
+     "hi_hw": 3.1000078113555536,
+     "lo_hw": 1.1000078113555536,
+     "n_users": {
+      "A": 14356,
+      "B": 14155
+     },
+     "pageviews": {
+      "A": 112430,
+      "B": 111554
+     },
+     "rel_lift": 0.14539781387909545,
+     "srm_p": 0.23389253592671883
+    },
+    "shipped": {
+     "ci_95": [
+      0.006700676340537231,
+      0.018929087994116127
+     ],
+     "clicks": {
+      "A": 10210,
+      "B": 11560
+     },
+     "ctr": {
+      "A": 0.09081206083785466,
+      "B": 0.10362694300518134
+     },
+     "de": 6.210148737820575,
+     "decision": "ship",
+     "diff": 0.01281488216732668,
+     "half_width": 0.006114205826789449,
+     "hi_hw": 3.0959193279326898,
+     "lo_hw": 1.0959193279326902,
+     "n_users": {
+      "A": 14356,
+      "B": 14155
+     },
+     "pageviews": {
+      "A": 112430,
+      "B": 111554
+     },
+     "rel_lift": 0.14111431949780018,
+     "srm_p": 0.23389253592671883
+    }
+   },
+   "ref_ab_max_abs_diff": 1.734723475976807e-18,
+   "role": "pos",
+   "rows": {
+    "assignments.csv": 30291,
+    "bot_flags.csv": 1527,
+    "module_clicks.csv": 24593,
+    "pageviews.csv": 266851
+   },
+   "search": {
+    "construction_rejects": 0,
+    "scanned": 1,
+    "soft_kept": null,
+    "soft_passes_in_scan": null,
+    "soft_rule": false
+   },
+   "seed": 5000,
+   "tries": 1,
+   "versions": {
+    "A": "v1",
+    "B": "v1 with another ranking (no arrows)"
+   }
+  },
+  "h_pos": {
+   "carousel_arm": "B",
+   "checks": {
+    "floors": {
+     "pre_assignment_item": {
+      "A": 665,
+      "B": 711
+     },
+     "see_all_only_counted": {
+      "A": 375,
+      "B": 324
+     },
+     "two_item_counted": {
+      "A": 970,
+      "B": 1074
+     }
+    },
+    "item_recount_users": 21,
+    "item_recount_users_all_crawlers": true,
+    "override_users": {
+     "A": 0,
+     "B": 0
+    },
+    "passed": [
+     "columns",
+     "timestamp format assigned_at",
+     "timestamp format flagged_at",
+     "timestamp format pv ts",
+     "timestamp format click ts",
+     "one assignment per user",
+     "variant and method values",
+     "flags of assigned users",
+     "pageviews of assigned users",
+     "clicks of assigned users",
+     "rules",
+     "clicked values",
+     "pageview_id unique",
+     "no repeated flag rows",
+     "caps",
+     "(a) ua_crawler flags >= 1 s before assigned_at, one per crawler",
+     "(b) velocity flags after assigned_at at 02:00:00 UTC",
+     "(g) every event has its pageview, at or after it; pre-assignment events before assigned_at",
+     "(h) clicked = has a module event",
+     "(l) only documented targets",
+     "(l) nav: only in the carousel arm, on post-assignment pageviews",
+     "(l) link:all only from 2026-09-08",
+     "(j) velocity rows = the documented rule on module_clicks (<= 60 s)",
+     "(j) the same with < 60 s",
+     "(j) one velocity row per user-day",
+     "(f) no ambiguous 8-event window",
+     "(d) no non-crawler with 5 item events within 60 s",
+     "(c) velocity-only users: carousel-arm hash humans with 8+ nav taps (8 within 60 s) that day",
+     "(e) rule route = time route = recount route",
+     "(k) override accounts: one row, no flag",
+     "reference n_users = ref_a",
+     "reference pageviews = ref_a",
+     "reference clicks = ref_a",
+     "(m) srm_all_assigned misses by >= 3% relative",
+     "(n) design effect >= 5.5",
+     "floor see_all_only_counted",
+     "floor two_item_counted",
+     "floor pre_assignment_item"
+    ],
+    "pre_assignment_pageviews_ref": 11206,
+    "rows": {
+     "assignments": 32332,
+     "bot_flags": 1472,
+     "distinct_users": 32000,
+     "exact_repeats": 332,
+     "module_clicks": 54909,
+     "pageviews": 330117
+    },
+    "srm_all_assigned_rel_miss": 0.13458351025315976,
+    "targets": {
+     "item": 43478,
+     "link": 827,
+     "nav": 10604,
+     "nav_arm": {
+      "A": 0,
+      "B": 10604
+     }
+    },
+    "ties_at_assigned_ref": 16857,
+    "ua_crawler_users": {
+     "A": 253,
+     "B": 234
+    },
+    "velocity_only_users": {
+     "A": 0,
+     "B": 922
+    },
+    "velocity_rows": 985,
+    "zero_view_users_ref": 3324
+   },
+   "crawler_share": 0.015,
+   "files": {
+    "assignments.csv.gz": 291836,
+    "bot_flags.csv.gz": 11514,
+    "module_clicks.csv.gz": 746033,
+    "pageviews.csv.gz": 3623419
+   },
+   "lift": 0.1,
+   "override": null,
+   "p_b": 0.5,
+   "paths": {
+    "all_assigned": {
+     "n_users": {
+      "A": 15960,
+      "B": 16040
+     },
+     "rows": {
+      "A": 16112,
+      "B": 16220
+     },
+     "srm_p": 0.654720846018577
+    },
+    "dashboard": {
+     "ci_95": [
+      0.014071303505189151,
+      0.026786308916246417
+     ],
+     "clicks": {
+      "A": 19282,
+      "B": 22221
+     },
+     "ctr": {
+      "A": 0.12005927623222336,
+      "B": 0.14048808244294114
+     },
+     "de": 7.403108422826331,
+     "decision": "ship",
+     "diff": 0.020428806210717784,
+     "half_width": 0.006357502705528633,
+     "hi_hw": 4.213338185912594,
+     "lo_hw": 2.2133381859125936,
+     "n_users": {
+      "A": 15960,
+      "B": 16040
+     },
+     "pageviews": {
+      "A": 160604,
+      "B": 158170
+     },
+     "rel_lift": 0.17015600003454612,
+     "srm_p": 0.654720846018577
+    },
+    "dashboard_all_rows": {
+     "ci_95": [
+      0.013804794679983187,
+      0.026226894240356045
+     ],
+     "clicks": {
+      "A": 19948,
+      "B": 22934
+     },
+     "ctr": {
+      "A": 0.11996560039932404,
+      "B": 0.13998144485949365
+     },
+     "de": 7.331698190353409,
+     "decision": "ship",
+     "diff": 0.020015844460169616,
+     "half_width": 0.006211049780186428,
+     "hi_hw": 4.222618585995108,
+     "lo_hw": 2.222618585995108,
+     "n_users": {
+      "A": 15960,
+      "B": 16040
+     },
+     "pageviews": {
+      "A": 166281,
+      "B": 163836
+     },
+     "rel_lift": 0.16684653261888238,
+     "srm_p": 0.654720846018577
+    },
+    "filter_only": {
+     "ci_95": [
+      0.014390237085443819,
+      0.02728592722778636
+     ],
+     "clicks": {
+      "A": 19000,
+      "B": 22021
+     },
+     "ctr": {
+      "A": 0.12289462109647875,
+      "B": 0.14373270325309384
+     },
+     "de": 7.212584117469851,
+     "decision": "ship",
+     "diff": 0.02083808215661509,
+     "half_width": 0.00644784507117127,
+     "hi_hw": 4.231790144863048,
+     "lo_hw": 2.231790144863048,
+     "n_users": {
+      "A": 15707,
+      "B": 15806
+     },
+     "pageviews": {
+      "A": 154604,
+      "B": 153208
+     },
+     "rel_lift": 0.16956057124954316,
+     "srm_p": 0.5770583126776531
+    },
+    "keep_overrides": {
+     "ci_95": [
+      0.009377687828746154,
+      0.022267850535211072
+     ],
+     "clicks": {
+      "A": 18625,
+      "B": 20881
+     },
+     "ctr": {
+      "A": 0.1204690693643114,
+      "B": 0.13629183854629
+     },
+     "de": 7.438593439354546,
+     "decision": "ship",
+     "diff": 0.015822769181978613,
+     "half_width": 0.00644508135323246,
+     "hi_hw": 3.4550146561056017,
+     "lo_hw": 1.4550146561056019,
+     "n_users": {
+      "A": 15707,
+      "B": 15806
+     },
+     "pageviews": {
+      "A": 154604,
+      "B": 153208
+     },
+     "rel_lift": 0.13134300169721458,
+     "srm_p": 0.5770583126776531
+    },
+    "literal_bot_filter": {
+     "ci_95": [
+      0.001514191892041209,
+      0.014367391211527199
+     ],
+     "clicks": {
+      "A": 18625,
+      "B": 18382
+     },
+     "ctr": {
+      "A": 0.1204690693643114,
+      "B": 0.1284098609160956
+     },
+     "de": 7.327972350810294,
+     "decision": "invalid",
+     "diff": 0.007940791551784204,
+     "half_width": 0.006426599659742995,
+     "hi_hw": 2.235613228178237,
+     "lo_hw": 0.23561322817823735,
+     "n_users": {
+      "A": 15707,
+      "B": 14884
+     },
+     "pageviews": {
+      "A": 154604,
+      "B": 143151
+     },
+     "rel_lift": 0.06591560467500912,
+     "srm_p": 2.5328189493119395e-06
+    },
+    "not_nav_clicked": {
+     "ci_95": [
+      0.00908392912922067,
+      0.021940049919532422
+     ],
+     "clicks": {
+      "A": 19000,
+      "B": 21205
+     },
+     "ctr": {
+      "A": 0.12289462109647875,
+      "B": 0.1384066106208553
+     },
+     "de": 7.2896252994212425,
+     "decision": "ship",
+     "diff": 0.015511989524376546,
+     "half_width": 0.006428060395155876,
+     "hi_hw": 3.4131679808214357,
+     "lo_hw": 1.4131679808214357,
+     "n_users": {
+      "A": 15707,
+      "B": 15806
+     },
+     "pageviews": {
+      "A": 154604,
+      "B": 153208
+     },
+     "rel_lift": 0.12622187518035322,
+     "srm_p": 0.5770583126776531
+    },
+    "platform_clicked": {
+     "ci_95": [
+      0.014390237085443819,
+      0.02728592722778636
+     ],
+     "clicks": {
+      "A": 19000,
+      "B": 22021
+     },
+     "ctr": {
+      "A": 0.12289462109647875,
+      "B": 0.14373270325309384
+     },
+     "de": 7.212584117469851,
+     "decision": "ship",
+     "diff": 0.02083808215661509,
+     "half_width": 0.00644784507117127,
+     "hi_hw": 4.231790144863048,
+     "lo_hw": 2.231790144863048,
+     "n_users": {
+      "A": 15707,
+      "B": 15806
+     },
+     "pageviews": {
+      "A": 154604,
+      "B": 153208
+     },
+     "rel_lift": 0.16956057124954316,
+     "srm_p": 0.5770583126776531
+    },
+    "reference": {
+     "ci_95": [
+      0.009377687828746154,
+      0.022267850535211072
+     ],
+     "clicks": {
+      "A": 18625,
+      "B": 20881
+     },
+     "ctr": {
+      "A": 0.1204690693643114,
+      "B": 0.13629183854629
+     },
+     "de": 7.438593439354546,
+     "decision": "ship",
+     "diff": 0.015822769181978613,
+     "half_width": 0.00644508135323246,
+     "hi_hw": 3.4550146561056017,
+     "lo_hw": 1.4550146561056019,
+     "n_users": {
+      "A": 15707,
+      "B": 15806
+     },
+     "pageviews": {
+      "A": 154604,
+      "B": 153208
+     },
+     "rel_lift": 0.13134300169721458,
+     "srm_p": 0.5770583126776531
+    },
+    "shipped": {
+     "ci_95": [
+      0.0017997800564150887,
+      0.01462360637355007
+     ],
+     "clicks": {
+      "A": 19000,
+      "B": 18768
+     },
+     "ctr": {
+      "A": 0.12289462109647875,
+      "B": 0.13110631431146133
+     },
+     "de": 7.1683717476627296,
+     "decision": "invalid",
+     "diff": 0.00821169321498258,
+     "half_width": 0.006411913158567491,
+     "hi_hw": 2.280693142889849,
+     "lo_hw": 0.28069314288984915,
+     "n_users": {
+      "A": 15707,
+      "B": 14884
+     },
+     "pageviews": {
+      "A": 154604,
+      "B": 143151
+     },
+     "rel_lift": 0.06681897988469299,
+     "srm_p": 2.5328189493119395e-06
+    }
+   },
+   "ref_ab_max_abs_diff": 0.0,
+   "role": "pos",
+   "rows": {
+    "assignments.csv": 32332,
+    "bot_flags.csv": 1472,
+    "module_clicks.csv": 54909,
+    "pageviews.csv": 330117
+   },
+   "search": {
+    "construction_rejects": 0,
+    "scanned": 2,
+    "soft_kept": null,
+    "soft_passes_in_scan": null,
+    "soft_rule": false
+   },
+   "seed": 3001,
+   "tries": 2,
+   "versions": {
+    "A": "v1",
+    "B": "v2"
+   }
+  },
+  "h_srm": {
+   "carousel_arm": "B",
+   "checks": {
+    "floors": {
+     "pre_assignment_item": {
+      "A": 631,
+      "B": 652
+     },
+     "see_all_only_counted": {
+      "A": 428,
+      "B": 376
+     },
+     "two_item_counted": {
+      "A": 869,
+      "B": 850
+     }
+    },
+    "item_recount_users": 26,
+    "item_recount_users_all_crawlers": true,
+    "override_users": {
+     "A": 0,
+     "B": 500
+    },
+    "passed": [
+     "columns",
+     "timestamp format assigned_at",
+     "timestamp format flagged_at",
+     "timestamp format pv ts",
+     "timestamp format click ts",
+     "one assignment per user",
+     "variant and method values",
+     "flags of assigned users",
+     "pageviews of assigned users",
+     "clicks of assigned users",
+     "rules",
+     "clicked values",
+     "pageview_id unique",
+     "no repeated flag rows",
+     "caps",
+     "(a) ua_crawler flags >= 1 s before assigned_at, one per crawler",
+     "(b) velocity flags after assigned_at at 02:00:00 UTC",
+     "(g) every event has its pageview, at or after it; pre-assignment events before assigned_at",
+     "(h) clicked = has a module event",
+     "(l) only documented targets",
+     "(l) nav: only in the carousel arm, on post-assignment pageviews",
+     "(l) link:all only from 2026-09-08",
+     "(j) velocity rows = the documented rule on module_clicks (<= 60 s)",
+     "(j) the same with < 60 s",
+     "(j) one velocity row per user-day",
+     "(f) no ambiguous 8-event window",
+     "(d) no non-crawler with 5 item events within 60 s",
+     "(c) velocity-only users: carousel-arm hash humans with 8+ nav taps (8 within 60 s) that day",
+     "(e) rule route = time route = recount route",
+     "(k) override accounts: one row, no flag",
+     "reference n_users = ref_a",
+     "reference pageviews = ref_a",
+     "reference clicks = ref_a",
+     "(m) srm_all_assigned misses by >= 3% relative",
+     "(n) design effect >= 5.5",
+     "floor see_all_only_counted",
+     "floor two_item_counted",
+     "floor pre_assignment_item"
+    ],
+    "pre_assignment_pageviews_ref": 11914,
+    "rows": {
+     "assignments": 34835,
+     "bot_flags": 1658,
+     "distinct_users": 34500,
+     "exact_repeats": 335,
+     "module_clicks": 51566,
+     "pageviews": 355667
+    },
+    "srm_all_assigned_rel_miss": 40378.34554382367,
+    "targets": {
+     "item": 38800,
+     "link": 908,
+     "nav": 11858,
+     "nav_arm": {
+      "A": 0,
+      "B": 11858
+     }
+    },
+    "ties_at_assigned_ref": 17936,
+    "ua_crawler_users": {
+     "A": 286,
+     "B": 247
+    },
+    "velocity_only_users": {
+     "A": 0,
+     "B": 1026
+    },
+    "velocity_rows": 1125,
+    "zero_view_users_ref": 3528
+   },
+   "crawler_share": 0.015,
+   "files": {
+    "assignments.csv.gz": 314916,
+    "bot_flags.csv.gz": 12815,
+    "module_clicks.csv.gz": 686311,
+    "pageviews.csv.gz": 3901776
+   },
+   "lift": 0.13,
+   "override": {
+    "arm": "B",
+    "ctr": 0.02,
+    "kind": "qa",
+    "n": 500,
+    "pv_mean": 12.0,
+    "pv_min": 3,
+    "rho": 0.05,
+    "sigma": 0.5,
+    "start": 0
+   },
+   "p_b": 0.486,
+   "paths": {
+    "all_assigned": {
+     "n_users": {
+      "A": 17494,
+      "B": 17006
+     },
+     "rows": {
+      "A": 17672,
+      "B": 17163
+     },
+     "srm_p": 0.008606448740892505
+    },
+    "dashboard": {
+     "ci_95": [
+      0.007482925754629493,
+      0.01865439620289034
+     ],
+     "clicks": {
+      "A": 18000,
+      "B": 19424
+     },
+     "ctr": {
+      "A": 0.10261029181226877,
+      "B": 0.11567895279102869
+     },
+     "de": 7.161367369333502,
+     "decision": "ship",
+     "diff": 0.013068660978759916,
+     "half_width": 0.005585735224130423,
+     "hi_hw": 3.3396492054086617,
+     "lo_hw": 1.3396492054086615,
+     "n_users": {
+      "A": 17494,
+      "B": 17006
+     },
+     "pageviews": {
+      "A": 175421,
+      "B": 167913
+     },
+     "rel_lift": 0.1273620876419468,
+     "srm_p": 0.008606448740892505
+    },
+    "dashboard_all_rows": {
+     "ci_95": [
+      0.007347567935722387,
+      0.01827452762951326
+     ],
+     "clicks": {
+      "A": 18635,
+      "B": 20083
+     },
+     "ctr": {
+      "A": 0.10259191156230388,
+      "B": 0.1154029593449217
+     },
+     "de": 7.106168143812211,
+     "decision": "ship",
+     "diff": 0.012811047782617824,
+     "half_width": 0.005463479846895437,
+     "hi_hw": 3.3448512928802256,
+     "lo_hw": 1.3448512928802259,
+     "n_users": {
+      "A": 17494,
+      "B": 17006
+     },
+     "pageviews": {
+      "A": 181642,
+      "B": 174025
+     },
+     "rel_lift": 0.12487385786585814,
+     "srm_p": 0.008606448740892505
+    },
+    "filter_only": {
+     "ci_95": [
+      0.007564275732996412,
+      0.018789099957179155
+     ],
+     "clicks": {
+      "A": 17637,
+      "B": 19163
+     },
+     "ctr": {
+      "A": 0.10471536799107037,
+      "B": 0.11789205583615815
+     },
+     "de": 6.853762124295707,
+     "decision": "ship",
+     "diff": 0.013176687845087784,
+     "half_width": 0.0056124121120913716,
+     "hi_hw": 3.3477762469901218,
+     "lo_hw": 1.347776246990122,
+     "n_users": {
+      "A": 17208,
+      "B": 16759
+     },
+     "pageviews": {
+      "A": 168428,
+      "B": 162547
+     },
+     "rel_lift": 0.1258333719097604,
+     "srm_p": 0.014841369120296587
+    },
+    "keep_overrides": {
+     "ci_95": [
+      0.0021113275415988965,
+      0.01329205245760218
+     ],
+     "clicks": {
+      "A": 17209,
+      "B": 17860
+     },
+     "ctr": {
+      "A": 0.10217422281330896,
+      "B": 0.1098759128129095
+     },
+     "de": 7.096902801955134,
+     "decision": "ship",
+     "diff": 0.007701689999600539,
+     "half_width": 0.0055903624580016424,
+     "hi_hw": 2.3776727461699543,
+     "lo_hw": 0.3776727461699544,
+     "n_users": {
+      "A": 17208,
+      "B": 16759
+     },
+     "pageviews": {
+      "A": 168428,
+      "B": 162547
+     },
+     "rel_lift": 0.07537801401898547,
+     "srm_p": 0.014841369120296587
+    },
+    "literal_bot_filter": {
+     "ci_95": [
+      -0.002379163372399514,
+      0.008986420737862402
+     ],
+     "clicks": {
+      "A": 17209,
+      "B": 15437
+     },
+     "ctr": {
+      "A": 0.10217422281330896,
+      "B": 0.1054778514960404
+     },
+     "de": 7.068392962854867,
+     "decision": "invalid",
+     "diff": 0.0033036286827314437,
+     "half_width": 0.005682792055130958,
+     "hi_hw": 1.5813390056651144,
+     "lo_hw": -0.41866099433488546,
+     "n_users": {
+      "A": 17208,
+      "B": 15233
+     },
+     "pageviews": {
+      "A": 168428,
+      "B": 146353
+     },
+     "rel_lift": 0.03233328907984734,
+     "srm_p": 5.612251893202735e-28
+    },
+    "not_nav_clicked": {
+     "ci_95": [
+      0.005244246490633519,
+      0.016617274192616736
+     ],
+     "clicks": {
+      "A": 17637,
+      "B": 18131
+     },
+     "ctr": {
+      "A": 0.10471536799107037,
+      "B": 0.1156461283326955
+     },
+     "de": 6.962878900362889,
+     "decision": "invalid",
+     "diff": 0.010930760341625129,
+     "half_width": 0.0056865138509916095,
+     "hi_hw": 2.9222252205925834,
+     "lo_hw": 0.9222252205925836,
+     "n_users": {
+      "A": 17208,
+      "B": 16259
+     },
+     "pageviews": {
+      "A": 168428,
+      "B": 156780
+     },
+     "rel_lift": 0.10438544553037565,
+     "srm_p": 2.1313987695892525e-07
+    },
+    "platform_clicked": {
+     "ci_95": [
+      0.011055688917398016,
+      0.02249099568982214
+     ],
+     "clicks": {
+      "A": 17637,
+      "B": 19047
+     },
+     "ctr": {
+      "A": 0.10471536799107037,
+      "B": 0.12148871029468045
+     },
+     "de": 6.8776148466655265,
+     "decision": "invalid",
+     "diff": 0.016773342303610078,
+     "half_width": 0.005717653386212063,
+     "hi_hw": 3.933606004179696,
+     "lo_hw": 1.9336060041796963,
+     "n_users": {
+      "A": 17208,
+      "B": 16259
+     },
+     "pageviews": {
+      "A": 168428,
+      "B": 156780
+     },
+     "rel_lift": 0.1601803309810308,
+     "srm_p": 2.1313987695892525e-07
+    },
+    "reference": {
+     "ci_95": [
+      0.005379923846420568,
+      0.016767357022688015
+     ],
+     "clicks": {
+      "A": 17209,
+      "B": 17755
+     },
+     "ctr": {
+      "A": 0.10217422281330896,
+      "B": 0.11324786324786325
+     },
+     "de": 7.1204805689182775,
+     "decision": "invalid",
+     "diff": 0.011073640434554291,
+     "half_width": 0.005693716588133723,
+     "hi_hw": 2.9448878888058583,
+     "lo_hw": 0.9448878888058583,
+     "n_users": {
+      "A": 17208,
+      "B": 16259
+     },
+     "pageviews": {
+      "A": 168428,
+      "B": 156780
+     },
+     "rel_lift": 0.10837998205073562,
+     "srm_p": 2.1313987695892525e-07
+    },
+    "shipped": {
+     "ci_95": [
+      -0.005295199415247625,
+      0.005843427408915452
+     ],
+     "clicks": {
+      "A": 17637,
+      "B": 15971
+     },
+     "ctr": {
+      "A": 0.10471536799107037,
+      "B": 0.10498948198790428
+     },
+     "de": 6.875687701679763,
+     "decision": "invalid",
+     "diff": 0.00027411399683391346,
+     "half_width": 0.005569313412081538,
+     "hi_hw": 1.049218633707932,
+     "lo_hw": -0.9507813662920681,
+     "n_users": {
+      "A": 17208,
+      "B": 15733
+     },
+     "pageviews": {
+      "A": 168428,
+      "B": 152120
+     },
+     "rel_lift": 0.0026177055201419552,
+     "srm_p": 4.404957577934164e-16
+    }
+   },
+   "ref_ab_max_abs_diff": 3.469446951953614e-18,
+   "role": "srm",
+   "rows": {
+    "assignments.csv": 34835,
+    "bot_flags.csv": 1658,
+    "module_clicks.csv": 51566,
+    "pageviews.csv": 355667
+   },
+   "search": {
+    "construction_rejects": 0,
+    "scanned": 3,
+    "soft_kept": null,
+    "soft_passes_in_scan": null,
+    "soft_rule": false
+   },
+   "seed": 4002,
+   "tries": 3,
+   "versions": {
+    "A": "v1",
+    "B": "v2"
+   }
+  },
+  "visible": {
+   "carousel_arm": "B",
+   "checks": {
+    "floors": {
+     "pre_assignment_item": {
+      "A": 587,
+      "B": 616
+     },
+     "see_all_only_counted": {
+      "A": 401,
+      "B": 424
+     },
+     "two_item_counted": {
+      "A": 872,
+      "B": 898
+     }
+    },
+    "item_recount_users": 16,
+    "item_recount_users_all_crawlers": true,
+    "override_users": {
+     "A": 0,
+     "B": 100
+    },
+    "passed": [
+     "columns",
+     "timestamp format assigned_at",
+     "timestamp format flagged_at",
+     "timestamp format pv ts",
+     "timestamp format click ts",
+     "one assignment per user",
+     "variant and method values",
+     "flags of assigned users",
+     "pageviews of assigned users",
+     "clicks of assigned users",
+     "rules",
+     "clicked values",
+     "pageview_id unique",
+     "no repeated flag rows",
+     "caps",
+     "(a) ua_crawler flags >= 1 s before assigned_at, one per crawler",
+     "(b) velocity flags after assigned_at at 02:00:00 UTC",
+     "(g) every event has its pageview, at or after it; pre-assignment events before assigned_at",
+     "(h) clicked = has a module event",
+     "(l) only documented targets",
+     "(l) nav: only in the carousel arm, on post-assignment pageviews",
+     "(l) link:all only from 2026-09-08",
+     "(j) velocity rows = the documented rule on module_clicks (<= 60 s)",
+     "(j) the same with < 60 s",
+     "(j) one velocity row per user-day",
+     "(f) no ambiguous 8-event window",
+     "(d) no non-crawler with 5 item events within 60 s",
+     "(c) velocity-only users: carousel-arm hash humans with 8+ nav taps (8 within 60 s) that day",
+     "(e) rule route = time route = recount route",
+     "(k) override accounts: one row, no flag",
+     "reference n_users = ref_a",
+     "reference pageviews = ref_a",
+     "reference clicks = ref_a",
+     "(m) srm_all_assigned misses by >= 3% relative",
+     "(n) design effect >= 5.5",
+     "floor see_all_only_counted",
+     "floor two_item_counted",
+     "floor pre_assignment_item"
+    ],
+    "pre_assignment_pageviews_ref": 11751,
+    "rows": {
+     "assignments": 34436,
+     "bot_flags": 1883,
+     "distinct_users": 34100,
+     "exact_repeats": 336,
+     "module_clicks": 51671,
+     "pageviews": 364644
+    },
+    "srm_all_assigned_rel_miss": 0.5462342601202939,
+    "targets": {
+     "item": 38088,
+     "link": 947,
+     "nav": 12636,
+     "nav_arm": {
+      "A": 0,
+      "B": 12636
+     }
+    },
+    "ties_at_assigned_ref": 17972,
+    "ua_crawler_users": {
+     "A": 365,
+     "B": 363
+    },
+    "velocity_only_users": {
+     "A": 0,
+     "B": 1080
+    },
+    "velocity_rows": 1155,
+    "zero_view_users_ref": 3520
+   },
+   "crawler_share": 0.02,
+   "files": {
+    "assignments.csv.gz": 310712,
+    "bot_flags.csv.gz": 15009,
+    "module_clicks.csv.gz": 680612,
+    "pageviews.csv.gz": 3992737
+   },
+   "lift": 0.0,
+   "override": {
+    "arm": "B",
+    "ctr": 0.36,
+    "kind": "dogfood",
+    "n": 100,
+    "pv_mean": 40.0,
+    "pv_min": 10,
+    "rho": 0.08,
+    "sigma": 0.35,
+    "start": 172800
+   },
+   "p_b": 0.5,
+   "paths": {
+    "all_assigned": {
+     "n_users": {
+      "A": 16935,
+      "B": 17165
+     },
+     "rows": {
+      "A": 17101,
+      "B": 17335
+     },
+     "srm_p": 0.21294073078349923
+    },
+    "dashboard": {
+     "ci_95": [
+      0.006981444353719902,
+      0.017555855099336506
+     ],
+     "clicks": {
+      "A": 17067,
+      "B": 19768
+     },
+     "ctr": {
+      "A": 0.09822451152484821,
+      "B": 0.11049316125137641
+     },
+     "de": 6.870739881755648,
+     "decision": "ship",
+     "diff": 0.012268649726528205,
+     "half_width": 0.005287205372808303,
+     "hi_hw": 3.320441303382112,
+     "lo_hw": 1.3204413033821123,
+     "n_users": {
+      "A": 16935,
+      "B": 17165
+     },
+     "pageviews": {
+      "A": 173755,
+      "B": 178907
+     },
+     "rel_lift": 0.1249041561629407,
+     "srm_p": 0.21294073078349923
+    },
+    "dashboard_all_rows": {
+     "ci_95": [
+      0.006922615602334787,
+      0.017273328831224677
+     ],
+     "clicks": {
+      "A": 17656,
+      "B": 20396
+     },
+     "ctr": {
+      "A": 0.0982198486871384,
+      "B": 0.11031782090391813
+     },
+     "de": 6.811750478829286,
+     "decision": "ship",
+     "diff": 0.012097972216779732,
+     "half_width": 0.0051753566144449445,
+     "hi_hw": 3.3376113218967496,
+     "lo_hw": 1.3376113218967494,
+     "n_users": {
+      "A": 16935,
+      "B": 17165
+     },
+     "pageviews": {
+      "A": 179760,
+      "B": 184884
+     },
+     "rel_lift": 0.12317237685140037,
+     "srm_p": 0.21294073078349923
+    },
+    "filter_only": {
+     "ci_95": [
+      0.007564290918964186,
+      0.018356783267514106
+     ],
+     "clicks": {
+      "A": 16837,
+      "B": 19608
+     },
+     "ctr": {
+      "A": 0.10164447073880443,
+      "B": 0.11460500783204358
+     },
+     "de": 6.624240134441639,
+     "decision": "ship",
+     "diff": 0.012960537093239147,
+     "half_width": 0.00539624617427496,
+     "hi_hw": 3.401769058466004,
+     "lo_hw": 1.4017690584660039,
+     "n_users": {
+      "A": 16570,
+      "B": 16802
+     },
+     "pageviews": {
+      "A": 165646,
+      "B": 171092
+     },
+     "rel_lift": 0.1275085304595054,
+     "srm_p": 0.20409176916852725
+    },
+    "keep_overrides": {
+     "ci_95": [
+      0.0014505219381963008,
+      0.01222198204833045
+     ],
+     "clicks": {
+      "A": 16436,
+      "B": 18146
+     },
+     "ctr": {
+      "A": 0.09922364560568923,
+      "B": 0.10605989759895261
+     },
+     "de": 6.903730623409802,
+     "decision": "ship",
+     "diff": 0.006836251993263376,
+     "half_width": 0.005385730055067075,
+     "hi_hw": 2.269326892243996,
+     "lo_hw": 0.26932689224399603,
+     "n_users": {
+      "A": 16570,
+      "B": 16802
+     },
+     "pageviews": {
+      "A": 165646,
+      "B": 171092
+     },
+     "rel_lift": 0.06889740798710786,
+     "srm_p": 0.20409176916852725
+    },
+    "literal_bot_filter": {
+     "ci_95": [
+      -0.010362787564031056,
+      0.00034853705599813267
+     ],
+     "clicks": {
+      "A": 16436,
+      "B": 14585
+     },
+     "ctr": {
+      "A": 0.09922364560568923,
+      "B": 0.09421652035167277
+     },
+     "de": 6.844843846471764,
+     "decision": "invalid",
+     "diff": -0.005007125254016462,
+     "half_width": 0.0053556623100145945,
+     "hi_hw": 0.06507823604680985,
+     "lo_hw": -1.9349217639531902,
+     "n_users": {
+      "A": 16570,
+      "B": 15622
+     },
+     "pageviews": {
+      "A": 165646,
+      "B": 154803
+     },
+     "rel_lift": -0.050463024447968574,
+     "srm_p": 1.2663242107736877e-07
+    },
+    "not_nav_clicked": {
+     "ci_95": [
+      -0.004192815312478876,
+      0.00634508283301084
+     ],
+     "clicks": {
+      "A": 16837,
+      "B": 17183
+     },
+     "ctr": {
+      "A": 0.10164447073880443,
+      "B": 0.10272060449907042
+     },
+     "de": 6.556534749211182,
+     "decision": "no_ship",
+     "diff": 0.001076133760265982,
+     "half_width": 0.005268949072744858,
+     "hi_hw": 1.2042406835610902,
+     "lo_hw": -0.7957593164389098,
+     "n_users": {
+      "A": 16570,
+      "B": 16702
+     },
+     "pageviews": {
+      "A": 165646,
+      "B": 167279
+     },
+     "rel_lift": 0.010587233643346128,
+     "srm_p": 0.469274588337035
+    },
+    "platform_clicked": {
+     "ci_95": [
+      0.0019338943177735213,
+      0.01252117271734185
+     ],
+     "clicks": {
+      "A": 16837,
+      "B": 18212
+     },
+     "ctr": {
+      "A": 0.10164447073880443,
+      "B": 0.10887200425636212
+     },
+     "de": 6.4485107789139615,
+     "decision": "ship",
+     "diff": 0.0072275335175576855,
+     "half_width": 0.005293639199784164,
+     "hi_hw": 2.365324164490162,
+     "lo_hw": 0.3653241644901623,
+     "n_users": {
+      "A": 16570,
+      "B": 16702
+     },
+     "pageviews": {
+      "A": 165646,
+      "B": 167279
+     },
+     "rel_lift": 0.0711060175238678,
+     "srm_p": 0.469274588337035
+    },
+    "reference": {
+     "ci_95": [
+      -0.004315790679054589,
+      0.006240333349992479
+     ],
+     "clicks": {
+      "A": 16436,
+      "B": 16759
+     },
+     "ctr": {
+      "A": 0.09922364560568923,
+      "B": 0.10018591694115818
+     },
+     "de": 6.7241608843971585,
+     "decision": "no_ship",
+     "diff": 0.0009622713354689449,
+     "half_width": 0.005278062014523534,
+     "hi_hw": 1.1823152764823686,
+     "lo_hw": -0.8176847235176316,
+     "n_users": {
+      "A": 16570,
+      "B": 16702
+     },
+     "pageviews": {
+      "A": 165646,
+      "B": 167279
+     },
+     "rel_lift": 0.00969800423674183,
+     "srm_p": 0.469274588337035
+    },
+    "shipped": {
+     "ci_95": [
+      -0.0033131556717745413,
+      0.007645135160524679
+     ],
+     "clicks": {
+      "A": 16837,
+      "B": 16466
+     },
+     "ctr": {
+      "A": 0.10164447073880443,
+      "B": 0.1038104604831795
+     },
+     "de": 6.868597214426745,
+     "decision": "invalid",
+     "diff": 0.0021659897443750686,
+     "half_width": 0.00547914541614961,
+     "hi_hw": 1.3953152508036895,
+     "lo_hw": -0.6046847491963105,
+     "n_users": {
+      "A": 16570,
+      "B": 15722
+     },
+     "pageviews": {
+      "A": 165646,
+      "B": 158616
+     },
+     "rel_lift": 0.021309469453985486,
+     "srm_p": 2.370270355747157e-06
+    }
+   },
+   "ref_ab_max_abs_diff": 1.734723475976807e-18,
+   "role": "null",
+   "rows": {
+    "assignments.csv": 34436,
+    "bot_flags.csv": 1883,
+    "module_clicks.csv": 51671,
+    "pageviews.csv": 364644
+   },
+   "search": {
+    "construction_rejects": 0,
+    "scanned": 16,
+    "soft_kept": true,
+    "soft_passes_in_scan": 3,
+    "soft_rule": true
+   },
+   "seed": 1000,
+   "tries": 1,
+   "versions": {
+    "A": "v1",
+    "B": "v2"
+   }
+  }
+ },
+ "sha256sums_files": 26
+}

@@ -1,0 +1,34 @@
+{
+ "slug": "orders-export-missing-rows",
+ "tag": "clone2",
+ "rows": [
+  {
+   "variant": "canonical",
+   "args": "-a oracle -k 1",
+   "expected": 1,
+   "rewards": [
+    1.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/orders-export-missing-rows/orders-export-missing-rows-canonical-clone2",
+   "started": "2026-10-30 07:02:39",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "nop",
+   "args": "-a nop",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/orders-export-missing-rows/orders-export-missing-rows-nop-clone2",
+   "started": "2026-10-30 07:04:04",
+   "harbor_rc": 0
+  }
+ ]
+}

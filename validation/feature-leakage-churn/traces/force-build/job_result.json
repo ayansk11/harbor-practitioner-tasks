@@ -1,8 +1,8 @@
 {
-    "id": "1549d986-17c6-44ac-910e-38ccf6182779",
-    "started_at": "2026-10-28T20:56:12.829164",
-    "updated_at": "2026-10-28T20:56:42.507900",
-    "finished_at": "2026-10-28T20:56:42.507900",
+    "id": "de4c8ae5-319e-4537-8631-4d37161d9813",
+    "started_at": "2026-10-31T19:30:57.192899",
+    "updated_at": "2026-10-31T19:31:28.897141",
+    "finished_at": "2026-10-31T19:31:28.897141",
     "n_total_trials": 1,
     "stats": {
         "n_completed_trials": 1,
@@ -23,6 +23,7 @@
                         "A_mismatch_days_since_last_order": 0.0,
                         "A_mismatch_orders_30d": 0.0,
                         "A_mismatch_orders_7d": 0.0,
+                        "A_mismatch_plan": 0.0,
                         "A_mismatch_spend_30d_cents": 0.0,
                         "A_mismatch_status": 0.0,
                         "A_mismatch_te_district": 0.0,
@@ -33,23 +34,66 @@
                         "B_cut1_changed_cells": 0.0,
                         "B_cut1_duplicate_rows": 0.0,
                         "B_cut1_extra_rows": 0.0,
+                        "B_cut1_invariant_problems": 0.0,
+                        "B_cut1_mismatch_app_minutes_7d": 0.0,
+                        "B_cut1_mismatch_days_since_last_order": 0.0,
+                        "B_cut1_mismatch_orders_30d": 0.0,
+                        "B_cut1_mismatch_orders_7d": 0.0,
+                        "B_cut1_mismatch_plan": 0.0,
+                        "B_cut1_mismatch_spend_30d_cents": 0.0,
+                        "B_cut1_mismatch_status": 0.0,
+                        "B_cut1_mismatch_te_district": 0.0,
+                        "B_cut1_mismatch_tenure_days": 0.0,
+                        "B_cut1_mismatch_tickets_30d": 0.0,
                         "B_cut1_missing_rows": 0.0,
-                        "B_cut1_rows_compared": 13498.0,
+                        "B_cut1_points": 54077.0,
+                        "B_cut1_rows_compared": 9451.0,
                         "B_cut2_changed_cells": 0.0,
                         "B_cut2_duplicate_rows": 0.0,
                         "B_cut2_extra_rows": 0.0,
+                        "B_cut2_invariant_problems": 0.0,
+                        "B_cut2_mismatch_app_minutes_7d": 0.0,
+                        "B_cut2_mismatch_days_since_last_order": 0.0,
+                        "B_cut2_mismatch_orders_30d": 0.0,
+                        "B_cut2_mismatch_orders_7d": 0.0,
+                        "B_cut2_mismatch_plan": 0.0,
+                        "B_cut2_mismatch_spend_30d_cents": 0.0,
+                        "B_cut2_mismatch_status": 0.0,
+                        "B_cut2_mismatch_te_district": 0.0,
+                        "B_cut2_mismatch_tenure_days": 0.0,
+                        "B_cut2_mismatch_tickets_30d": 0.0,
                         "B_cut2_missing_rows": 0.0,
-                        "B_cut2_rows_compared": 35906.0,
+                        "B_cut2_points": 56906.0,
+                        "B_cut2_rows_compared": 45706.0,
+                        "H_days_since_last_login_nonnull": 0.0,
                         "check_A": 1.0,
                         "check_B_cut1": 1.0,
                         "check_B_cut2": 1.0,
+                        "cut1_days_since_last_login_nonnull": 0.0,
+                        "cut2_days_since_last_login_nonnull": 0.0,
                         "net_private_H": 1.0,
                         "net_private_cut1": 1.0,
                         "net_private_cut2": 1.0,
+                        "residual_runner_paths_H": 0.0,
+                        "residual_runner_paths_cut1": 0.0,
+                        "residual_runner_paths_cut2": 0.0,
                         "reward": 1.0,
-                        "seconds_H": 0.475,
-                        "seconds_cut1": 0.478,
-                        "seconds_cut2": 0.476,
+                        "seconds_H": 0.723,
+                        "seconds_convert_H": 0.622,
+                        "seconds_convert_cut1": 0.583,
+                        "seconds_convert_cut2": 0.581,
+                        "seconds_cut1": 0.729,
+                        "seconds_cut2": 0.731,
+                        "seconds_grade_total": 12.161870006471872,
+                        "seconds_sweep_H": 0.654,
+                        "seconds_sweep_cut1": 0.646,
+                        "seconds_sweep_cut2": 0.653,
+                        "sweep_errors_H": 0.0,
+                        "sweep_errors_cut1": 0.0,
+                        "sweep_errors_cut2": 0.0,
+                        "swept_runner_paths_H": 1.0,
+                        "swept_runner_paths_cut1": 5.0,
+                        "swept_runner_paths_cut2": 5.0,
                         "verifier_cpu_quota": 2.0,
                         "verifier_cpus_visible": 48.0,
                         "verifier_memory_limit_mib": 4096.0,
@@ -60,187 +104,407 @@
                 "reward_stats": {
                     "reward": {
                         "1.0": [
-                            "feature-leakage-churn__DHZxhyB"
+                            "feature-leakage-churn__zdnsFo9"
                         ]
                     },
                     "check_A": {
                         "1": [
-                            "feature-leakage-churn__DHZxhyB"
+                            "feature-leakage-churn__zdnsFo9"
                         ]
                     },
                     "check_B_cut1": {
                         "1": [
-                            "feature-leakage-churn__DHZxhyB"
+                            "feature-leakage-churn__zdnsFo9"
                         ]
                     },
                     "check_B_cut2": {
                         "1": [
-                            "feature-leakage-churn__DHZxhyB"
+                            "feature-leakage-churn__zdnsFo9"
                         ]
                     },
                     "verifier_cpus_visible": {
                         "48": [
-                            "feature-leakage-churn__DHZxhyB"
+                            "feature-leakage-churn__zdnsFo9"
                         ]
                     },
                     "verifier_cpu_quota": {
                         "2.0": [
-                            "feature-leakage-churn__DHZxhyB"
+                            "feature-leakage-churn__zdnsFo9"
                         ]
                     },
                     "verifier_memory_limit_mib": {
                         "4096.0": [
-                            "feature-leakage-churn__DHZxhyB"
+                            "feature-leakage-churn__zdnsFo9"
                         ]
                     },
                     "verifier_memtotal_mib": {
                         "386464.3": [
-                            "feature-leakage-churn__DHZxhyB"
+                            "feature-leakage-churn__zdnsFo9"
+                        ]
+                    },
+                    "swept_runner_paths_H": {
+                        "1": [
+                            "feature-leakage-churn__zdnsFo9"
+                        ]
+                    },
+                    "residual_runner_paths_H": {
+                        "0": [
+                            "feature-leakage-churn__zdnsFo9"
+                        ]
+                    },
+                    "seconds_sweep_H": {
+                        "0.654": [
+                            "feature-leakage-churn__zdnsFo9"
+                        ]
+                    },
+                    "sweep_errors_H": {
+                        "0": [
+                            "feature-leakage-churn__zdnsFo9"
                         ]
                     },
                     "seconds_H": {
-                        "0.475": [
-                            "feature-leakage-churn__DHZxhyB"
+                        "0.723": [
+                            "feature-leakage-churn__zdnsFo9"
                         ]
                     },
                     "net_private_H": {
                         "1": [
-                            "feature-leakage-churn__DHZxhyB"
+                            "feature-leakage-churn__zdnsFo9"
+                        ]
+                    },
+                    "seconds_convert_H": {
+                        "0.622": [
+                            "feature-leakage-churn__zdnsFo9"
+                        ]
+                    },
+                    "H_days_since_last_login_nonnull": {
+                        "0": [
+                            "feature-leakage-churn__zdnsFo9"
                         ]
                     },
                     "A_duplicate_rows": {
                         "0": [
-                            "feature-leakage-churn__DHZxhyB"
+                            "feature-leakage-churn__zdnsFo9"
                         ]
                     },
                     "A_missing_rows": {
                         "0": [
-                            "feature-leakage-churn__DHZxhyB"
+                            "feature-leakage-churn__zdnsFo9"
                         ]
                     },
                     "A_extra_rows": {
                         "0": [
-                            "feature-leakage-churn__DHZxhyB"
+                            "feature-leakage-churn__zdnsFo9"
                         ]
                     },
                     "A_mismatch_orders_7d": {
                         "0": [
-                            "feature-leakage-churn__DHZxhyB"
+                            "feature-leakage-churn__zdnsFo9"
                         ]
                     },
                     "A_mismatch_orders_30d": {
                         "0": [
-                            "feature-leakage-churn__DHZxhyB"
+                            "feature-leakage-churn__zdnsFo9"
                         ]
                     },
                     "A_mismatch_spend_30d_cents": {
                         "0": [
-                            "feature-leakage-churn__DHZxhyB"
+                            "feature-leakage-churn__zdnsFo9"
                         ]
                     },
                     "A_mismatch_tickets_30d": {
                         "0": [
-                            "feature-leakage-churn__DHZxhyB"
+                            "feature-leakage-churn__zdnsFo9"
                         ]
                     },
                     "A_mismatch_days_since_last_order": {
                         "0": [
-                            "feature-leakage-churn__DHZxhyB"
+                            "feature-leakage-churn__zdnsFo9"
                         ]
                     },
                     "A_mismatch_tenure_days": {
                         "0": [
-                            "feature-leakage-churn__DHZxhyB"
+                            "feature-leakage-churn__zdnsFo9"
                         ]
                     },
                     "A_mismatch_app_minutes_7d": {
                         "0": [
-                            "feature-leakage-churn__DHZxhyB"
+                            "feature-leakage-churn__zdnsFo9"
                         ]
                     },
                     "A_mismatch_te_district": {
                         "0": [
-                            "feature-leakage-churn__DHZxhyB"
+                            "feature-leakage-churn__zdnsFo9"
                         ]
                     },
                     "A_mismatch_status": {
                         "0": [
-                            "feature-leakage-churn__DHZxhyB"
+                            "feature-leakage-churn__zdnsFo9"
+                        ]
+                    },
+                    "A_mismatch_plan": {
+                        "0": [
+                            "feature-leakage-churn__zdnsFo9"
                         ]
                     },
                     "A_mismatched_cells": {
                         "0": [
-                            "feature-leakage-churn__DHZxhyB"
+                            "feature-leakage-churn__zdnsFo9"
+                        ]
+                    },
+                    "B_cut1_invariant_problems": {
+                        "0": [
+                            "feature-leakage-churn__zdnsFo9"
+                        ]
+                    },
+                    "B_cut1_points": {
+                        "54077": [
+                            "feature-leakage-churn__zdnsFo9"
+                        ]
+                    },
+                    "swept_runner_paths_cut1": {
+                        "5": [
+                            "feature-leakage-churn__zdnsFo9"
+                        ]
+                    },
+                    "residual_runner_paths_cut1": {
+                        "0": [
+                            "feature-leakage-churn__zdnsFo9"
+                        ]
+                    },
+                    "seconds_sweep_cut1": {
+                        "0.646": [
+                            "feature-leakage-churn__zdnsFo9"
+                        ]
+                    },
+                    "sweep_errors_cut1": {
+                        "0": [
+                            "feature-leakage-churn__zdnsFo9"
                         ]
                     },
                     "seconds_cut1": {
-                        "0.478": [
-                            "feature-leakage-churn__DHZxhyB"
+                        "0.729": [
+                            "feature-leakage-churn__zdnsFo9"
                         ]
                     },
                     "net_private_cut1": {
                         "1": [
-                            "feature-leakage-churn__DHZxhyB"
+                            "feature-leakage-churn__zdnsFo9"
+                        ]
+                    },
+                    "seconds_convert_cut1": {
+                        "0.583": [
+                            "feature-leakage-churn__zdnsFo9"
+                        ]
+                    },
+                    "cut1_days_since_last_login_nonnull": {
+                        "0": [
+                            "feature-leakage-churn__zdnsFo9"
                         ]
                     },
                     "B_cut1_rows_compared": {
-                        "13498": [
-                            "feature-leakage-churn__DHZxhyB"
+                        "9451": [
+                            "feature-leakage-churn__zdnsFo9"
                         ]
                     },
                     "B_cut1_changed_cells": {
                         "0": [
-                            "feature-leakage-churn__DHZxhyB"
+                            "feature-leakage-churn__zdnsFo9"
+                        ]
+                    },
+                    "B_cut1_mismatch_orders_7d": {
+                        "0": [
+                            "feature-leakage-churn__zdnsFo9"
+                        ]
+                    },
+                    "B_cut1_mismatch_orders_30d": {
+                        "0": [
+                            "feature-leakage-churn__zdnsFo9"
+                        ]
+                    },
+                    "B_cut1_mismatch_spend_30d_cents": {
+                        "0": [
+                            "feature-leakage-churn__zdnsFo9"
+                        ]
+                    },
+                    "B_cut1_mismatch_tickets_30d": {
+                        "0": [
+                            "feature-leakage-churn__zdnsFo9"
+                        ]
+                    },
+                    "B_cut1_mismatch_days_since_last_order": {
+                        "0": [
+                            "feature-leakage-churn__zdnsFo9"
+                        ]
+                    },
+                    "B_cut1_mismatch_tenure_days": {
+                        "0": [
+                            "feature-leakage-churn__zdnsFo9"
+                        ]
+                    },
+                    "B_cut1_mismatch_app_minutes_7d": {
+                        "0": [
+                            "feature-leakage-churn__zdnsFo9"
+                        ]
+                    },
+                    "B_cut1_mismatch_te_district": {
+                        "0": [
+                            "feature-leakage-churn__zdnsFo9"
+                        ]
+                    },
+                    "B_cut1_mismatch_status": {
+                        "0": [
+                            "feature-leakage-churn__zdnsFo9"
+                        ]
+                    },
+                    "B_cut1_mismatch_plan": {
+                        "0": [
+                            "feature-leakage-churn__zdnsFo9"
                         ]
                     },
                     "B_cut1_duplicate_rows": {
                         "0": [
-                            "feature-leakage-churn__DHZxhyB"
+                            "feature-leakage-churn__zdnsFo9"
                         ]
                     },
                     "B_cut1_missing_rows": {
                         "0": [
-                            "feature-leakage-churn__DHZxhyB"
+                            "feature-leakage-churn__zdnsFo9"
                         ]
                     },
                     "B_cut1_extra_rows": {
                         "0": [
-                            "feature-leakage-churn__DHZxhyB"
+                            "feature-leakage-churn__zdnsFo9"
+                        ]
+                    },
+                    "B_cut2_invariant_problems": {
+                        "0": [
+                            "feature-leakage-churn__zdnsFo9"
+                        ]
+                    },
+                    "B_cut2_points": {
+                        "56906": [
+                            "feature-leakage-churn__zdnsFo9"
+                        ]
+                    },
+                    "swept_runner_paths_cut2": {
+                        "5": [
+                            "feature-leakage-churn__zdnsFo9"
+                        ]
+                    },
+                    "residual_runner_paths_cut2": {
+                        "0": [
+                            "feature-leakage-churn__zdnsFo9"
+                        ]
+                    },
+                    "seconds_sweep_cut2": {
+                        "0.653": [
+                            "feature-leakage-churn__zdnsFo9"
+                        ]
+                    },
+                    "sweep_errors_cut2": {
+                        "0": [
+                            "feature-leakage-churn__zdnsFo9"
                         ]
                     },
                     "seconds_cut2": {
-                        "0.476": [
-                            "feature-leakage-churn__DHZxhyB"
+                        "0.731": [
+                            "feature-leakage-churn__zdnsFo9"
                         ]
                     },
                     "net_private_cut2": {
                         "1": [
-                            "feature-leakage-churn__DHZxhyB"
+                            "feature-leakage-churn__zdnsFo9"
+                        ]
+                    },
+                    "seconds_convert_cut2": {
+                        "0.581": [
+                            "feature-leakage-churn__zdnsFo9"
+                        ]
+                    },
+                    "cut2_days_since_last_login_nonnull": {
+                        "0": [
+                            "feature-leakage-churn__zdnsFo9"
                         ]
                     },
                     "B_cut2_rows_compared": {
-                        "35906": [
-                            "feature-leakage-churn__DHZxhyB"
+                        "45706": [
+                            "feature-leakage-churn__zdnsFo9"
                         ]
                     },
                     "B_cut2_changed_cells": {
                         "0": [
-                            "feature-leakage-churn__DHZxhyB"
+                            "feature-leakage-churn__zdnsFo9"
+                        ]
+                    },
+                    "B_cut2_mismatch_orders_7d": {
+                        "0": [
+                            "feature-leakage-churn__zdnsFo9"
+                        ]
+                    },
+                    "B_cut2_mismatch_orders_30d": {
+                        "0": [
+                            "feature-leakage-churn__zdnsFo9"
+                        ]
+                    },
+                    "B_cut2_mismatch_spend_30d_cents": {
+                        "0": [
+                            "feature-leakage-churn__zdnsFo9"
+                        ]
+                    },
+                    "B_cut2_mismatch_tickets_30d": {
+                        "0": [
+                            "feature-leakage-churn__zdnsFo9"
+                        ]
+                    },
+                    "B_cut2_mismatch_days_since_last_order": {
+                        "0": [
+                            "feature-leakage-churn__zdnsFo9"
+                        ]
+                    },
+                    "B_cut2_mismatch_tenure_days": {
+                        "0": [
+                            "feature-leakage-churn__zdnsFo9"
+                        ]
+                    },
+                    "B_cut2_mismatch_app_minutes_7d": {
+                        "0": [
+                            "feature-leakage-churn__zdnsFo9"
+                        ]
+                    },
+                    "B_cut2_mismatch_te_district": {
+                        "0": [
+                            "feature-leakage-churn__zdnsFo9"
+                        ]
+                    },
+                    "B_cut2_mismatch_status": {
+                        "0": [
+                            "feature-leakage-churn__zdnsFo9"
+                        ]
+                    },
+                    "B_cut2_mismatch_plan": {
+                        "0": [
+                            "feature-leakage-churn__zdnsFo9"
                         ]
                     },
                     "B_cut2_duplicate_rows": {
                         "0": [
-                            "feature-leakage-churn__DHZxhyB"
+                            "feature-leakage-churn__zdnsFo9"
                         ]
                     },
                     "B_cut2_missing_rows": {
                         "0": [
-                            "feature-leakage-churn__DHZxhyB"
+                            "feature-leakage-churn__zdnsFo9"
                         ]
                     },
                     "B_cut2_extra_rows": {
                         "0": [
-                            "feature-leakage-churn__DHZxhyB"
+                            "feature-leakage-churn__zdnsFo9"
+                        ]
+                    },
+                    "seconds_grade_total": {
+                        "12.161870006471872": [
+                            "feature-leakage-churn__zdnsFo9"
                         ]
                     }
                 },

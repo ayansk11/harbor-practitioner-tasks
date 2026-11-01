@@ -1,35 +1,35 @@
-"""Calibrate the CI band for ab-test-reanalysis on the committed data (DESIGN.md section 5, the design's "Main risk").
+"""Calibrate the CI band of ab-test-reanalysis on the committed data (the revision's design, section 9 "Band").
 
-Run: submission/.venv/bin/python submission/authoring/ab-test-reanalysis/calibration_study.py [--seeds 200]
-Reads the visible set (environment/app/data), the hidden sets as committed (tests/hidden/<set>/*.csv.gz) and the
-reference values in tests/expected/<set>.json. Needs nothing that a clean checkout lacks.
+Run: submission/.venv/bin/python -I -B submission/authoring/ab-test-reanalysis/calibration_study.py [--seeds 200]
+Reads the visible export (environment/app/data), the five hidden exports as committed (tests/hidden/<set>/*.csv.gz),
+the reference readouts (tests/expected/<set>.json, ref_a, delta method) and the band of tests/grade.py (BAND). Per
+user clicks and counted pageviews come from ref_b.per_user (the time route, which equals ref_a's population on every
+set by the generator's assertion e); the script asserts that they reproduce each reference's n_users, pageviews and
+clicks exactly. Needs nothing that a clean checkout lacks.
 
-All errors are bound errors in units of the reference half-width hw_ref: e = (bound - reference bound) / hw_ref.
-Valid methods (the plan allows them): delta without the N/(N-1) factor; CR1 cluster-robust OLS; user-level bootstrap
-with B = 2000 (the plan's minimum) for --seeds seeds, read three ways (percentile, basic, normal); B = 5000 percentile
-(the alt solution's setting); pooled (not stratified) B = 2000 percentile. Wrong methods: the pageview-level interval
-(attempt fix_bots_only) and the pageview-level interval times a constant K fitted on the visible data (attempt
-constant_inflation). The band rule (design): band > 2 x spread of the valid methods, fix_bots_only misses by >= 2 x
-band on every set, and no constant multiple of the pageview-level interval fits every set.
-ICC shortcut sweep (added 2026-10-28, DESIGN.md section 13): the pageview-level variance of each arm times
-1 + rho (m - 1), with one rho for every set, m = m_w = sum(v^2) / sum(v) (the weighted cluster size) or m = mean v;
-rho from 0 to 1 in steps of 0.005 (and 0.0001 for the best rho). Check: no rho passes every set.
-Pageview-only sweep (added 2026-10-28, DESIGN.md section 14): the pageview-level variance of each arm
-times a multiplier built from that arm's pageview counts only, for 16 features f of the counts (Kish's K = mean(v^2) /
-mean(v)^2, CV, tail shares, quantile ratios, Gini, share of users with no pageview, ...) in three forms, f^g (no
-constant), c f^g and 1 + c f^g with c fitted so the visible readout is exact (what an agent could fit), g from -3 to 4
-in steps of 0.01. Check: no form passes every set, and every form's best worst-set error is above the band. The
-h_null / h_twin pair (since 2026-10-29, DESIGN.md section 15: h_twin is h_null's exact users and pageview rows with only
-the clicks redrawn) is checked twice: the per-user pageview counts of each arm must be identical on the two sets (so any
-multiplier computed from them is equal on both), and the smallest worst error any pair of per-arm multipliers
-M_A, M_B >= 0 can reach on the two must be above the band: (r - 1) / (r + 1) with r = sqrt(q_lo) x hw_null / hw_twin,
-q_lo the smaller per-arm ratio R(1-R) twin / R(1-R) null (the ratio for one common multiplier, sqrt(DE) null / sqrt(DE)
-twin, is reported too).
-Bootstrap margin (added in DESIGN.md section 14): for every set, bound and bootstrap group, |mean error| + 4 SD must
-be below the band (the spread above is a sample maximum, so this states the margin in SDs as well).
-Writes calibration_study.out.md and calibration.json next to this script.
+All errors are bound errors in units of the reference half-width hw: e = (bound - reference bound) / hw.
+Plan methods (EXPERIMENT.md section 5; the binding gate is computed over these only):
+  delta, recomputed by ref_b (with the N/(N-1) factor, as the reference) and without that factor;
+  CR1, pageview-level OLS of clicked on a B indicator with cluster-robust errors by user;
+  user bootstrap within each arm, percentile: B = 2,000 (the plan's minimum) for --seeds seeds, and B = 5,000 (the
+  alt_time solution's setting) for --seeds-extra seeds.
+Other readings, not plan methods (reported, never gating): bootstrap B = 2,000 read as basic and normal intervals;
+pooled (not within-arm) bootstrap B = 2,000 percentile.
+Wrong method (the attempt pageview_ci): the pageview-level interval, each pageview an independent trial.
+Binding gates (the design: the 0.25 band stays only if both hold; otherwise the data changes, never the band):
+  1. the worst plan-method bound error over every set, bound and seed is <= band / 2 (0.125 at band 0.25);
+  2. pageview_ci's smallest miss over the sets (per set, the larger of its two bound errors) is >= 2 x band (0.5).
+Data conditions re-checked here (the generator's seed conditions that the band relies on): every reference lower bound
+at least 0.5 hw from 0 (a bound inside the band cannot flip a decision); srm_p in (1e-11, 1e-5) on h_srm and >= 0.05
+elsewhere; DE >= 5.5 on every set.
+Information only (no gate; the revised design drops the multiplier attempts, since the shipped CI is correct): the
+bootstrap's |mean| + 4 SD of the bound error; the best constant multiple K of the pageview-level interval; the ICC
+shortcut sweep (one rho for every set, m = sum(v^2)/sum(v) or mean v); the pageview-only multiplier sweep (16 features
+of each arm's pageview counts x 3 forms).
+Writes calibration_study.out.md and calibration.json next to this script; exit 0 only if the binding gates and the
+data conditions pass.
 """
-import argparse, json, math, os, sys, time
+import argparse, json, math, os, re, sys, time
 
 import numpy as np
 
@@ -38,12 +38,22 @@ sys.path.insert(0, HERE)
 import ref_b  # noqa: E402
 
 TASK = os.path.normpath(os.path.join(HERE, "..", "..", "tasks", "ab-test-reanalysis"))
-SETS = ["visible", "h_null", "h_pos", "h_srm", "h_bots", "h_twin"]
+SETS = ["visible", "h_null", "h_pos", "h_srm", "h_plain", "h_neg"]
 Z975 = ref_b.Z975
+PV = "pageview_ci (pageview-level interval)"
 
 
 def folder(name):
     return os.path.join(TASK, "environment", "app", "data") if name == "visible" else os.path.join(TASK, "tests", "hidden", name)
+
+
+def grade_band():
+    """The band tests/grade.py uses (its BAND line), read as text so that the grader's kit is never imported."""
+    with open(os.path.join(TASK, "tests", "grade.py"), encoding="utf-8") as f:
+        m = re.search(r"^BAND = ([0-9.]+)", f.read(), re.M)
+    if not m:
+        raise SystemExit("no BAND line in tests/grade.py")
+    return float(m.group(1))
 
 
 def errs(ci, ref):
@@ -94,7 +104,6 @@ def icc_sweep(res, band, step=0.005, top=1.0, fine=0.0001):
         n_pass = [sum(err_at[s][i] <= band for s in res["sets"]) for i in range(len(grid))]
         worst = [max(err_at[s][i] for s in res["sets"]) for i in range(len(grid))]
         i_best = min(range(len(grid)), key=lambda i: worst[i])
-        r_best = grid[i_best]
         fine_worst = [(max(icc_err(st, r, m_key) for st in res["sets"].values()), r) for r in fine_grid]
         f_err, f_rho = min(fine_worst)
         all_ok = [grid[i] for i in range(len(grid)) if n_pass[i] == len(res["sets"])]
@@ -102,7 +111,7 @@ def icc_sweep(res, band, step=0.005, top=1.0, fine=0.0001):
         out[m_key] = {"grid": [0.0, top, step], "windows": win, "rho_passing_all": all_ok,
                       "max_sets_passed": best_count,
                       "rho_with_max_sets": [grid[i] for i in range(len(grid)) if n_pass[i] == best_count],
-                      "best_rho": r_best, "best_worst_err": worst[i_best],
+                      "best_rho": grid[i_best], "best_worst_err": worst[i_best],
                       "best_errs": {s: err_at[s][i_best] for s in res["sets"]},
                       "fine_best_rho": round(f_rho, 4), "fine_best_worst_err": f_err}
     return out
@@ -176,11 +185,19 @@ def feature_sweep(res, band, g_lo=-3.0, g_hi=4.0, step=0.01):
     return out
 
 
+def method_names(seeds, seeds_extra):
+    plan = ["delta (ref_b, N/(N-1) factor)", "delta without the N/(N-1) factor", "CR1 by user",
+            f"bootstrap B=2000 percentile ({seeds} seeds)", f"bootstrap B=5000 percentile ({seeds_extra} seeds)"]
+    other = [f"bootstrap B=2000 basic ({seeds} seeds)", f"bootstrap B=2000 normal ({seeds} seeds)",
+             f"pooled bootstrap B=2000 percentile ({seeds_extra} seeds)"]
+    return plan, other
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--seeds", type=int, default=200)
     ap.add_argument("--seeds-extra", type=int, default=30)
-    ap.add_argument("--band", type=float, default=None, help="the band grade.py uses (checks are run at this band)")
+    ap.add_argument("--band", type=float, default=None, help="default: the BAND of tests/grade.py")
     ap.add_argument("--reuse", action="store_true", help="re-render from calibration.json without recomputing")
     args = ap.parse_args()
     if args.reuse:
@@ -188,22 +205,27 @@ def main():
             res = json.load(f)
         return render(res, args, res["seeds"], res["seeds_extra"])
     t_start = time.time()
-    refs = {s: json.load(open(os.path.join(TASK, "tests", "expected", s + ".json"))) for s in SETS}
-    # the constant fitted on the visible data, as the constant_inflation attempt does: K = hw_delta / hw_pageview
-    k_visible = round(refs["visible"]["half_width"] / naive_ci(refs["visible"])[2], 3)
-    res = {"k_visible": k_visible, "seeds": args.seeds, "seeds_extra": args.seeds_extra, "sets": {}}
-    pv_counts = {}
+    started = time.strftime("%Y-%m-%d %H:%M:%S %Z")
+    refs = {}
     for s in SETS:
+        with open(os.path.join(TASK, "tests", "expected", s + ".json")) as f:
+            refs[s] = json.load(f)
+    # the constant fitted on the visible data (information only): K = hw_delta / hw_pageview
+    k_visible = round(refs["visible"]["half_width"] / naive_ci(refs["visible"])[2], 3)
+    plan_names, other_names = method_names(args.seeds, args.seeds_extra)
+    res = {"k_visible": k_visible, "seeds": args.seeds, "seeds_extra": args.seeds_extra, "started": started,
+           "plan_methods": plan_names, "other_methods": other_names, "sets": {}}
+    for s in SETS:
+        t_set = time.time()
         ref = refs[s]
         arms = ref_b.per_user(folder(s))
-        pv_counts[s] = {a: arms[a][1] for a in "AB"}
         assert {a: len(v[0]) for a, v in arms.items()} == ref["n_users"], s
         assert all(int(arms[a][1].sum()) == ref["pageviews"][a] for a in "AB"), s
-        d = {}
+        assert all(int(arms[a][0].sum()) == ref["clicks"][a] for a in "AB"), s
         diff = ref["diff"]
-        d["delta_refb"] = errs(ref_b.delta(arms)[1:], ref)
-        d["delta_no_N_factor"] = errs(ref_b.delta(arms, small_sample=False)[1:], ref)
-        d["cr1"] = errs(ref_b.cr1(arms)[1:], ref)
+        point = {plan_names[0]: errs(ref_b.delta(arms)[1:], ref),
+                 plan_names[1]: errs(ref_b.delta(arms, small_sample=False)[1:], ref),
+                 plan_names[2]: errs(ref_b.cr1(arms)[1:], ref)}
         boot = {"percentile": [], "basic": [], "normal": []}
         for seed in range(1, args.seeds + 1):
             cis = ref_b.bootstrap_cis(diff, ref_b.bootstrap_draws(arms, 2000, seed))
@@ -213,124 +235,123 @@ def main():
                  for seed in range(args.seeds_extra)]
         pooled = [errs(ref_b.bootstrap_cis(diff, ref_b.bootstrap_draws(arms, 2000, 20_000 + seed, pooled=True))
                        ["percentile"], ref) for seed in range(args.seeds_extra)]
-        lo, hi, nhw = naive_ci(ref)
-        wrong = {"fix_bots_only (pageview-level CI)": errs((lo, hi), ref),
-                 f"constant_inflation (K={k_visible})": errs((diff - k_visible * nhw, diff + k_visible * nhw), ref)}
-        groups = {f"bootstrap B=2000 {k} ({args.seeds} seeds)": np.array(v) for k, v in boot.items()}
-        groups[f"bootstrap B=5000 percentile ({args.seeds_extra} seeds)"] = np.array(b5000)
-        groups[f"pooled bootstrap B=2000 percentile ({args.seeds_extra} seeds)"] = np.array(pooled)
+        groups = {plan_names[3]: np.array(boot["percentile"]), plan_names[4]: np.array(b5000),
+                  other_names[0]: np.array(boot["basic"]), other_names[1]: np.array(boot["normal"]),
+                  other_names[2]: np.array(pooled)}
         summary = {}
-        for name, e in d.items():
+        for name, e in point.items():
             summary[name] = {"max_abs": max(abs(e[0]), abs(e[1])), "lo": e[0], "hi": e[1]}
         for name, arr in groups.items():
             summary[name] = {"max_abs": float(np.abs(arr).max()), "mean_lo": float(arr[:, 0].mean()),
                              "mean_hi": float(arr[:, 1].mean()), "sd_lo": float(arr[:, 0].std(ddof=1)),
-                             "sd_hi": float(arr[:, 1].std(ddof=1))}
+                             "sd_hi": float(arr[:, 1].std(ddof=1)), "n": int(len(arr))}
+        lo, hi, nhw = naive_ci(ref)
+        wrong = {PV: errs((lo, hi), ref),
+                 f"constant K={k_visible} (fitted on visible; information)": errs((diff - k_visible * nhw,
+                                                                                    diff + k_visible * nhw), ref)}
         res["sets"][s] = {"icc": icc_inputs(arms),
                           "feat": {f: {a: fn(arms[a][1]) for a in ("A", "B")} for f, fn in FEATURES.items()},
                           "diff": diff, "ref_ci": ref["ci_95"], "half_width": ref["half_width"],
                           "de": (ref["half_width"] / nhw) ** 2, "sqrt_de": ref["half_width"] / nhw,
-                          "lower_over_hw": ref["ci_95"][0] / ref["half_width"], "srm_p": ref["srm_p"],
-                          "decision": ref["decision"], "valid": summary,
+                          "lower_over_hw": ref["ci_95"][0] / ref["half_width"],
+                          "upper_over_hw": ref["ci_95"][1] / ref["half_width"], "srm_p": ref["srm_p"],
+                          "decision": ref["decision"], "n_users": ref["n_users"], "methods": summary,
                           "wrong": {k: {"lo": v[0], "hi": v[1], "max_abs": max(abs(v[0]), abs(v[1]))}
-                                    for k, v in wrong.items()}}
+                                    for k, v in wrong.items()},
+                          "seconds": round(time.time() - t_set, 1)}
         print(f"{s}: done ({time.time() - t_start:.0f} s)", flush=True)
-    if "h_null" in pv_counts and "h_twin" in pv_counts:
-        res["twin_identical_counts"] = all(np.array_equal(pv_counts["h_null"][a], pv_counts["h_twin"][a]) for a in "AB")
     res["seconds"] = round(time.time() - t_start, 1)
+    res["finished"] = time.strftime("%Y-%m-%d %H:%M:%S %Z")
     with open(os.path.join(HERE, "calibration.json"), "w") as f:
         json.dump(res, f, indent=1)
     return render(res, args, args.seeds, args.seeds_extra)
 
 
 def render(res, args, seeds, seeds_extra):
-    k_visible = res["k_visible"]
-    spread = max(v["max_abs"] for st in res["sets"].values() for v in st["valid"].values())
-    rule_band = math.ceil(2 * spread * 100 + 1e-9) / 100     # next whole percent strictly above 2 x spread
-    if rule_band <= 2 * spread:
-        rule_band += 0.01
-    band = args.band if args.band is not None else rule_band
-    fbo = {s: st["wrong"]["fix_bots_only (pageview-level CI)"]["max_abs"] for s, st in res["sets"].items()}
-    r = [st["sqrt_de"] for st in res["sets"].values()]
+    plan, other = res["plan_methods"], res["other_methods"]
+    band = args.band if args.band is not None else grade_band()
+    sets = res["sets"]
+    worst_plan = {s: max(st["methods"][m]["max_abs"] for m in plan) for s, st in sets.items()}
+    worst_other = {s: max(st["methods"][m]["max_abs"] for m in other) for s, st in sets.items()}
+    spread = max(worst_plan.values())
+    spread_at = max(worst_plan, key=worst_plan.get)
+    pv_miss = {s: st["wrong"][PV]["max_abs"] for s, st in sets.items()}
+    r = [st["sqrt_de"] for st in sets.values()]
     minimax = (max(r) - min(r)) / (max(r) + min(r))           # best any constant K can do (its worst set error)
-    margins = {s: abs(st["lower_over_hw"]) for s, st in res["sets"].items()}
-    res.update(spread=spread, rule_band=rule_band, band=band, fix_bots_only_min=min(fbo.values()),
-               minimax_constant_error=minimax, min_decision_margin=min(margins.values()))
+    margins = {s: abs(st["lower_over_hw"]) for s, st in sets.items()}
+    m4 = max(max(abs(v["mean_lo"]) + 4 * v["sd_lo"], abs(v["mean_hi"]) + 4 * v["sd_hi"])
+             for st in sets.values() for name, v in st["methods"].items() if name in plan and "sd_lo" in v)
+    res.update(band=band, spread_plan=spread, spread_plan_set=spread_at, worst_other=max(worst_other.values()),
+               pageview_ci_min_miss=min(pv_miss.values()), minimax_constant_error=minimax,
+               min_decision_margin=min(margins.values()), boot_plan_mean_plus_4sd=m4)
     icc = res["icc_sweep"] = icc_sweep(res, band)
     fs = res["feature_sweep"] = feature_sweep(res, band)
-    fs_open = [(f, form) for f, v in fs.items() for form, r in v.items() if r["window"]]
-    fs_min = min((r["best_worst_err"], f, form) for f, v in fs.items() for form, r in v.items())
-    twin = None
-    if "h_null" in res["sets"] and "h_twin" in res["sets"]:
-        n, t = res["sets"]["h_null"], res["sets"]["h_twin"]
-        rr = n["sqrt_de"] / t["sqrt_de"]
-        q = {a: t["icc"][a]["R"] * (1 - t["icc"][a]["R"]) / (n["icc"][a]["R"] * (1 - n["icc"][a]["R"])) for a in "AB"}
-        rm = math.sqrt(min(q.values())) * n["half_width"] / t["half_width"]
-        twin = res["twin_pair"] = {"sqrt_de_ratio": rr, "common_multiplier_min_err": (rr - 1) / (rr + 1),
-                                   "identical_counts": res.get("twin_identical_counts"), "q": q,
-                                   "hw_ratio": n["half_width"] / t["half_width"], "per_arm_r": rm,
-                                   "per_arm_min_err": (rm - 1) / (rm + 1)}
-    # bootstrap margin in SDs: |mean| + 4 SD per bound, set and bootstrap group (the spread above is a sample maximum)
-    m4 = max(max(abs(v["mean_lo"]) + 4 * v["sd_lo"], abs(v["mean_hi"]) + 4 * v["sd_hi"])
-             for st in res["sets"].values() for v in st["valid"].values() if "sd_lo" in v)
-    res["boot_mean_plus_4sd"] = m4
-    checks = {
-        "band > 2 x spread": band > 2 * spread,
-        "fix_bots_only misses by >= 2 x band on every set": min(fbo.values()) >= 2 * band,
-        "no constant K fits every set (best K's worst error > band)": minimax > band,
-        "ICC shortcut, m = sum(v^2)/sum(v): no rho in [0, 1] passes every set (best rho's worst error > band)":
-            not icc["mw"]["rho_passing_all"] and icc["mw"]["fine_best_worst_err"] > band,
-        "ICC shortcut, m = mean pageviews per user: no rho in [0, 1] passes every set":
-            not icc["mbar"]["rho_passing_all"] and icc["mbar"]["fine_best_worst_err"] > band,
-        f"pageview-only multipliers ({len(FEATURES)} features x {len(FORMS)} forms): none passes every set "
-        "(every form's best worst-set error > band)": not fs_open and fs_min[0] > band,
-        "valid bootstrap: |mean| + 4 SD of the bound error < band for every set, bound and group": m4 < band,
-        "h_null / h_twin: identical per-user pageview counts per arm, and any per-arm multipliers M_A, M_B >= 0 from "
-        "them miss one of the two by more than the band": bool(twin and twin["identical_counts"]
-                                                              and twin["per_arm_min_err"] > band),
-        "every decision bound >= 0.35 hw from 0, and farther than band": min(margins.values()) >= max(0.35, band),
-        "SRM set: 1e-12 < srm_p < 0.001; other sets srm_p >= 0.05":
-            all((1e-12 < st["srm_p"] < 1e-3) if s == "h_srm" else st["srm_p"] >= 0.05 for s, st in res["sets"].items()),
+    fs_open = [(f, form) for f, v in fs.items() for form, x in v.items() if x["window"]]
+    fs_min = min((x["best_worst_err"], f, form) for f, v in fs.items() for form, x in v.items())
+    gates = {
+        f"worst plan-method bound error <= band / 2 = {band / 2:.3f} (every set, bound and seed)": spread <= band / 2,
+        f"pageview_ci smallest miss over the sets >= 2 x band = {2 * band:.2f}": min(pv_miss.values()) >= 2 * band,
     }
-    res["checks"] = checks
+    data = {
+        "every reference lower bound >= 0.5 hw from 0": min(margins.values()) >= 0.5,
+        "h_srm: 1e-11 < srm_p < 1e-5; every other set: srm_p >= 0.05":
+            all((1e-11 < st["srm_p"] < 1e-5) if s == "h_srm" else st["srm_p"] >= 0.05 for s, st in sets.items()),
+        "DE >= 5.5 on every set": min(st["de"] for st in sets.values()) >= 5.5,
+    }
+    info = {
+        f"other readings (basic, normal, pooled) worst error <= band / 2": max(worst_other.values()) <= band / 2,
+        "plan bootstrap |mean| + 4 SD of the bound error < band (every set, bound and group)": m4 < band,
+        "no constant K of the pageview interval fits every set (best K's worst error > band)": minimax > band,
+        "ICC shortcut, m = m_w: no rho in [0, 1] passes every set":
+            not icc["mw"]["rho_passing_all"] and icc["mw"]["fine_best_worst_err"] > band,
+        "ICC shortcut, m = mean v: no rho in [0, 1] passes every set":
+            not icc["mbar"]["rho_passing_all"] and icc["mbar"]["fine_best_worst_err"] > band,
+        f"pageview-only multipliers ({len(FEATURES)} features x {len(FORMS)} forms): none passes every set":
+            not fs_open and fs_min[0] > band,
+    }
+    res["gates"], res["data_conditions"], res["information"] = gates, data, info
     with open(os.path.join(HERE, "calibration.json"), "w") as f:
         json.dump(res, f, indent=1)
     L = ["# calibration_study.out.md (calibration_study.py)", "",
-         f"Bound errors in reference half-widths (reference = delta method in tests/expected/). Seeds: B=2000 x "
-         f"{seeds}; B=5000 and pooled x {seeds_extra}. Run time {res['seconds']} s.", "",
+         f"Bound errors in reference half-widths hw (reference = ref_a's delta method, tests/expected/). Band {band:g} "
+         f"(tests/grade.py). Seeds: B=2000 x {seeds}; B=5000 and pooled x {seeds_extra}. Run {res.get('started')} to "
+         f"{res.get('finished')} (Mac clock), {res['seconds']} s by the script's timer.", "",
          "## Per set", "",
-         "| set | DE | sqrt(DE) | lower/hw | SRM p | decision | max valid error | fix_bots_only error | "
-         f"constant_inflation error (K={k_visible}) |", "|---|---|---|---|---|---|---|---|---|"]
-    for s, st in res["sets"].items():
-        mv = max(v["max_abs"] for v in st["valid"].values())
-        w = list(st["wrong"].values())
-        L.append(f"| {s} | {st['de']:.2f} | {st['sqrt_de']:.3f} | {st['lower_over_hw']:+.3f} | {st['srm_p']:.3g} | "
-                 f"{st['decision']} | {mv:.4f} | {w[0]['max_abs']:.4f} | {w[1]['max_abs']:.4f} |")
-    L += ["", "## Valid methods, worst bound error per set", "",
-          "| method | " + " | ".join(SETS) + " |", "|---|" + "---|" * len(SETS)]
-    for name in res["sets"]["visible"]["valid"]:
-        L.append(f"| {name} | " + " | ".join(f"{res['sets'][s]['valid'][name]['max_abs']:.4f}" for s in SETS) + " |")
-    L += ["", "Bootstrap B=2000 percentile, mean and SD of the bound error (lo; hi):", ""]
-    key = f"bootstrap B=2000 percentile ({seeds} seeds)"
-    for s in SETS:
-        v = res["sets"][s]["valid"][key]
-        L.append(f"- {s}: lo mean {v['mean_lo']:+.4f} sd {v['sd_lo']:.4f}; hi mean {v['mean_hi']:+.4f} "
-                 f"sd {v['sd_hi']:.4f}")
+         "| set | n_users A/B | DE | sqrt(DE) | lower/hw | upper/hw | srm_p | decision | worst plan-method error | "
+         "worst other reading | pageview_ci miss | s |", "|---|---|---|---|---|---|---|---|---|---|---|---|"]
+    for s, st in sets.items():
+        L.append(f"| {s} | {st['n_users']['A']}/{st['n_users']['B']} | {st['de']:.2f} | {st['sqrt_de']:.3f} | "
+                 f"{st['lower_over_hw']:+.3f} | {st['upper_over_hw']:+.3f} | {st['srm_p']:.4g} | {st['decision']} | "
+                 f"{worst_plan[s]:.4f} | {worst_other[s]:.4f} | {pv_miss[s]:.4f} | {st['seconds']} |")
+    L += ["", "## Worst bound error per method and set", "",
+          "| method | plan method | " + " | ".join(SETS) + " |", "|---|---|" + "---|" * len(SETS)]
+    for name in plan + other:
+        L.append(f"| {name} | {'yes' if name in plan else 'no'} | " +
+                 " | ".join(f"{sets[s]['methods'][name]['max_abs']:.4f}" for s in SETS) + " |")
+    for name in sets["visible"]["wrong"]:
+        L.append(f"| {name} | no (wrong) | " + " | ".join(f"{sets[s]['wrong'][name]['max_abs']:.4f}" for s in SETS)
+                 + " |")
+    L += ["", "Plan bootstrap groups, mean and SD of the bound error (lo; hi):", ""]
+    for name in plan[3:]:
+        for s in SETS:
+            v = sets[s]["methods"][name]
+            L.append(f"- {name}, {s}: lo mean {v['mean_lo']:+.4f} sd {v['sd_lo']:.4f}; hi mean {v['mean_hi']:+.4f} "
+                     f"sd {v['sd_hi']:.4f}")
     L += ["", "## Band", "",
-          f"- spread (worst valid-method bound error, all sets; a sample maximum over the seeds): {spread:.4f}",
-          f"- bootstrap |mean| + 4 SD (worst set, bound and group): {m4:.4f} (needs < band)",
-          f"- rule band (next whole percent strictly above 2 x spread): {rule_band:.2f}",
-          f"- band checked below (the one grade.py uses): {band:.2f}",
-          f"- fix_bots_only, smallest miss over the sets: {min(fbo.values()):.4f} (needs >= 2 x band = {2 * band:.2f})",
-          f"- best constant K, worst-set error: {minimax:.4f} (needs > band)",
-          f"- smallest decision margin |lower|/hw: {min(margins.values()):.3f} (needs >= max(0.35, band))", "",
-          "## ICC shortcut sweep", "",
-          "Interval = diff +/- z sqrt(sum over arms of R(1-R)/V x (1 + rho (m - 1))), one rho for all sets; bound error in "
-          f"reference half-widths; a set passes when both errors <= {band:.2f}. rho_eff = (Var_delta / Var_pageview - 1) "
-          "/ (m_w - 1) per arm (A/B).", "",
+          f"- worst plan-method bound error (all sets, bounds and seeds; a sample maximum): {spread:.4f} ({spread_at}); "
+          f"needs <= {band / 2:.3f}",
+          f"- pageview_ci, smallest miss over the sets: {min(pv_miss.values()):.4f} "
+          f"({min(pv_miss, key=pv_miss.get)}); needs >= {2 * band:.2f}",
+          f"- other readings (not plan methods), worst error: {max(worst_other.values()):.4f}",
+          f"- plan bootstrap |mean| + 4 SD (worst set, bound and group): {m4:.4f}",
+          f"- best constant K of the pageview interval, worst-set error: {minimax:.4f}",
+          f"- smallest decision margin |lower|/hw: {min(margins.values()):.3f} ({min(margins, key=margins.get)})", "",
+          "## ICC shortcut sweep (information)", "",
+          "Interval = diff +/- z sqrt(sum over arms of R(1-R)/V x (1 + rho (m - 1))), one rho for all sets; a set "
+          f"passes when both bound errors are <= {band:g}. rho_eff = (Var_delta / Var_pageview - 1) / (m_w - 1).", "",
           "| set | m_w A/B | mean v A/B | rho_eff A/B | passing rho, m = m_w | passing rho, m = mean v |",
           "|---|---|---|---|---|---|"]
-    for s, st in res["sets"].items():
+    for s, st in sets.items():
         a, b = st["icc"]["A"], st["icc"]["B"]
         w1, w2 = icc["mw"]["windows"][s], icc["mbar"]["windows"][s]
         L.append(f"| {s} | {a['mw']:.1f} / {b['mw']:.1f} | {a['mbar']:.2f} / {b['mbar']:.2f} | "
@@ -341,39 +362,37 @@ def render(res, args, seeds, seeds_extra):
         rr = v["rho_with_max_sets"]
         L += ["", f"{label} (rho {v['grid'][0]} to {v['grid'][1]}, step {v['grid'][2]}):",
               f"- rho passing every set: {v['rho_passing_all'] or 'none'}",
-              f"- most sets passed by one rho: {v['max_sets_passed']} of {len(res['sets'])} "
-              f"(rho {rr[0]:.3f} to {rr[-1]:.3f})",
-              f"- best rho (smallest worst-set error) on the grid: {v['best_rho']:.3f}, worst error "
-              f"{v['best_worst_err']:.4f}; per set: " + ", ".join(f"{s} {e:.3f}" for s, e in v["best_errs"].items()),
+              f"- most sets passed by one rho: {v['max_sets_passed']} of {len(sets)} (rho {rr[0]:.3f} to {rr[-1]:.3f})",
+              f"- best rho on the grid: {v['best_rho']:.3f}, worst error {v['best_worst_err']:.4f}; per set: " +
+              ", ".join(f"{s} {e:.3f}" for s, e in v["best_errs"].items()),
               f"- best rho on a 0.0001 grid: {v['fine_best_rho']:.4f}, worst error {v['fine_best_worst_err']:.4f}"]
-    L += ["", "## Pageview-only sweep", "",
-          "Interval = diff +/- z sqrt(sum over arms of R(1-R)/V x M), M built from the arm's pageview counts only: "
-          "f^g, c f^g or 1 + c f^g, c fitted so the visible readout is exact, g from -3 to 4 step 0.01. A form passes "
-          f"when one g passes every set (both bound errors <= {band:.2f}).", "",
-          "| feature | visible A/B | h_null A/B | " + ("h_twin A/B | " if twin else "") +
-          " | ".join(f"{fm}: passing g / best worst error (g)" for fm in FORMS) + " |",
-          "|---|---|---|" + ("---|" if twin else "") + "---|" * len(FORMS)]
+    L += ["", "## Pageview-only multiplier sweep (information)", "",
+          "Interval = diff +/- z sqrt(sum over arms of R(1-R)/V x M), M from the arm's pageview counts only: f^g, c f^g "
+          "or 1 + c f^g, c fitted so the visible readout is exact, g from -3 to 4 step 0.01; a form passes when one g "
+          f"passes every set (both bound errors <= {band:g}).", "",
+          "| feature | visible A/B | h_null A/B | " + " | ".join(f"{fm}: passing g / best worst error (g)" for fm in FORMS)
+          + " |", "|---|---|---|" + "---|" * len(FORMS)]
     for f, v in fs.items():
-        vals = [res["sets"][s]["feat"][f] for s in (["visible", "h_null"] + (["h_twin"] if twin else []))]
+        vals = [sets[s]["feat"][f] for s in ("visible", "h_null")]
         cells = []
         for fm in FORMS:
-            r = v[fm]
-            w = "%.2f to %.2f" % tuple(r["window"]) if r["window"] else "none"
-            cells.append(f"{w} / {r['best_worst_err']:.3f} ({r['best_g']})")
+            x = v[fm]
+            w = "%.2f to %.2f" % tuple(x["window"]) if x["window"] else "none"
+            cells.append(f"{w} / {x['best_worst_err']:.3f} ({x['best_g']})")
         L.append(f"| {f} | " + " | ".join(f"{x['A']:.3g} / {x['B']:.3g}" for x in vals) + " | " + " | ".join(cells) + " |")
     L += ["", f"- forms passing every set: {', '.join(f'{f} [{fm}]' for f, fm in fs_open) or 'none'}",
-          f"- smallest best worst-set error over all forms: {fs_min[0]:.4f} ({fs_min[1]}, {fs_min[2]})"]
-    if twin:
-        L += [f"- h_null / h_twin: per-user pageview counts of each arm identical: {twin['identical_counts']}; "
-              f"sqrt(DE) ratio {twin['sqrt_de_ratio']:.4f}, so one common multiplier on both misses one of them by at "
-              f"least {twin['common_multiplier_min_err']:.4f} half-widths; per-arm multipliers M_A, M_B >= 0: "
-              f"q = R(1-R) twin / null A {twin['q']['A']:.4f}, B {twin['q']['B']:.4f}, r = sqrt(q_lo) x "
-              f"{twin['hw_ratio']:.4f} = {twin['per_arm_r']:.4f}, minimum miss {twin['per_arm_min_err']:.4f} half-widths"]
-    L += ["", "## Checks", ""] + [f"- {'PASS' if ok else 'FAIL'}: {name}" for name, ok in checks.items()]
+          f"- smallest best worst-set error over all forms: {fs_min[0]:.4f} ({fs_min[1]}, {fs_min[2]})",
+          "", "## Binding gates (the design: the band stays only if both pass; else change the data, never the band)", ""]
+    L += [f"- {'PASS' if ok else 'FAIL'}: {name}" for name, ok in gates.items()]
+    L += ["", "## Data conditions (re-checked)", ""] + [f"- {'PASS' if ok else 'FAIL'}: {n}" for n, ok in data.items()]
+    L += ["", "## Information (no gate)", ""] + [f"- {'yes' if ok else 'no'}: {n}" for n, ok in info.items()]
+    ok_all = all(gates.values()) and all(data.values())
+    L += ["", "RESULT: " + ("BAND KEPT (all binding gates and data conditions pass)" if ok_all else
+                            "BAND NOT SUPPORTED BY THIS DATA (change the data, never the band)")]
     with open(os.path.join(HERE, "calibration_study.out.md"), "w") as f:
         f.write("\n".join(L) + "\n")
-    print("\n".join(L))
-    return 0 if all(checks.values()) else 1
+    print("\n".join(L[-20:]))
+    return 0 if ok_all else 1
 
 
 if __name__ == "__main__":

@@ -1,14 +1,17 @@
-# Redactions in this traces folder (2026-10-29)
+# Redactions in this traces folder (2026-10-29; `agent-r3/` added 2026-10-31)
 
-Every file here is a copy of a Harbor trial or job file. Machine-specific paths were replaced; nothing else was changed (no reward, count or timing). The copy script checked this: each JSON file parses to the original with only the path strings replaced and identical numbers, and each text file differs from the original only on lines that held one of these paths.
+Every file here is a copy of a Harbor trial or job file. Machine-specific paths were replaced, and in `agent-r3/` also the URL of the model service the agents called; nothing else was changed (no reward, count or timing). The copy script checked this: each JSON file parses to the original with only the path strings replaced and identical numbers, and each text file differs from the original only on lines that held one of these paths.
 
 | Placeholder | What it replaces |
 |---|---|
 | `<submission>` | the absolute path of the `submission/` folder on the authoring Mac (also its URL-encoded form in `trial_uri`) |
 | `<home>` | other paths under the author's home folder (for example the Harbor tool install in a traceback) |
 | `<local-scratch>` | the session scratch folder of the authoring tool (a temporary folder on the Mac) |
+| `<model-endpoint>` | the URL of the OpenAI-compatible model service the agents of `agent-r3/` called |
 
 Text files that changed carry one extra first line saying so. JSON files cannot carry a comment, so they are listed here.
+
+In each `agent-r3/<trial>/agent/` (`recording.cast`, `terminus_2.pane`, `trajectory.json`), the shell prompt in the terminal records shows the sandbox's host name (a Daytona sandbox id); it is not a credential and was left as is.
 
 | File | Replacements |
 |---|---|
@@ -52,5 +55,17 @@ Text files that changed carry one extra first line saying so. JSON files cannot 
 | `phase_gate/job_lock.json` | `<submission>` x1 |
 | `phase_gate/result.json` | `<submission>` x3, `<submission>` (URL-encoded form) x1 |
 | `phase_gate/trial.log` (text; first line added) | `<submission>` x2 |
+| `agent-r3/tenant-isolation-docshare__5JS5qnC/config.json` | `<model-endpoint>` x1 |
+| `agent-r3/tenant-isolation-docshare__5JS5qnC/result.json` | `<submission>` (URL-encoded form) x1, `<model-endpoint>` x1 |
+| `agent-r3/tenant-isolation-docshare__5JS5qnC/trial.log` (text; first line added) | `<submission>` x2 |
+| `agent-r3/tenant-isolation-docshare__5JS5qnC/job_lock.json` | `<model-endpoint>` x3 |
+| `agent-r3/tenant-isolation-docshare__9n7yLqH/config.json` | `<model-endpoint>` x1 |
+| `agent-r3/tenant-isolation-docshare__9n7yLqH/result.json` | `<submission>` (URL-encoded form) x1, `<model-endpoint>` x1 |
+| `agent-r3/tenant-isolation-docshare__9n7yLqH/trial.log` (text; first line added) | `<submission>` x2 |
+| `agent-r3/tenant-isolation-docshare__9n7yLqH/job_lock.json` | `<model-endpoint>` x3 |
+| `agent-r3/tenant-isolation-docshare__U5her8X/config.json` | `<model-endpoint>` x1 |
+| `agent-r3/tenant-isolation-docshare__U5her8X/result.json` | `<submission>` (URL-encoded form) x1, `<model-endpoint>` x1 |
+| `agent-r3/tenant-isolation-docshare__U5her8X/trial.log` (text; first line added) | `<submission>` x2 |
+| `agent-r3/tenant-isolation-docshare__U5her8X/job_lock.json` | `<model-endpoint>` x3 |
 
-Files with no machine-specific path (copied byte for byte): 59.
+Files with no machine-specific path or model URL (copied byte for byte): 83 (59, plus 24 in `agent-r3/`).

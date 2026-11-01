@@ -1,3 +1,9 @@
+> Pre-revision record (status line added 2026-10-31): made for the first version of this task (commit 495c9f5 or
+> earlier); it reads the first version's six sets, h_bots and h_twin among them, which the revision removed or
+> replaced, so it no longer runs. The section numbers it cites are those of that version's design record (git show
+> 495c9f5:docs/ab-test-reanalysis/DESIGN.md). Kept as history; the revision's records are
+> calibration_study.out.md, generation_report.out.md and local_check.out.md.
+
 # click_rule_probes.out.md (click_rule_probes.py)
 
 Fast evaluator: delta-method check, max |w/H - 1| over the six sets = 4.4e-16 (the per-user counts match tests/expected/ exactly).

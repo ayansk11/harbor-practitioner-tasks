@@ -1,0 +1,175 @@
+{
+    "id": "8cd04720-5857-4a0f-9102-0531effb76b1",
+    "started_at": "2026-10-30T07:07:52.680359",
+    "updated_at": "2026-10-30T07:12:12.473492",
+    "finished_at": "2026-10-30T07:12:12.473492",
+    "n_total_trials": 2,
+    "stats": {
+        "n_completed_trials": 2,
+        "n_errored_trials": 0,
+        "n_running_trials": 0,
+        "n_pending_trials": 0,
+        "n_cancelled_trials": 0,
+        "n_retries": 0,
+        "evals": {
+            "terminus-2__gpt-oss-120b__adhoc": {
+                "n_trials": 2,
+                "n_errors": 0,
+                "metrics": [
+                    {
+                        "app_locked": 1.0,
+                        "hidden_bad_rows": 0.0,
+                        "hidden_duplicate_rows": 0.0,
+                        "hidden_extra_rows": 0.0,
+                        "hidden_max_abs_err": 1.106565,
+                        "hidden_missing_rows": 0.0,
+                        "hidden_ok": 0.0,
+                        "hidden_rows_over_tol": 1027.0,
+                        "hidden_run_rc": 0.0,
+                        "hidden_run_seconds": 0.4455,
+                        "hidden_run_timed_out": 0.0,
+                        "reward": 0.0,
+                        "tolerance_mm_day": 0.03,
+                        "visible_bad_rows": 0.0,
+                        "visible_duplicate_rows": 0.0,
+                        "visible_extra_rows": 0.0,
+                        "visible_max_abs_err": 1.405081,
+                        "visible_missing_rows": 0.0,
+                        "visible_ok": 0.0,
+                        "visible_rows_over_tol": 715.0
+                    }
+                ],
+                "pass_at_k": {},
+                "reward_stats": {
+                    "reward": {
+                        "0.0": [
+                            "et0-station-ingest__Ac3eDsn",
+                            "et0-station-ingest__TwBGkQK"
+                        ]
+                    },
+                    "tolerance_mm_day": {
+                        "0.03": [
+                            "et0-station-ingest__Ac3eDsn",
+                            "et0-station-ingest__TwBGkQK"
+                        ]
+                    },
+                    "app_locked": {
+                        "1": [
+                            "et0-station-ingest__Ac3eDsn",
+                            "et0-station-ingest__TwBGkQK"
+                        ]
+                    },
+                    "visible_ok": {
+                        "0": [
+                            "et0-station-ingest__Ac3eDsn",
+                            "et0-station-ingest__TwBGkQK"
+                        ]
+                    },
+                    "visible_missing_rows": {
+                        "0": [
+                            "et0-station-ingest__Ac3eDsn",
+                            "et0-station-ingest__TwBGkQK"
+                        ]
+                    },
+                    "visible_extra_rows": {
+                        "0": [
+                            "et0-station-ingest__Ac3eDsn",
+                            "et0-station-ingest__TwBGkQK"
+                        ]
+                    },
+                    "visible_bad_rows": {
+                        "0": [
+                            "et0-station-ingest__Ac3eDsn",
+                            "et0-station-ingest__TwBGkQK"
+                        ]
+                    },
+                    "visible_duplicate_rows": {
+                        "0": [
+                            "et0-station-ingest__Ac3eDsn",
+                            "et0-station-ingest__TwBGkQK"
+                        ]
+                    },
+                    "visible_rows_over_tol": {
+                        "715": [
+                            "et0-station-ingest__Ac3eDsn",
+                            "et0-station-ingest__TwBGkQK"
+                        ]
+                    },
+                    "visible_max_abs_err": {
+                        "1.405081": [
+                            "et0-station-ingest__Ac3eDsn",
+                            "et0-station-ingest__TwBGkQK"
+                        ]
+                    },
+                    "hidden_run_rc": {
+                        "0": [
+                            "et0-station-ingest__Ac3eDsn",
+                            "et0-station-ingest__TwBGkQK"
+                        ]
+                    },
+                    "hidden_run_timed_out": {
+                        "0": [
+                            "et0-station-ingest__Ac3eDsn",
+                            "et0-station-ingest__TwBGkQK"
+                        ]
+                    },
+                    "hidden_run_seconds": {
+                        "0.471": [
+                            "et0-station-ingest__Ac3eDsn"
+                        ],
+                        "0.42": [
+                            "et0-station-ingest__TwBGkQK"
+                        ]
+                    },
+                    "hidden_ok": {
+                        "0": [
+                            "et0-station-ingest__Ac3eDsn",
+                            "et0-station-ingest__TwBGkQK"
+                        ]
+                    },
+                    "hidden_missing_rows": {
+                        "0": [
+                            "et0-station-ingest__Ac3eDsn",
+                            "et0-station-ingest__TwBGkQK"
+                        ]
+                    },
+                    "hidden_extra_rows": {
+                        "0": [
+                            "et0-station-ingest__Ac3eDsn",
+                            "et0-station-ingest__TwBGkQK"
+                        ]
+                    },
+                    "hidden_bad_rows": {
+                        "0": [
+                            "et0-station-ingest__Ac3eDsn",
+                            "et0-station-ingest__TwBGkQK"
+                        ]
+                    },
+                    "hidden_duplicate_rows": {
+                        "0": [
+                            "et0-station-ingest__Ac3eDsn",
+                            "et0-station-ingest__TwBGkQK"
+                        ]
+                    },
+                    "hidden_rows_over_tol": {
+                        "1027": [
+                            "et0-station-ingest__Ac3eDsn",
+                            "et0-station-ingest__TwBGkQK"
+                        ]
+                    },
+                    "hidden_max_abs_err": {
+                        "1.106565": [
+                            "et0-station-ingest__Ac3eDsn",
+                            "et0-station-ingest__TwBGkQK"
+                        ]
+                    }
+                },
+                "exception_stats": {}
+            }
+        },
+        "n_input_tokens": 414936,
+        "n_cache_tokens": 0,
+        "n_output_tokens": 28944,
+        "cost_usd": null
+    }
+}

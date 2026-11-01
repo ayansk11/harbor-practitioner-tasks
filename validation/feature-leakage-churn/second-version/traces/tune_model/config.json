@@ -1,0 +1,18 @@
+{
+    "task": {
+        "path": "<submission>/jobs/feature-leakage-churn/package-rev1/feature-leakage-churn"
+    },
+    "trial_name": "feature-leakage-churn__zP9gNvx",
+    "trials_dir": "<submission>/jobs/feature-leakage-churn/feature-leakage-churn-tune_model-rev1",
+    "environment_build_timeout_multiplier": 3.0,
+    "agent": {
+        "name": "oracle",
+        "env": {
+            "SOLUTION": "tune_model"
+        }
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "17bc5e60-30fa-41df-af0e-ee884d66d820"
+}

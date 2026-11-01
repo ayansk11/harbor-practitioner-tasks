@@ -1,9 +1,10 @@
 {
     "task": {
-        "path": "<submission>/tasks/feature-leakage-churn"
+        "path": "<submission>/jobs/feature-leakage-churn/package-v3/feature-leakage-churn"
     },
-    "trial_name": "feature-leakage-churn__qbRxNMV",
-    "trials_dir": "<submission>/jobs/feature-leakage-churn/feature-leakage-churn-alt-full1",
+    "trial_name": "feature-leakage-churn__bZ7F35J",
+    "trials_dir": "<submission>/jobs/feature-leakage-churn/feature-leakage-churn-alt-v3",
+    "environment_build_timeout_multiplier": 3.0,
     "agent": {
         "name": "oracle",
         "env": {
@@ -13,5 +14,5 @@
     "environment": {
         "type": "daytona"
     },
-    "job_id": "6d39c765-0149-4663-835a-121d30e237ed"
+    "job_id": "02507fce-4963-4575-adf6-157f09f636fa"
 }

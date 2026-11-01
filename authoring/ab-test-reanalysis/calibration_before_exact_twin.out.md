@@ -1,3 +1,9 @@
+> Pre-revision record (status line added 2026-10-31): made for the first version of this task (commit 495c9f5 or
+> earlier); it describes the first version's data with the h_twin of that version's section 14. The section
+> numbers it cites are those of that version's design record (git show 495c9f5:docs/ab-test-reanalysis/DESIGN.md).
+> Kept as history; the revision's records are calibration_study.out.md, generation_report.out.md and
+> local_check.out.md.
+
 # calibration_study.out.md (calibration_study.py)
 
 Bound errors in reference half-widths (reference = delta method in tests/expected/). Seeds: B=2000 x 200; B=5000 and pooled x 30. Run time 641.8 s.

@@ -1,0 +1,111 @@
+{
+    "id": "29751377-c563-424e-9ef8-67f912dc8d06",
+    "started_at": "2026-10-31T02:02:47.269343",
+    "updated_at": "2026-10-31T02:03:14.435171",
+    "finished_at": "2026-10-31T02:03:14.435171",
+    "n_total_trials": 1,
+    "stats": {
+        "n_completed_trials": 1,
+        "n_errored_trials": 0,
+        "n_running_trials": 0,
+        "n_pending_trials": 0,
+        "n_cancelled_trials": 0,
+        "n_retries": 0,
+        "evals": {
+            "oracle__adhoc": {
+                "n_trials": 1,
+                "n_errors": 0,
+                "metrics": [
+                    {
+                        "bad_output_H": 1.0,
+                        "check_A": 0.0,
+                        "check_B_cut1": 0.0,
+                        "check_B_cut2": 0.0,
+                        "net_private_H": 1.0,
+                        "reward": 0.0,
+                        "seconds_H": 0.574,
+                        "seconds_convert_H": 0.372,
+                        "seconds_grade_total": 1.0209853999549523,
+                        "verifier_cpu_quota": 2.0,
+                        "verifier_cpus_visible": 48.0,
+                        "verifier_memory_limit_mib": 4096.0,
+                        "verifier_memtotal_mib": 386459.6
+                    }
+                ],
+                "pass_at_k": {},
+                "reward_stats": {
+                    "reward": {
+                        "0.0": [
+                            "feature-leakage-churn__HVEw966"
+                        ]
+                    },
+                    "check_A": {
+                        "0": [
+                            "feature-leakage-churn__HVEw966"
+                        ]
+                    },
+                    "check_B_cut1": {
+                        "0": [
+                            "feature-leakage-churn__HVEw966"
+                        ]
+                    },
+                    "check_B_cut2": {
+                        "0": [
+                            "feature-leakage-churn__HVEw966"
+                        ]
+                    },
+                    "verifier_cpus_visible": {
+                        "48": [
+                            "feature-leakage-churn__HVEw966"
+                        ]
+                    },
+                    "verifier_cpu_quota": {
+                        "2.0": [
+                            "feature-leakage-churn__HVEw966"
+                        ]
+                    },
+                    "verifier_memory_limit_mib": {
+                        "4096.0": [
+                            "feature-leakage-churn__HVEw966"
+                        ]
+                    },
+                    "verifier_memtotal_mib": {
+                        "386459.6": [
+                            "feature-leakage-churn__HVEw966"
+                        ]
+                    },
+                    "seconds_H": {
+                        "0.574": [
+                            "feature-leakage-churn__HVEw966"
+                        ]
+                    },
+                    "net_private_H": {
+                        "1": [
+                            "feature-leakage-churn__HVEw966"
+                        ]
+                    },
+                    "seconds_convert_H": {
+                        "0.372": [
+                            "feature-leakage-churn__HVEw966"
+                        ]
+                    },
+                    "bad_output_H": {
+                        "1": [
+                            "feature-leakage-churn__HVEw966"
+                        ]
+                    },
+                    "seconds_grade_total": {
+                        "1.0209853999549523": [
+                            "feature-leakage-churn__HVEw966"
+                        ]
+                    }
+                },
+                "exception_stats": {}
+            }
+        },
+        "n_input_tokens": null,
+        "n_cache_tokens": null,
+        "n_output_tokens": null,
+        "cost_usd": null
+    }
+}

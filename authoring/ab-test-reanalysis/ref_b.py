@@ -1,10 +1,17 @@
-"""Reference B for ab-test-reanalysis: a second, independent reading of a dataset (pandas + numpy).
+"""Reference B for ab-test-reanalysis: a second, independent reading of an export (pandas + numpy; the time route).
 
-Own loader (pandas, not the shipped code and not ref_a), per-user aggregates, and three interval methods:
-  delta(...)   delta method for each arm's ratio of sums (numpy), with the N/(N-1) factor or without it;
-  cr1(...)     pageview-level OLS of clicked on a B indicator with CR1 cluster-robust errors by user (2x2 algebra);
+Own loader (pandas, not the shipped code, not ref_a) and a different population rule that the generator makes
+coincide with ref_a's rule route (data_checks.py assertion e):
+  population  hash-assigned users (exact repeats once) with no bot_flags row of any rule flagged at or before their
+              assigned_at (flags raised later read what the user did during the experiment);
+  clicks      a counted pageview is clicked if its pageview_id is among the pageview_ids of item:<product> events
+              (set membership, so pageviews without events count as unclicked and two events count once).
+Interval methods (used by calibration_study.py):
+  delta(...)     delta method for each arm's ratio of sums (numpy), with the N/(N-1) factor or without it;
+  cr1(...)       pageview-level OLS of clicked on a B indicator with CR1 cluster-robust errors by user (2x2 algebra);
   bootstrap(...) user-level bootstrap, users resampled with replacement within each arm (or pooled), any B and seed.
-Used by calibration_study.py; `python ref_b.py <folder>` prints its delta and CR1 readouts for a quick cross-check.
+readout(folder) gives the full readout with the delta interval (gen_data.py compares it with ref_a's).
+`python ref_b.py <folder>` prints its delta and CR1 readouts.
 """
 import json, math, os, sys
 
@@ -12,11 +19,16 @@ import numpy as np
 import pandas as pd
 
 Z975 = 1.959963984540054
+SRM_ALPHA = 0.001
 
 
 def _read(folder, name, **kw):
-    p = os.path.join(folder, name)
-    return pd.read_csv(p if os.path.exists(p) else p + ".gz", **kw)
+    p = os.path.join(folder, name + ".gz")
+    return pd.read_csv(p if os.path.exists(p) else os.path.join(folder, name), **kw)
+
+
+def _utc(col):
+    return pd.to_datetime(col, utc=True, format="ISO8601")
 
 
 def per_user(folder):
@@ -24,14 +36,21 @@ def per_user(folder):
     a = _read(folder, "assignments.csv", dtype=str).drop_duplicates()
     if a["user_id"].duplicated().any():
         raise ValueError("conflicting assignment rows")
-    a["t0"] = pd.to_datetime(a["assigned_at"], utc=True, format="ISO8601")
-    u = _read(folder, "users.csv", dtype={"user_id": str, "is_bot": "int64"})
-    a = a[~a["user_id"].isin(u.loc[u["is_bot"] == 1, "user_id"])]
-    pv = _read(folder, "pageviews.csv", dtype={"user_id": str, "ts": str, "clicked": "int64"})
-    pv["t"] = pd.to_datetime(pv["ts"], utc=True, format="ISO8601")
+    a = a[a["method"] == "hash"].copy()
+    a["t0"] = _utc(a["assigned_at"])
+    f = _read(folder, "bot_flags.csv", dtype=str)
+    f["t"] = _utc(f["flagged_at"])
+    early = f.merge(a[["user_id", "t0"]], on="user_id", how="inner")
+    early = early.loc[early["t"] <= early["t0"], "user_id"]
+    a = a[~a["user_id"].isin(early)]
+    pv = _read(folder, "pageviews.csv", dtype={"pageview_id": str, "user_id": str, "ts": str, "clicked": "int64"})
+    pv["t"] = _utc(pv["ts"])
     pv = pv.merge(a[["user_id", "t0"]], on="user_id", how="inner")
     pv = pv[pv["t"] >= pv["t0"]]
-    g = pv.groupby("user_id").agg(c=("clicked", "sum"), n=("clicked", "size"))
+    mc = _read(folder, "module_clicks.csv", dtype=str)
+    items = mc.loc[mc["target"].str.startswith("item:"), "pageview_id"].unique()
+    pv = pv.assign(c=pv["pageview_id"].isin(items).astype("int64"))
+    g = pv.groupby("user_id").agg(c=("c", "sum"), n=("c", "size"))
     a = a.join(g, on="user_id").fillna({"c": 0, "n": 0})
     return {arm: (a.loc[a["variant"] == arm, "c"].to_numpy(float), a.loc[a["variant"] == arm, "n"].to_numpy(float))
             for arm in ("A", "B")}
@@ -47,6 +66,26 @@ def delta(arms, small_sample=True):
     diff = out["B"][0] - out["A"][0]
     se = math.sqrt(out["A"][1] + out["B"][1])
     return diff, diff - Z975 * se, diff + Z975 * se
+
+
+def readout(folder):
+    """The full readout (delta interval) in ref_a's keys."""
+    arms = per_user(folder)
+    out = {"n_users": {}, "pageviews": {}, "clicks": {}, "ctr": {}}
+    for arm, (c, n) in arms.items():
+        out["n_users"][arm] = int(len(c))
+        out["pageviews"][arm] = int(n.sum())
+        out["clicks"][arm] = int(c.sum())
+        out["ctr"][arm] = float(c.sum() / n.sum())
+    diff, lo, hi = delta(arms)
+    na, nb = out["n_users"]["A"], out["n_users"]["B"]
+    e = (na + nb) / 2
+    chi2 = ((na - e) ** 2 + (nb - e) ** 2) / e
+    srm_p = math.erfc(math.sqrt(chi2 / 2))
+    srm_flag = srm_p < SRM_ALPHA
+    out.update(diff=float(diff), ci_95=[float(lo), float(hi)], half_width=float((hi - lo) / 2), srm_p=srm_p,
+               srm_flag=srm_flag, decision="invalid" if srm_flag else ("ship" if lo > 0 else "no_ship"))
+    return out
 
 
 def cr1(arms):

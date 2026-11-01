@@ -1,0 +1,19 @@
+{
+    "task": {
+        "path": "tasks/orders-export-missing-rows"
+    },
+    "trial_name": "orders-export-missing-rows__8QFnJgD",
+    "trials_dir": "jobs/agent-trials/orders-export-missing-rows-terminus2-gptoss-r3",
+    "environment_build_timeout_multiplier": 3.0,
+    "agent": {
+        "name": "terminus-2",
+        "model_name": "openai/gpt-oss-120b",
+        "kwargs": {
+            "api_base": "<model-endpoint>"
+        }
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "37deae34-d0fb-4e19-b65c-43bec4d08ce9"
+}

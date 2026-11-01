@@ -1,0 +1,2219 @@
+[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# asciinema rec --stdin /logs/agent/recording.cast
+[?2004l[0;32masciinema: recording asciicast to /logs/agent/recording.cast[0m
+[0;32masciinema: press <ctrl-d> or type "exit" when you're done[0m
+[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# clear
+[?2004l[H[J[3J[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# ls -R
+[?2004l.:
+INCIDENT.md  README.md	churn  data
+
+./churn:
+FEATURES.md  __init__.py  build_features.py  encoding.py  extract.py  impute.py  status.py  train.py  windows.py
+
+./data:
+customers.csv  labels.csv  orders.csv  scoring_points.csv  status_snapshots.csv  tickets.csv
+[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# sed -n '1,200p' churn/FEATURES.md
+[?2004l# Churn model features: specification
+
+Owner: retention data science. This is the contract between the feature pipeline (`python -m churn.build_features`)
+and the churn model (`python -m churn.train`). The live scoring service computes the same features from the same
+definitions, so offline and live values must agree.
+
+## The one rule
+Each output row is one prediction for one customer at one moment `t` (the row's `as_of`). **A feature for that row may
+use only information that existed strictly before `t`.** The definitions below say exactly what that means for each
+feature; where they are more specific, they win.
+
+## Conventions
+- All timestamps are UTC, written as ISO 8601 with a `Z` suffix and whole seconds (`2025-03-04T06:00:00Z`).
+- "Day" means a UTC calendar date. `date(t)` is the UTC date of `t`.
+- "In days" means elapsed seconds divided by 86,400 (a fractional number).
+- `W days` means exactly `W × 86,400` seconds.
+- Windows are half-open: `[t − W days, t)` contains an event at exactly `t − W days` and does **not** contain an event at
+  exactly `t`. Events are stamped to the second, and an event stamped exactly at `t` (for example the box charge that
+  the 06:00 billing run creates while the 06:00 scoring run is reading) is not visible to the prediction at `t`.
+
+## Input tables (`--data <dir>`)
+| File | Columns | Notes |
+|---|---|---|
+| `customers.csv` | `customer_id, signup_at, plan, postcode_district` | one row per customer |
+| `scoring_points.csv` | `customer_id, as_of, trigger, app_minutes_7d` | one row per prediction; `(customer_id, as_of)` is unique; `trigger` is `batch` (the 06:00 run) or `ticket` (scored by the support desk when a ticket is opened, at the ticket's `opened_at`); `app_minutes_7d` is the product-analytics reading for that prediction and is often empty (export outages, devices offline) |
+| `orders.csv` | `order_id, customer_id, ordered_at, kind, amount_cents` | `kind` is `box` or `addon`; amounts are integer cents |
+| `tickets.csv` | `ticket_id, customer_id, opened_at, topic` | support tickets |
+| `status_snapshots.csv` | `customer_id, snapshot_date, status` | `snapshot_date` is a date (`YYYY-MM-DD`); at most one row per `(customer_id, snapshot_date)`; a snapshot dated `D` records the account status at the **end** of day `D`; `status` is one of `active`, `paused`, `payment_failed`, `cancelled` |
+| `labels.csv` | `customer_id, as_of, churned_30d, label_available_at` | one row per labelled prediction; `churned_30d` is 1 if the customer cancelled in `(as_of, as_of + 30 days]`, else 0; `label_available_at` is when that outcome landed in the warehouse. Predictions whose outcome had not landed when the extract was taken have no row. |
+
+## Output (`--out <file.parquet>`)
+One row per row of `scoring_points.csv`, exactly once each, with these columns (row and column order do not matter):
+
+| Column | Type | Definition |
+|---|---|---|
+| `customer_id` | integer | key, from `scoring_points.csv` |
+| `as_of` | timestamp (UTC) | key, `t` |
+| `orders_7d` | integer | number of orders with `t − 7 days ≤ ordered_at < t` |
+| `orders_30d` | integer | number of orders with `t − 30 days ≤ ordered_at < t` |
+| `spend_30d_cents` | integer | sum of `amount_cents` over the same 30-day window; `0` when there are none |
+| `tickets_30d` | integer | number of tickets with `t − 30 days ≤ opened_at < t` |
+| `days_since_last_order` | float or null | `t` minus the latest `ordered_at` that is `< t`, in days; null when the customer has no earlier order |
+| `tenure_days` | float | `t − signup_at`, in days |
+| `status` | string or null | `status` of the customer's latest snapshot with `snapshot_date < date(t)`; null when there is none. (The snapshot dated `date(t)` describes the end of that day, so it does not exist yet at `t`.) |
+| `app_minutes_7d` | float or null | the row's own `app_minutes_7d` when present; otherwise the value of the same customer's most recent row with a strictly earlier `as_of` that has one; otherwise null. Never a value from a row at or after `t`. |
+| `te_district` | float | target encoding of the customer's `postcode_district`, defined below |
+
+### `te_district`
+A label row is **available at `t`** when its `label_available_at < t`. For a prediction at `t` for a customer in
+district `k`:
+- `p` = the mean of `churned_30d` over all label rows available at `t` (every district, every customer); if no label row
+  is available at `t`, `p = 0.05`.
+- `n` = the number of label rows available at `t` whose customer is in district `k` (this includes the same customer's
+  own earlier predictions whose outcome has landed); `s` = the sum of their `churned_30d`.
+- `te_district = (s + 20 × p) / (n + 20)`  (a smoothed mean with prior weight `m = 20`).
+
+## Run time
+A run on an extract of the size in `/app/data` (about 3,000 customers) must finish within the limit stated in the task
+ticket.
+[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# sed -n '1,200p' churn/build_features.py
+[?2004l"""Build the churn feature table: python -m churn.build_features --data <dir> --out <file.parquet>"""
+import argparse
+import os
+
+from churn.encoding import district_encoding
+from churn.impute import fill_app_minutes
+from churn.extract import load_extract
+from churn.status import latest_status
+from churn.windows import activity_features, tenure_days
+
+FEATURE_COLUMNS = ["orders_7d", "orders_30d", "spend_30d_cents", "tickets_30d", "days_since_last_order",
+                   "tenure_days", "status", "app_minutes_7d", "te_district"]
+
+
+def build(data_dir):
+    t = load_extract(data_dir)
+    points = t["scoring_points"].reset_index(drop=True)
+    feats = activity_features(points, t["orders"], t["tickets"])
+    feats["tenure_days"] = tenure_days(points, t["customers"])
+    feats["status"] = latest_status(points, t["status_snapshots"])
+    feats["app_minutes_7d"] = fill_app_minutes(points)
+    feats["te_district"] = district_encoding(points, t["labels"], t["customers"])
+    return feats[["customer_id", "as_of"] + FEATURE_COLUMNS]
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--data", required=True, help="folder with the extract CSVs")
+    ap.add_argument("--out", required=True, help="output parquet file")
+    a = ap.parse_args()
+    feats = build(a.data)
+    os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
+    feats.to_parquet(a.out, index=False)
+    print(f"wrote {len(feats)} rows x {feats.shape[1]} columns to {a.out}")
+
+
+if __name__ == "__main__":
+    main()
+[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# sed -n '1,200p' churn/windows.py
+[?2004l"""Activity features over trailing windows (orders, spend, tickets) and simple time-since features."""
+import numpy as np
+import pandas as pd
+
+
+def _daily(points, events, ts_col, amount_col=None):
+    """Per customer and UTC day: number of events (and amount). Days that have a prediction but no event get 0."""
+    ev = events.assign(day=events[ts_col].dt.floor("D"))
+    agg = {"n": (ts_col, "size")}
+    if amount_col:
+        agg["amount"] = (amount_col, "sum")
+    per_day = ev.groupby(["customer_id", "day"]).agg(**agg).reset_index()
+    pred_days = points[["customer_id"]].assign(day=points["as_of"].dt.floor("D")).drop_duplicates()
+    grid = pd.concat([per_day[["customer_id", "day"]], pred_days]).drop_duplicates()
+    daily = grid.merge(per_day, on=["customer_id", "day"], how="left").fillna(0)
+    return daily.sort_values(["customer_id", "day"]).reset_index(drop=True)
+
+
+def _rolling(daily, cols, window):
+    # daily buckets keep this fast; the window covers the last `window` including the prediction day
+    rolled = (daily.set_index("day").groupby("customer_id")[cols]
+              .rolling(window, closed="both").sum().reset_index())
+    return rolled
+
+
+def activity_features(points, orders, tickets):
+    out = points[["customer_id", "as_of"]].copy()
+    out["day"] = out["as_of"].dt.floor("D")
+
+    od = _daily(points, orders, "ordered_at", "amount_cents")
+    r7 = _rolling(od, ["n"], "7D").rename(columns={"n": "orders_7d"})
+    r30 = _rolling(od, ["n", "amount"], "30D").rename(columns={"n": "orders_30d", "amount": "spend_30d_cents"})
+    td = _daily(points, tickets, "opened_at")
+    t30 = _rolling(td, ["n"], "30D").rename(columns={"n": "tickets_30d"})
+    for part in (r7, r30, t30):
+        out = out.merge(part, on=["customer_id", "day"], how="left")
+    for c in ("orders_7d", "orders_30d", "spend_30d_cents", "tickets_30d"):
+        out[c] = out[c].fillna(0).astype("int64")
+
+    # time since the last order strictly before the prediction
+    o = orders.sort_values("ordered_at")[["customer_id", "ordered_at"]]
+    left = out[["customer_id", "as_of"]].reset_index().sort_values("as_of")
+    last = pd.merge_asof(left, o, left_on="as_of", right_on="ordered_at", by="customer_id",
+                         allow_exact_matches=False).set_index("index").sort_index()["ordered_at"]
+    out["days_since_last_order"] = (out["as_of"] - last).dt.total_seconds() / 86400
+    return out.drop(columns=["day"])
+
+
+def tenure_days(points, customers):
+    signup = points["customer_id"].map(customers.set_index("customer_id")["signup_at"])
+    return (points["as_of"] - signup).dt.total_seconds() / 86400
+[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# sed -n '1,200p' churn/status.py
+[?2004l"""Account status from the billing system's status snapshots."""
+
+
+def latest_status(points, snapshots):
+    """Status of the customer's latest snapshot."""
+    latest = (snapshots.sort_values(["customer_id", "snapshot_date"])
+              .drop_duplicates("customer_id", keep="last"))
+    return points[["customer_id"]].merge(latest[["customer_id", "status"]], on="customer_id", how="left")["status"]
+[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# sed -n '1,200p' churn/impute.py
+[?2004l"""Gap filling for upstream readings that arrive with holes (analytics export outages, devices offline)."""
+
+
+def fill_app_minutes(points):
+    """Fill missing app_minutes_7d from the nearest reading of the same customer."""
+    pts = points.sort_values(["customer_id", "as_of"])
+    filled = pts.groupby("customer_id")["app_minutes_7d"].transform(lambda s: s.bfill().ffill())
+    return filled.reindex(points.index)
+[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# sed -n '1,200p' churn/encoding.py
+[?2004l"""Target encoding of high-cardinality categoricals."""
+import pandas as pd
+
+PRIOR_WEIGHT = 20
+DEFAULT_PRIOR = 0.05
+
+
+def district_encoding(points, labels, customers, m=PRIOR_WEIGHT):
+    """Smoothed churn rate of the customer's postcode district."""
+    district = customers.set_index("customer_id")["postcode_district"]
+    lab = labels.assign(district=labels["customer_id"].map(district))
+    prior = lab["churned_30d"].mean() if len(lab) else DEFAULT_PRIOR
+    stats = lab.groupby("district")["churned_30d"].agg(["sum", "count"])
+    te = (stats["sum"] + m * prior) / (stats["count"] + m)
+    return points["customer_id"].map(district).map(te).fillna(prior).astype("float64")
+[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# sed -n '1,200p' churn/extract.py
+[?2004l"""Load a warehouse extract (the CSV layout described in FEATURES.md) into pandas frames with UTC timestamps."""
+import os
+import pandas as pd
+
+TIMESTAMPS = {
+    "customers": ["signup_at"],
+    "scoring_points": ["as_of"],
+    "orders": ["ordered_at"],
+    "tickets": ["opened_at"],
+    "status_snapshots": ["snapshot_date"],
+    "labels": ["as_of", "label_available_at"],
+}
+
+
+def load_extract(data_dir):
+    tables = {}
+    for name, cols in TIMESTAMPS.items():
+        df = pd.read_csv(os.path.join(data_dir, f"{name}.csv"), dtype={"postcode_district": "str"})
+        for c in cols:
+            df[c] = pd.to_datetime(df[c], utc=True)
+        tables[name] = df
+    tables["scoring_points"]["app_minutes_7d"] = tables["scoring_points"]["app_minutes_7d"].astype("float64")
+    return tables
+[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# apply_patch <<'PATCH'
+[?2004lhis fast; the window covers the last `window` including the prediction day
+-    rolled = (daily.set_index("day").groupby("customer_id")[cols]
+-              .rolling(window, closed="both").sum().reset_index())
+-    return rolled
+-
+-
+-def activity_features(points, orders, tickets):
+-    out = points[["customer_id", "as_of"]].copy()
+-    out["day"] = out["as_of"].dt.floor("D")
+-
+-    od = _daily(points, orders, "ordered_at", "amount_cents")
+-    r7 = _rolling(od, ["n"], "7D").rename(columns={"n": "orders_7d"})
+-    r30 = _rolling(od, ["n", "amount"], "30D").rename(columns={"n": "orders_30d", "amount": "spend_30d_cents"})
+-    td = _daily(points, tickets, "opened_at")
+-    t30 = _rolling(td, ["n"], "30D").rename(columns={"n": "tickets_30d"})
+-    for part in (r7, r30, t30):
+-        out = out.merge(part, on=["customer_id", "day"], how="left")
+-    for c in ("orders_7d", "orders_30d", "spend_30d_cents", "tickets_30d"):
+-        out[c] = out[c].fillna(0).astype("int64")
+-
+-    # time since the last order strictly before the prediction
+-    o = orders.sort_values("ordered_at")[["customer_id", "ordered_at"]]
+-    left = out[["customer_id", "as_of"]].reset_index().sort_values("as_of")
+-    last = pd.merge_asof(left, o, left_on="as_of", right_on="ordered_at", by="customer_id",
+-                         allow_exact_matches=False).set_index("index").sort_index()["ordered_at"]
+-    out["days_since_last_order"] = (out["as_of"] - last).dt.total_seconds() / 86400
+-    return out.drop(columns=["day"])
++"""Activity features over trailing windows (orders, spend, tickets) and simple time‑since features.
++
++The original implementation aggregated events per calendar day and then used a closed="both"
++rolling window.  That unintentionally included events that occurred **after** the prediction
++timestamp on the same day, violating the strict‑before rule described in `FEATURES.md`.
++
++The new implementation works directly with timestamps and uses `pd.merge_asof` to obtain
++cumulative counts/sums strictly before each `as_of`.  For a window `[t‑W, t)` we compute:
++
++```
++count(t) = cum_count(t‑) - cum_count(t‑W‑)
++```
++
++where `cum_count(t‑)` is the cumulative count of events with timestamp < t.  This approach
++guarantees that events at exactly `t` are excluded and that only information available
++strictly before the prediction is used.
++"""
++
++import numpy as np
++import pandas as pd
++
++
++def _cumulative(events, ts_col, amount_col=None):
++    """Return a DataFrame with cumulative count and (optional) cumulative sum per customer.
++
++    The returned DataFrame is sorted by ``customer_id`` and the timestamp column and contains
++    the original timestamp column, plus ``cum_cnt`` and optionally ``cum_sum``.
++    """
++    ev = events[["customer_id", ts_col]].copy()
++    ev = ev.sort_values(["customer_id", ts_col])
++    ev["cum_cnt"] = ev.groupby("customer_id").cumcount() + 1
++    if amount_col:
++        ev["cum_sum"] = events.loc[ev.index, amount_col].groupby(events["customer_id"]).cumsum()
++    return ev
++
++
++def _window_counts(points, events, ts_col, a[?2004h> *** Begin Patch: churn/windows.py
+[?2004l[?2004h> @@
+[?2004l[?2004h> -"""Activity features over trailing windows (orders, spend, tickets) and simple time-since features."""
+[?2004l[?2004h> -import numpy as np
+[?2004l[?2004h> -import pandas as pd
+[?2004l[?2004h> -
+[?2004l[?2004h> -
+[?2004l[?2004h> -def _daily(points, events, ts_col, amount_col=None):
+[?2004l[?2004h> -    """Per customer and UTC day: number of events (and amount). Days that have a prediction but no event get 0."""
+[?2004l[?2004h> -    ev = events.assign(day=events[ts_col].dt.floor("D"))
+[?2004l[?2004h> -    agg = {"n": (ts_col, "size")}
+[?2004l[?2004h> -    if amount_col:
+[?2004l[?2004h> -        agg["amount"] = (amount_col, "sum")
+[?2004l[?2004h> -    per_day = ev.groupby(["customer_id", "day"]).agg(**agg).reset_index()
+[?2004l[?2004h> -    pred_days = points[["customer_id"]].assign(day=points["as_of"].dt.floor("D")).drop_duplicates()
+[?2004l[?2004h> -    grid = pd.concat([per_day[["customer_id", "day"]], pred_days]).drop_duplicates()
+[?2004l[?2004h> -    daily = grid.merge(per_day, on=["customer_id", "day"], how="left").fillna(0)
+[?2004l[?2004h> -    return daily.sort_values(["customer_id", "day"]).reset_index(drop=True)
+[?2004l[?2004h> -
+[?2004l[?2004h> -
+[?2004l[?2004h> -def _rolling(daily, cols, window):
+[?2004l[?2004h> -    # daily buckets keep this fast; the window covers the last `window` including the prediction day
+[?2004l[?2004h> -    rolled = (daily.set_index("day").groupby("customer_id")[cols]
+[?2004l[?2004h> -              .rolling(window, closed="both").sum().reset_index())
+[?2004l[?2004h> -    return rolled
+[?2004l[?2004h> -
+[?2004l[?2004h> -
+[?2004l[?2004h> -def activity_features(points, orders, tickets):
+[?2004l[?2004h> -    out = points[["customer_id", "as_of"]].copy()
+[?2004l[?2004h> -    out["day"] = out["as_of"].dt.floor("D")
+[?2004l[?2004h> -
+[?2004l[?2004h> -    od = _daily(points, orders, "ordered_at", "amount_cents")
+[?2004l[?2004h> -    r7 = _rolling(od, ["n"], "7D").rename(columns={"n": "orders_7d"})
+[?2004l[?2004h> -    r30 = _rolling(od, ["n", "amount"], "30D").rename(columns={"n": "orders_30d", "amount": "spend_30d_cents"})
+[?2004l[?2004h> -    td = _daily(points, tickets, "opened_at")
+[?2004l[?2004h> -    t30 = _rolling(td, ["n"], "30D").rename(columns={"n": "tickets_30d"})
+[?2004l[?2004h> -    for part in (r7, r30, t30):
+[?2004l[?2004h> -        out = out.merge(part, on=["customer_id", "day"], how="left")
+[?2004l[?2004h> -    for c in ("orders_7d", "orders_30d", "spend_30d_cents", "tickets_30d"):
+[?2004l[?2004h> -        out[c] = out[c].fillna(0).astype("int64")
+[?2004l[?2004h> -
+[?2004l[?2004h> -    # time since the last order strictly before the prediction
+[?2004l[?2004h> -    o = orders.sort_values("ordered_at")[["customer_id", "ordered_at"]]
+[?2004l[?2004h> -    left = out[["customer_id", "as_of"]].reset_index().sort_values("as_of")
+[?2004l[?2004h> -    last = pd.merge_asof(left, o, left_on="as_of", right_on="ordered_at", by="customer_id",
+[?2004l[?2004h> -                         allow_exact_matches=False).set_index("index").sort_index()["ordered_at"]
+[?2004l[?2004h> -    out["days_since_last_order"] = (out["as_of"] - last).dt.total_seconds() / 86400
+[?2004l[?2004h> -    return out.drop(columns=["day"])
+[?2004l[?2004h> +"""Activity features over trailing windows (orders, spend, tickets) and simple time‑since features.
+[?2004l[?2004h> +
+[?2004l[?2004h> +The original implementation aggregated events per calendar day and then used a closed="both"
+[?2004l[?2004h> +rolling window.  That unintentionally included events that occurred **after** the prediction
+[?2004l[?2004h> +timestamp on the same day, violating the strict‑before rule described in `FEATURES.md`.
+[?2004l[?2004h> +
+[?2004l[?2004h> +The new implementation works directly with timestamps and uses `pd.merge_asof` to obtain
+[?2004l[?2004h> +cumulative counts/sums strictly before each `as_of`.  For a window `[t‑W, t)` we compute:
+[?2004l[?2004h> +
+[?2004l[?2004h> +```
+[?2004l[?2004h> +count(t) = cum_count(t‑) - cum_count(t‑W‑)
+[?2004l[?2004h> +```
+[?2004l[?2004h> +
+[?2004l[?2004h> +where `cum_count(t‑)` is the cumulative count of events with timestamp < t.  This approach
+[?2004l[?2004h> +guarantees that events at exactly `t` are excluded and that only information available
+[?2004l[?2004h> +strictly before the prediction is used.
+[?2004l[?2004h> +"""
+[?2004l[?2004h> +
+[?2004l[?2004h> +import numpy as np
+[?2004l[?2004h> +import pandas as pd
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def _cumulative(events, ts_col, amount_col=None):
+[?2004l[?2004h> +    """Return a DataFrame with cumulative count and (optional) cumulative sum per customer.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    The returned DataFrame is sorted by ``customer_id`` and the timestamp column and contains
+[?2004l[?2004h> +    the original timestamp column, plus ``cum_cnt`` and optionally ``cum_sum``.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    ev = events[["customer_id", ts_col]].copy()
+[?2004l[?2004h> +    ev = ev.sort_values(["customer_id", ts_col])
+[?2004l[?2004h> +    ev["cum_cnt"] = ev.groupby("customer_id").cumcount() + 1
+[?2004l[?2004h> +    if amount_col:
+[?2004l[?2004h> +        ev["cum_sum"] = events.loc[ev.index, amount_col].groupby(events["customer_id"]).cumsum()
+[?2004l[?2004h> +    return ev
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def _window_counts(points, events, ts_col, amount_col=None, days=7):
+[?2004l[?2004h> +    """Calculate count (and optional sum) of ``events`` in the half‑open window ``[t‑days, t)``.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    Returns a Series aligned with ``points`` containing the count and, if ``amount_col`` is
+[?2004l[?2004h> +    supplied, the sum of the amount column.  The result is ``int64`` for counts and ``int64``
+[?2004l[?2004h> +    for sums (with missing values filled with 0).
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    # cumulative up to (but not including) each as_of
+[?2004l[?2004h> +    cum = _cumulative(events, ts_col, amount_col)
+[?2004l[?2004h> +
+[?2004l[?2004h> +    # merge_asof to get cumulative values strictly before as_of
+[?2004l[?2004h> +    left = points[["customer_id", "as_of"]].sort_values(["customer_id", "as_of"])
+[?2004l[?2004h> +    merged_cur = pd.merge_asof(
+[?2004l[?2004h> +        left,
+[?2004l[?2004h> +        cum,
+[?2004l[?2004h> +        left_on="as_of",
+[?2004l[?2004h> +        right_on=ts_col,
+[?2004l[?2004h> +        by="customer_id",
+[?2004l[?2004h> +        direction="backward",
+[?2004l[?2004h> +        allow_exact_matches=False,
+[?2004l[?2004h> +    )
+[?2004l[?2004h> +
+[?2004l[?2004h> +    # merge_asof for the start of the window (t - days)
+[?2004l[?2004h> +    left_start = left.copy()
+[?2004l[?2004h> +    left_start["as_of"] = left_start["as_of"] - np.timedelta64(days, "D")
+[?2004l[?2004h> +    merged_start = pd.merge_asof(
+[?2004l[?2004h> +        left_start,
+[?2004l[?2004h> +        cum,
+[?2004l[?2004h> +        left_on="as_of",
+[?2004l[?2004h> +        right_on=ts_col,
+[?2004l[?2004h> +        by="customer_id",
+[?2004l[?2004h> +        direction="backward",
+[?2004l[?2004h> +        allow_exact_matches=False,
+[?2004l[?2004h> +    )
+[?2004l[?2004h> +
+[?2004l[?2004h> +    cnt = (merged_cur["cum_cnt"].fillna(0) - merged_start["cum_cnt"].fillna(0)).astype("int64")
+[?2004l[?2004h> +    if amount_col:
+[?2004l[?2004h> +        spend = (merged_cur["cum_sum"].fillna(0) - merged_start["cum_sum"].fillna(0)).astype("int64")
+[?2004l[?2004h> +        return cnt, spend
+[?2004l[?2004h> +    else:
+[?2004l[?2004h> +        return cnt, None
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def activity_features(points, orders, tickets):
+[?2004l[?2004h> +    """Return a DataFrame with all activity‑related features.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    Columns produced: ``orders_7d``, ``orders_30d``, ``spend_30d_cents``, ``tickets_30d`` and
+[?2004l[?2004h> +    ``days_since_last_order``.  All calculations respect the strict‑before rule.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    out = points[["customer_id", "as_of"]].copy()
+[?2004l[?2004h> +
+[?2004l[?2004h> +    # orders_7d
+[?2004l[?2004h> +    out["orders_7d"], _ = _window_counts(points, orders, "ordered_at", days=7)
+[?2004l[?2004h> +    # orders_30d and spend_30d_cents
+[?2004l[?2004h> +    out["orders_30d"], out["spend_30d_cents"] = _window_counts(
+[?2004l[?2004h> +        points, orders, "ordered_at", amount_col="amount_cents", days=30
+[?2004l[?2004h> +    )
+[?2004l[?2004h> +    # tickets_30d
+[?2004l[?2004h> +    out["tickets_30d"], _ = _window_counts(points, tickets, "opened_at", days=30)
+[?2004l[?2004h> +
+[?2004l[?2004h> +    # days_since_last_order (strictly before)
+[?2004l[?2004h> +    orders_sorted = orders.sort_values("ordered_at")[["customer_id", "ordered_at"]]
+[?2004l[?2004h> +    left = out[["customer_id", "as_of"]].reset_index().sort_values("as_of")
+[?2004l[?2004h> +    last = pd.merge_asof(
+[?2004l[?2004h> +        left,
+[?2004l[?2004h> +        orders_sorted,
+[?2004l[?2004h> +        left_on="as_of",
+[?2004l[?2004h> +        right_on="ordered_at",
+[?2004l[?2004h> +        by="customer_id",
+[?2004l[?2004h> +        allow_exact_matches=False,
+[?2004l[?2004h> +    ).set_index("index").sort_index()["ordered_at"]
+[?2004l[?2004h> +    out["days_since_last_order"] = (out["as_of"] - last).dt.total_seconds() / 86400
+[?2004l[?2004h> +
+[?2004l[?2004h> +    return out
+[?2004l[?2004h> *** End Patch
+[?2004l[?2004h> PATCH
+[?2004lbash: apply_patch: command not found
+[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# apply_patch <<'PATCH'
+[?2004l,
++        direction="backward",
++        allow_exact_matches=False,
++    )
++    return merged["status"]
+*** End Patch
+PATCH
+[?2004h> *** Begin Patch: churn/status.py
+[?2004l[?2004h> @@
+[?2004l[?2004h> -"""Account status from the billing system's status snapshots."""
+[?2004l[?2004h> -
+[?2004l[?2004h> -
+[?2004l[?2004h> -def latest_status(points, snapshots):
+[?2004l[?2004h> -    """Status of the customer's latest snapshot."""
+[?2004l[?2004h> -    latest = (snapshots.sort_values(["customer_id", "snapshot_date"])
+[?2004l[?2004h> -              .drop_duplicates("customer_id", keep="last"))
+[?2004l[?2004h> -    return points[["customer_id"]].merge(latest[["customer_id", "status"]], on="customer_id", how="left")["status"]
+[?2004l[?2004h> +"""Account status from the billing system's status snapshots.
+[?2004l[?2004h> +
+[?2004l[?2004h> +The specification requires that, for a prediction at time ``t`` (the ``as_of`` timestamp), we use the
+[?2004l[?2004h> +status from the *latest* snapshot whose ``snapshot_date`` is **strictly before** ``date(t)``.  The
+[?2004l[?2004h> +original implementation ignored ``as_of`` entirely and always returned the globally latest snapshot.
+[?2004l[?2004h> +The corrected implementation performs a ``merge_asof`` on ``snapshot_date`` after converting the
+[?2004l[?2004h> +prediction timestamp to a date (floored to UTC midnight).  This guarantees that snapshots that are
+[?2004l[?2004h> +recorded on the same day as the prediction are not visible to the model.
+[?2004l[?2004h> +"""
+[?2004l[?2004h> +
+[?2004l[?2004h> +import pandas as pd
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def latest_status(points, snapshots):
+[?2004l[?2004h> +    """Return a Series of the most recent status *before* the prediction date.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    Parameters
+[?2004l[?2004h> +    ----------
+[?2004l[?2004h> +    points : DataFrame
+[?2004l[?2004h> +        The scoring points containing ``customer_id`` and ``as_of``.
+[?2004l[?2004h> +    snapshots : DataFrame
+[?2004l[?2004h> +        Status snapshots with ``customer_id``, ``snapshot_date`` (as a UTC datetime) and ``status``.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    # Ensure snapshots are sorted for merge_asof
+[?2004l[?2004h> +    snaps = snapshots.sort_values(["customer_id", "snapshot_date"])
+[?2004l[?2004h> +
+[?2004l[?2004h> +    # Convert as_of to the *date* (midnight) that the snapshot would represent at the end of that day.
+[?2004l[?2004h> +    pts = points[["customer_id", "as_of"]].copy()
+[?2004l[?2004h> +    pts["pred_date"] = pts["as_of"].dt.floor("D")
+[?2004l[?2004h> +
+[?2004l[?2004h> +    merged = pd.merge_asof(
+[?2004l[?2004h> +        pts.sort_values(["customer_id", "pred_date"]),
+[?2004l[?2004h> +        snaps,
+[?2004l[?2004h> +        left_on="pred_date",
+[?2004l[?2004h> +        right_on="snapshot_date",
+[?2004l[?2004h> +        by="customer_id",
+[?2004l[?2004h> +        direction="backward",
+[?2004l[?2004h> +        allow_exact_matches=False,
+[?2004l[?2004h> +    )
+[?2004l[?2004h> +    return merged["status"]
+[?2004l[?2004h> *** End Patch
+[?2004l[?2004h> PATCH
+[?2004lbash: apply_patch: command not found
+[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# apply_patch <<'PATCH'
+[?2004l[?2004h> *** Begin Patch: churn/impute.py
+[?2004l[?2004h> @@
+[?2004l[?2004h> -"""Gap filling for upstream readings that arrive with holes (analytics export outages, devices offline)."""
+[?2004l[?2004h> -
+[?2004l[?2004h> -
+[?2004l[?2004h> -def fill_app_minutes(points):
+[?2004l[?2004h> -    """Fill missing app_minutes_7d from the nearest reading of the same customer."""
+[?2004l[?2004h> -    pts = points.sort_values(["customer_id", "as_of"])
+[?2004l[?2004h> -    filled = pts.groupby("customer_id")["app_minutes_7d"].transform(lambda s: s.bfill().ffill())
+[?2004l[?2004h> -    return filled.reindex(points.index)
+[?2004l[?2004h> +"""Gap filling for upstream readings that arrive with holes.
+[?2004l[?2004h> +
+[?2004l[?2004h> +The original implementation performed a bidirectional fill (``bfill`` followed by ``ffill``),
+[?2004l[?2004h> +which could propagate a *future* ``app_minutes_7d`` value backward to earlier predictions – a clear
+[?2004l[?2004h> +violation of the strict‑before rule.  The corrected version only forward‑fills so that a missing
+[?2004l[?2004h> +value is replaced by the most recent earlier reading (if any); future readings never influence past
+[?2004l[?2004h> +predictions.
+[?2004l[?2004h> +"""
+[?2004l[?2004h> +
+[?2004l[?2004h> +import pandas as pd
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def fill_app_minutes(points):
+[?2004l[?2004h> +    """Forward‑fill missing ``app_minutes_7d`` within each customer.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    Parameters
+[?2004l[?2004h> +    ----------
+[?2004l[?2004h> +    points : DataFrame
+[?2004l[?2004h> +        Scoring points containing ``customer_id``, ``as_of`` and ``app_minutes_7d``.
+[?2004l[?2004h> +    Returns
+[?2004l[?2004h> +    -------
+[?2004l[?2004h> +    pandas.Series
+[?2004l[?2004h> +        A series aligned with ``points`` where NaNs have been forward‑filled per customer.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    # Ensure deterministic order
+[?2004l[?2004h> +    pts = points.sort_values(["customer_id", "as_of"])
+[?2004l[?2004h> +    filled = pts.groupby("customer_id")["app_minutes_7d"].transform(lambda s: s.ffill())
+[?2004l[?2004h> +    # Re‑index to original order
+[?2004l[?2004h> +    return filled.reindex(points.index)
+[?2004l[?2004h> *** End Patch
+[?2004l[?2004h> PATCH
+[?2004lbash: apply_patch: command not found
+[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# apply_patch <<'PATCH'
+[?2004l[?2004h> *** Begin Patch: churn/encoding.py
+[?2004l[?2004h> @@
+[?2004l[?2004h> -"""Target encoding of high-cardinality categoricals."""
+[?2004l[?2004h> -import pandas as pd
+[?2004l[?2004h> -
+[?2004l[?2004h> -PRIOR_WEIGHT = 20
+[?2004l[?2004h> -DEFAULT_PRIOR = 0.05
+[?2004l[?2004h> -
+[?2004l[?2004h> -
+[?2004l[?2004h> -def district_encoding(points, labels, customers, m=PRIOR_WEIGHT):
+[?2004l[?2004h> -    """Smoothed churn rate of the customer's postcode district."""
+[?2004l[?2004h> -    district = customers.set_index("customer_id")["postcode_district"]
+[?2004l[?2004h> -    lab = labels.assign(district=labels["customer_id"].map(district))
+[?2004l[?2004h> -    prior = lab["churned_30d"].mean() if len(lab) else DEFAULT_PRIOR
+[?2004l[?2004h> -    stats = lab.groupby("district")["churned_30d"].agg(["sum", "count"])
+[?2004l[?2004h> -    te = (stats["sum"] + m * prior) / (stats["count"] + m)
+[?2004l[?2004h> -    return points["customer_id"].map(district).map(te).fillna(prior).astype("float64")
+[?2004l[?2004h> +"""Target encoding of high‑cardinality categoricals.
+[?2004l[?2004h> +
+[?2004l[?2004h> +The specification for ``te_district`` requires that, for a prediction at time ``t``, only label rows
+[?2004l[?2004h> +with ``label_available_at < t`` are considered.  The original implementation ignored both ``as_of``
+[?2004l[?2004h> +and ``label_available_at``, using *all* labels regardless of availability, which introduces leakage.
+[?2004l[?2004h> +
+[?2004l[?2004h> +The revised implementation computes, for each district, the cumulative sum and count of ``churned_30d``
+[?2004l[?2004h> +over label rows ordered by ``label_available_at``.  For each prediction we merge the most recent
+[?2004l[?2004h> +cumulative statistics that are strictly before the prediction's ``as_of`` timestamp, then apply the
+[?2004l[?2004h> +smoothed formula:
+[?2004l[?2004h> +
+[?2004l[?2004h> +```
+[?2004l[?2004h> +te = (s + m * p) / (n + m)
+[?2004l[?2004h> +```
+[?2004l[?2004h> +
+[?2004l[?2004h> +where ``p`` is the overall prior mean computed from the same set of *available* label rows (i.e.
+[?2004l[?2004h> +those with ``label_available_at < t``).  If no label rows are available for a given ``t`` we fall back
+[?2004l[?2004h> +to the constant ``DEFAULT_PRIOR``.
+[?2004l[?2004h> +"""
+[?2004l[?2004h> +
+[?2004l[?2004h> +import pandas as pd
+[?2004l[?2004h> +
+[?2004l[?2004h> +PRIOR_WEIGHT = 20
+[?2004l[?2004h> +DEFAULT_PRIOR = 0.05
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def district_encoding(points, labels, customers, m=PRIOR_WEIGHT):
+[?2004l[?2004h> +    """Return the smoothed churn rate per postcode district respecting label availability.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    Parameters
+[?2004l[?2004h> +    ----------
+[?2004l[?2004h> +    points : DataFrame
+[?2004l[?2004h> +        Scoring points with ``customer_id`` and ``as_of``.
+[?2004l[?2004h> +    labels : DataFrame
+[?2004l[?2004h> +        Label rows containing ``customer_id``, ``churned_30d`` and ``label_available_at``.
+[?2004l[?2004h> +    customers : DataFrame
+[?2004l[?2004h> +        Customer master with ``customer_id`` and ``postcode_district``.
+[?2004l[?2004h> +    m : int, optional
+[?2004l[?2004h> +        Prior weight (default 20).
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    # Map customers to districts
+[?2004l[?2004h> +    district_map = customers.set_index("customer_id")["postcode_district"]
+[?2004l[?2004h> +    points = points.copy()
+[?2004l[?2004h> +    points["district"] = points["customer_id"].map(district_map)
+[?2004l[?2004h> +
+[?2004l[?2004h> +    # Prepare labels with district information
+[?2004l[?2004h> +    lbl = labels.copy()
+[?2004l[?2004h> +    lbl["district"] = lbl["customer_id"].map(district_map)
+[?2004l[?2004h> +    # Drop rows where district could not be resolved (should be rare)
+[?2004l[?2004h> +    lbl = lbl.dropna(subset=["district"])
+[?2004l[?2004h> +
+[?2004l[?2004h> +    # Sort labels by the time they become available
+[?2004l[?2004h> +    lbl = lbl.sort_values("label_available_at")
+[?2004l[?2004h> +
+[?2004l[?2004h> +    # Cumulative stats per district
+[?2004l[?2004h> +    lbl["cum_sum"] = lbl.groupby("district")["churned_30d"].cumsum()
+[?2004l[?2004h> +    lbl["cum_cnt"] = lbl.groupby("district").cumcount() + 1
+[?2004l[?2004h> +
+[?2004l[?2004h> +    # Global cumulative stats for the prior mean (based on availability time)
+[?2004l[?2004h> +    lbl["global_cum_sum"] = lbl["churned_30d"].cumsum()
+[?2004l[?2004h> +    lbl["global_cum_cnt"] = range(1, len(lbl) + 1)
+[?2004l[?2004h> +
+[?2004l[?2004h> +    # Merge-asof per district to get the latest cumulative stats before each as_of
+[?2004l[?2004h> +    pts_sorted = points.sort_values(["district", "as_of"]).reset_index()
+[?2004l[?2004h> +    merged = pd.merge_asof(
+[?2004l[?2004h> +        pts_sorted,
+[?2004l[?2004h> +        lbl,
+[?2004l[?2004h> +        left_on="as_of",
+[?2004l[?2004h> +        right_on="label_available_at",
+[?2004l[?2004h> +        by="district",
+[?2004l[?2004h> +        direction="backward",
+[?2004l[?2004h> +        allow_exact_matches=False,
+[?2004l[?2004h> +    )
+[?2004l[?2004h> +
+[?2004l[?2004h> +    # Compute prior mean p(t) = global_cum_sum / global_cum_cnt, handling the case of no prior rows
+[?2004l[?2004h> +    prior = merged["global_cum_sum"] / merged["global_cum_cnt"]
+[?2004l[?2004h> +    prior = prior.fillna(DEFAULT_PRIOR)
+[?2004l[?2004h> +
+[?2004l[?2004h> +    # Per‑district smoothed encoding
+[?2004l[?2004h> +    te = (merged["cum_sum"] + m * prior) / (merged["cum_cnt"] + m)
+[?2004l[?2004h> +    te = te.fillna(prior)  # districts with no prior rows get the global prior
+[?2004l[?2004h> +
+[?2004l[?2004h> +    # Align back to original ordering
+[?2004l[?2004h> +    result = pd.Series(te.values, index=pts_sorted["index"]).reindex(points.index)
+[?2004l[?2004h> +    return result.astype("float64")
+[?2004l[?2004h> *** End Patch
+[?2004l[?2004h> PATCH
+[?2004lbash: apply_patch: command not found
+[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# python -m churn.build_features --data data --out features.parquet
+[?2004lwrote 48966 rows x 11 columns to features.parquet
+[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# python - <<'PY'
+[?2004l[?2004h> import pandas as pd, sys, json, pyarrow as pa
+[?2004l[?2004h> df = pd.read_parquet('features.parquet')
+[?2004l[?2004h> print('rows:', len(df))
+[?2004l[?2004h> print('columns:', list(df.columns))
+[?2004l[?2004h> print(df.head())
+[?2004l[?2004h> PY
+[?2004lrows: 48966
+columns: ['customer_id', 'as_of', 'orders_7d', 'orders_30d', 'spend_30d_cents', 'tickets_30d', 'days_since_last_order', 'tenure_days', 'status', 'app_minutes_7d', 'te_district']
+   customer_id                     as_of  orders_7d  orders_30d  ...  tenure_days     status  app_minutes_7d  te_district
+0       100001 2025-04-13 06:00:00+00:00          2           2  ...    16.702639  cancelled            56.0     0.149066
+1       100001 2025-04-27 06:00:00+00:00          2           6  ...    30.702639  cancelled            56.0     0.149066
+2       100001 2025-05-11 06:00:00+00:00          3           8  ...    44.702639  cancelled            52.0     0.149066
+3       100001 2025-05-25 06:00:00+00:00          4           8  ...    58.702639  cancelled            52.0     0.149066
+4       100001 2025-06-08 06:00:00+00:00          3           9  ...    72.702639  cancelled            59.0     0.149066
+
+[5 rows x 11 columns]
+[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# cat > churn/windows.py <<'PY'
+[?2004l[?2004h> """Activity features over trailing windows (orders, spend, tickets) and simple time‑since features.
+[?2004l[?2004h> 
+[?2004l[?2004h> The original implementation aggregated events per calendar day and then used a closed="both"
+[?2004l[?2004h> rolling window, which inadvertently included events that occurred on the prediction day.  This
+[?2004l[?2004h> violates the strict‑before rule in `FEATURES.md`.
+[?2004l[?2004h> 
+[?2004l[?2004h> The rewritten version works directly with timestamps and uses cumulative counts/sums via
+[?2004l[?2004h> `pd.merge_asof` to compute exact half‑open windows `[t‑W, t)`.  For a given window we take the
+[?2004l[?2004h> cumulative values just before `t` and subtract the cumulative values just before `t‑W`.  This
+[?2004l[?2004h> ensures that events at exactly `t` are never visible to the prediction.
+[?2004l[?2004h> """
+[?2004l[?2004h> 
+[?2004l[?2004h> import numpy as np
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def _cumulative(events, ts_col, amount_col=None):
+[?2004l[?2004h>     """Return a DataFrame with cumulative count and optional cumulative sum per customer.
+[?2004l[?2004h> 
+[?2004l[?2004h>     The result contains the original timestamp column plus `cum_cnt` and, if `amount_col` is
+[?2004l[?2004h>     provided, `cum_sum`.  Rows are sorted by ``customer_id`` and the timestamp column.
+[?2004l[?2004h>     """
+[?2004l[?2004h>     ev = events[["customer_id", ts_col]].copy()
+[?2004l[?2004h>     ev = ev.sort_values(["customer_id", ts_col])
+[?2004l[?2004h>     ev["cum_cnt"] = ev.groupby("customer_id").cumcount() + 1
+[?2004l[?2004h>     if amount_col:
+[?2004l[?2004h>         ev["cum_sum"] = events.loc[ev.index, amount_col].groupby(events["customer_id"]).cumsum()
+[?2004l[?2004h>     return ev
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def _window_counts(points, events, ts_col, amount_col=None, days=7):
+[?2004l[?2004h>     """Calculate count (and optional sum) of `events` in the half‑open window `[t‑days, t)`.
+[?2004l[?2004h> 
+[?2004l[?2004h>     Returns a Series of counts and, when `amount_col` is supplied, a Series of summed amounts.
+[?2004l[?2004h>     Missing values are filled with 0 and cast to ``int64``.
+[?2004l[?2004h>     """
+[?2004l[?2004h>     cum = _cumulative(events, ts_col, amount_col)
+[?2004l[?2004h>     # Merge to get cumulative values strictly before each as_of
+[?2004l[?2004h>     left = points[["customer_id", "as_of"]].sort_values(["customer_id", "as_of"])
+[?2004l[?2004h>     cur = pd.merge_asof(
+[?2004l[?2004h>         left,
+[?2004l[?2004h>         cum,
+[?2004l[?2004h>         left_on="as_of",
+[?2004l[?2004h>         right_on=ts_col,
+[?2004l[?2004h>         by="customer_id",
+[?2004l[?2004h>         direction="backward",
+[?2004l[?2004h>         allow_exact_matches=False,
+[?2004l[?2004h>     )
+[?2004l[?2004h>     # Compute the start of the window
+[?2004l[?2004h>     start = left.copy()
+[?2004l[?2004h>     start["as_of"] = start["as_of"] - np.timedelta64(days, "D")
+[?2004l[?2004h>     start_cum = pd.merge_asof(
+[?2004l[?2004h>         start,
+[?2004l[?2004h>         cum,
+[?2004l[?2004h>         left_on="as_of",
+[?2004l[?2004h>         right_on=ts_col,
+[?2004l[?2004h>         by="customer_id",
+[?2004l[?2004h>         direction="backward",
+[?2004l[?2004h>         allow_exact_matches=False,
+[?2004l[?2004h>     )
+[?2004l[?2004h>     cnt = (cur["cum_cnt"].fillna(0) - start_cum["cum_cnt"].fillna(0)).astype("int64")
+[?2004l[?2004h>     if amount_col:
+[?2004l[?2004h>         spend = (cur["cum_sum"].fillna(0) - start_cum["cum_sum"].fillna(0)).astype("int64")
+[?2004l[?2004h>         return cnt, spend
+[?2004l[?2004h>     return cnt, None
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def activity_features(points, orders, tickets):
+[?2004l[?2004h>     """Return a DataFrame containing all activity‑related features.
+[?2004l[?2004h> 
+[?2004l[?2004h>     Columns produced:
+[?2004l[?2004h>         - orders_7d
+[?2004l[?2004h>         - orders_30d
+[?2004l[?2004h>         - spend_30d_cents
+[?2004l[?2004h>         - tickets_30d
+[?2004l[?2004h>         - days_since_last_order (strictly before the prediction)
+[?2004l[?2004h>     """
+[?2004l[?2004h>     out = points[["customer_id", "as_of"]].copy()
+[?2004l[?2004h> 
+[?2004l[?2004h>     # orders_7d (window = 7 days)
+[?2004l[?2004h>     out["orders_7d"], _ = _window_counts(points, orders, "ordered_at", days=7)
+[?2004l[?2004h>     # orders_30d and spend_30d_cents (window = 30 days)
+[?2004l[?2004h>     out["orders_30d"], out["spend_30d_cents"] = _window_counts(
+[?2004l[?2004h>         points, orders, "ordered_at", amount_col="amount_cents", days=30
+[?2004l[?2004h> +    )
+[?2004l[?2004h> +    # tickets_30d (window = 30 days)
+[?2004l[?2004h> +    out["tickets_30d"], _ = _window_counts(points, tickets, "opened_at", days=30)
+[?2004l[?2004h> +
+[?2004l[?2004h> +    # days_since_last_order – strictly before as_of
+[?2004l[?2004h> +    orders_sorted = orders.sort_values("ordered_at")[["customer_id", "ordered_at"]]
+[?2004l[?2004h> +    left = out[["customer_id", "as_of"]].reset_index().sort_values("as_of")
+[?2004l[?2004h> +    last = pd.merge_asof(
+[?2004l[?2004h> +        left,
+[?2004l[?2004h> +        orders_sorted,
+[?2004l[?2004h> +        left_on="as_of",
+[?2004l[?2004h> +        right_on="ordered_at",
+[?2004l[?2004h> +        by="customer_id",
+[?2004l[?2004h> +        allow_exact_matches=False,
+[?2004l[?2004h> +    ).set_index("index").sort_index()["ordered_at"]
+[?2004l[?2004h> +    out["days_since_last_order"] = (out["as_of"] - last).dt.total_seconds() / 86400
+[?2004l[?2004h> +
+[?2004l[?2004h> +    return out
+[?2004l[?2004h> PY
+[?2004l[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# cat > churn/status.py <<'PY'
+[?2004l[?2004h> """Account status from the billing system's status snapshots.
+[?2004l[?2004h> 
+[?2004l[?2004h> The specification requires using the latest snapshot whose ``snapshot_date`` is strictly
+[?2004l[?2004h> before the *date* of the prediction (`as_of`).  The previous implementation ignored `as_of`
+[?2004l[?2004h> and always returned the globally most recent snapshot, causing leakage.
+[?2004l[?2004h> """
+[?2004l[?2004h> 
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def latest_status(points, snapshots):
+[?2004l[?2004h>     """Return a Series of the most recent status before the prediction date.
+[?2004l[?2004h> 
+[?2004l[?2004h>     Parameters
+[?2004l[?2004h>     ----------
+[?2004l[?2004h>     points : DataFrame with ``customer_id`` and ``as_of``.
+[?2004l[?2004h>     snapshots : DataFrame with ``customer_id``, ``snapshot_date`` (UTC datetime) and ``status``.
+[?2004l[?2004h>     """
+[?2004l[?2004h>     # Ensure snapshots are sorted for merge_asof
+[?2004l[?2004h>     snaps = snapshots.sort_values(["customer_id", "snapshot_date"])
+[?2004l[?2004h>     pts = points[["customer_id", "as_of"]].copy()
+[?2004l[?2004h>     pts["pred_date"] = pts["as_of"].dt.floor("D")  # snapshot_date represents end of day D
+[?2004l[?2004h>     merged = pd.merge_asof(
+[?2004l[?2004h> +        pts.sort_values(["customer_id", "pred_date"]),
+[?2004l[?2004h> +        snaps,
+[?2004l[?2004h> +        left_on="pred_date",
+[?2004l[?2004h> +        right_on="snapshot_date",
+[?2004l[?2004h> +        by="customer_id",
+[?2004l[?2004h> +        direction="backward",
+[?2004l[?2004h> +        allow_exact_matches=False,
+[?2004l[?2004h> +    )
+[?2004l[?2004h> +    return merged["status"]
+[?2004l[?2004h> PY
+[?2004l[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# cat > churn/impute.py <<'PY'
+[?2004l[?2004h> """Gap filling for upstream readings.
+[?2004l[?2004h> 
+[?2004l[?2004h> The original implementation performed a backward‑fill followed by a forward‑fill, which
+[?2004l[?2004h> could leak future `app_minutes_7d` values into earlier predictions.  The corrected version
+[?2004l[?2004h> only forward‑fills within each customer, ensuring that a missing value is replaced by the
+[?2004l[?2004h> most recent *earlier* reading (or remains NaN if none exists).
+[?2004l[?2004h> """
+[?2004l[?2004h> 
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def fill_app_minutes(points):
+[?2004l[?2004h>     """Forward‑fill missing `app_minutes_7d` per customer.
+[?2004l[?2004h> 
+[?2004l[?2004h>     Returns a Series aligned with the original `points` DataFrame.
+[?2004l[?2004h>     """
+[?2004l[?2004h>     pts = points.sort_values(["customer_id", "as_of"])
+[?2004l[?2004h>     filled = pts.groupby("customer_id")["app_minutes_7d"].transform(lambda s: s.ffill())
+[?2004l[?2004h>     return filled.reindex(points.index)
+[?2004l[?2004h> PY
+[?2004l[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# cat > churn/encoding.py <<'PY'
+[?2004l[?2004h> """Target encoding of high‑cardinality categoricals.
+[?2004l[?2004h> 
+[?2004l[?2004h> `te_district` must be computed using only label rows whose `label_available_at` is strictly
+[?2004l[?2004h> before the prediction's `as_of`.  The original code ignored this timing constraint, causing
+[?2004l[?2004h> leakage.  The implementation below builds cumulative sums/counts per district and a global
+[?2004l[?2004h> cumulative prior, then merges the latest cumulative statistics that are available before each
+[?2004l[?2004h> prediction.  The smoothed encoding follows:
+[?2004l[?2004h> 
+[?2004l[?2004h>     te = (s + m * p) / (n + m)
+[?2004l[?2004h> 
+[?2004l[?2004h> where `s` and `n` are the district‑specific cumulative sum and count, `p` is the global
+[?2004l[?2004h> prior mean (computed from the same set of available labels), and `m` is the prior weight.
+[?2004l[?2004h> """
+[?2004l[?2004h> 
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> 
+[?2004l[?2004h> PRIOR_WEIGHT = 20
+[?2004l[?2004h> DEFAULT_PRIOR = 0.05
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def district_encoding(points, labels, customers, m=PRIOR_WEIGHT):
+[?2004l[?2004h>     """Compute the district target encoding respecting label availability.
+[?2004l[?2004h> 
+[?2004l[?2004h>     Parameters
+[?2004l[?2004h>     ----------
+[?2004l[?2004h>     points : DataFrame with ``customer_id`` and ``as_of``.
+[?2004l[?2004h>     labels : DataFrame with ``customer_id``, ``churned_30d`` and ``label_available_at``.
+[?2004l[?2004h>     customers : DataFrame with ``customer_id`` and ``postcode_district``.
+[?2004l[?2004h>     m : int, optional
+[?2004l[?2004h>         Prior weight (default 20).
+[?2004l[?2004h>     """
+[?2004l[?2004h>     # Map each customer to its district
+[?2004l[?2004h>     district_map = customers.set_index("customer_id")["postcode_district"]
+[?2004l[?2004h>     pts = points.copy()
+[?2004l[?2004h>     pts["district"] = pts["customer_id"].map(district_map)
+[?2004l[?2004h> 
+[?2004l[?2004h>     # Attach district to label rows
+[?2004l[?2004h>     lbl = labels.copy()
+[?2004l[?2004h>     lbl["district"] = lbl["customer_id"].map(district_map)
+[?2004l[?2004h>     lbl = lbl.dropna(subset=["district"]).sort_values("label_available_at")
+[?2004l[?2004h> 
+[?2004l[?2004h>     # Cumulative per‑district statistics
+[?2004l[?2004h>     lbl["cum_sum"] = lbl.groupby("district")["churned_30d"].cumsum()
+[?2004l[?2004h>     lbl["cum_cnt"] = lbl.groupby("district").cumcount() + 1
+[?2004l[?2004h> 
+[?2004l[?2004h>     # Global cumulative statistics for the prior mean
+[?2004l[?2004h>     lbl["global_cum_sum"] = lbl["churned_30d"].cumsum()
+[?2004l[?2004h>     lbl["global_cum_cnt"] = range(1, len(lbl) + 1)
+[?2004l[?2004h> 
+[?2004l[?2004h>     # Merge‑asof to get the latest cumulative stats before each as_of, per district
+[?2004l[?2004h>     pts_sorted = pts.sort_values(["district", "as_of"]).reset_index()
+[?2004l[?2004h>     merged = pd.merge_asof(
+[?2004l[?2004h> +        pts_sorted,
+[?2004l[?2004h> +        lbl,
+[?2004l[?2004h> +        left_on="as_of",
+[?2004l[?2004h> +        right_on="label_available_at",
+[?2004l[?2004h> +        by="district",
+[?2004l[?2004h> +        direction="backward",
+[?2004l[?2004h> +        allow_exact_matches=False,
+[?2004l[?2004h> +    )
+[?2004l[?2004h> +
+[?2004l[?2004h> +    # Prior mean p(t) based on all labels available before as_of
+[?2004l[?2004h> +    prior = merged["global_cum_sum"] / merged["global_cum_cnt"]
+[?2004l[?2004h> +    prior = prior.fillna(DEFAULT_PRIOR)
+[?2004l[?2004h> +
+[?2004l[?2004h> +    # Smoothed encoding per district
+[?2004l[?2004h> +    te = (merged["cum_sum"] + m * prior) / (merged["cum_cnt"] + m)
+[?2004l[?2004h> +    te = te.fillna(prior)  # districts with no prior rows get the global prior
+[?2004l[?2004h> +
+[?2004l[?2004h> +    # Re‑index to original order of points
+[?2004l[?2004h> +    result = pd.Series(te.values, index=pts_sorted["index"]).reindex(points.index)
+[?2004l[?2004h> +    return result.astype("float64")
+[?2004l[?2004h> PY
+[?2004l[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# python -m churn.build_features --data data --out features_fixed.parquet
+[?2004lTraceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/app/churn/build_features.py", line 5, in <module>
+    from churn.encoding import district_encoding
+  File "/app/churn/encoding.py", line 55
+    +        left_on="as_of",
+    ^^^^^^^^^^^^^^^^^
+SyntaxError: expression cannot contain assignment, perhaps you meant "=="?
+[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# python - <<'PY'
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> df = pd.read_parquet('features_fixed.parquet')
+[?2004l[?2004h> print('rows:', len(df))
+[?2004l[?2004h> print('columns:', list(df.columns))
+[?2004l[?2004h> print(df.head())
+[?2004l[?2004h> PY
+[?2004lTraceback (most recent call last):
+  File "<stdin>", line 2, in <module>
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parquet.py", line 760, in read_parquet
+    return impl.read(
+           ^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parquet.py", line 296, in read
+    pa_table = self.api.parquet.read_table(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/parquet/core.py", line 1915, in read_table
+    dataset = ParquetDataset(
+              ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/parquet/core.py", line 1491, in __init__
+    self._dataset = ds.dataset(path_or_paths, filesystem=filesystem,
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/dataset.py", line 790, in dataset
+    return _filesystem_dataset(source, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/dataset.py", line 472, in _filesystem_dataset
+    fs, paths_or_selector = _ensure_single_source(source, filesystem)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/dataset.py", line 437, in _ensure_single_source
+    raise FileNotFoundError(path)
+FileNotFoundError: features_fixed.parquet
+[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# cat > churn/encoding.py <<'PY'
+[?2004l[?2004h> """Target encoding of high‑cardinality categoricals.
+[?2004l[?2004h> 
+[?2004l[?2004h> `te_district` must be computed using only label rows whose `label_available_at` is strictly
+[?2004l[?2004h> before the prediction's `as_of`.  The original code ignored this timing constraint, causing
+[?2004l[?2004h> leakage.  The implementation below builds cumulative sums/counts per district and a global
+[?2004l[?2004h> cumulative prior, then merges the latest cumulative statistics that are available before each
+[?2004l[?2004h> prediction.  The smoothed encoding follows:
+[?2004l[?2004h> 
+[?2004l[?2004h>     te = (s + m * p) / (n + m)
+[?2004l[?2004h> 
+[?2004l[?2004h> where `s` and `n` are the district‑specific cumulative sum and count, `p` is the global
+[?2004l[?2004h> prior mean (computed from the same set of available labels), and `m` is the prior weight.
+[?2004l[?2004h> """
+[?2004l[?2004h> 
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> 
+[?2004l[?2004h> PRIOR_WEIGHT = 20
+[?2004l[?2004h> DEFAULT_PRIOR = 0.05
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def district_encoding(points, labels, customers, m=PRIOR_WEIGHT):
+[?2004l[?2004h>     """Compute the district target encoding respecting label availability.
+[?2004l[?2004h> 
+[?2004l[?2004h>     Parameters
+[?2004l[?2004h>     ----------
+[?2004l[?2004h>     points : DataFrame with ``customer_id`` and ``as_of``.
+[?2004l[?2004h>     labels : DataFrame with ``customer_id``, ``churned_30d`` and ``label_available_at``.
+[?2004l[?2004h>     customers : DataFrame with ``customer_id`` and ``postcode_district``.
+[?2004l[?2004h>     m : int, optional
+[?2004l[?2004h>         Prior weight (default 20).
+[?2004l[?2004h>     """
+[?2004l[?2004h>     # Map each customer to its district
+[?2004l[?2004h>     district_map = customers.set_index("customer_id")["postcode_district"]
+[?2004l[?2004h>     pts = points.copy()
+[?2004l[?2004h>     pts["district"] = pts["customer_id"].map(district_map)
+[?2004l[?2004h> 
+[?2004l[?2004h>     # Attach district to label rows and drop those without a district
+[?2004l[?2004h>     lbl = labels.copy()
+[?2004l[?2004h>     lbl["district"] = lbl["customer_id"].map(district_map)
+[?2004l[?2004h>     lbl = lbl.dropna(subset=["district"]).sort_values("label_available_at")
+[?2004l[?2004h> 
+[?2004l[?2004h>     # Cumulative statistics per district
+[?2004l[?2004h>     lbl["cum_sum"] = lbl.groupby("district")["churned_30d"].cumsum()
+[?2004l[?2004h>     lbl["cum_cnt"] = lbl.groupby("district").cumcount() + 1
+[?2004l[?2004h> 
+[?2004l[?2004h>     # Global cumulative statistics for the prior mean (based on availability time)
+[?2004l[?2004h>     lbl["global_cum_sum"] = lbl["churned_30d"].cumsum()
+[?2004l[?2004h>     lbl["global_cum_cnt"] = range(1, len(lbl) + 1)
+[?2004l[?2004h> 
+[?2004l[?2004h>     # Merge‑asof to get the latest cumulative stats before each as_of, per district
+[?2004l[?2004h>     pts_sorted = pts.sort_values(["district", "as_of"]).reset_index()
+[?2004l[?2004h>     merged = pd.merge_asof(
+[?2004l[?2004h>         pts_sorted,
+[?2004l[?2004h>         lbl,
+[?2004l[?2004h>         left_on="as_of",
+[?2004l[?2004h>         right_on="label_available_at",
+[?2004l[?2004h>         by="district",
+[?2004l[?2004h>         direction="backward",
+[?2004l[?2004h>         allow_exact_matches=False,
+[?2004l[?2004h>     )
+[?2004l[?2004h> 
+[?2004l[?2004h>     # Prior mean p(t) using all labels available before as_of
+[?2004l[?2004h>     prior = merged["global_cum_sum"] / merged["global_cum_cnt"]
+[?2004l[?2004h>     prior = prior.fillna(DEFAULT_PRIOR)
+[?2004l[?2004h> 
+[?2004l[?2004h>     # Smoothed encoding per district
+[?2004l[?2004h>     te = (merged["cum_sum"] + m * prior) / (merged["cum_cnt"] + m)
+[?2004l[?2004h>     te = te.fillna(prior)  # districts with no prior rows fall back to global prior
+[?2004l[?2004h> 
+[?2004l[?2004h>     # Re‑index to the original order of points
+[?2004l[?2004h>     result = pd.Series(te.values, index=pts_sorted["index"]).reindex(points.index)
+[?2004l[?2004h>     return result.astype("float64")
+[?2004l[?2004h> PY
+[?2004l[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# python -m churn.build_features --data data --out features_fixed.parquet
+[?2004lTraceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/app/churn/build_features.py", line 8, in <module>
+    from churn.status import latest_status
+  File "/app/churn/status.py", line 26
+    +        left_on="pred_date",
+    ^^^^^^^^^^^^^^^^^
+SyntaxError: expression cannot contain assignment, perhaps you meant "=="?
+[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# python - <<'PY'
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> df = pd.read_parquet('features_fixed.parquet')
+[?2004l[?2004h> print('rows:', len(df))
+[?2004l[?2004h> print('columns:', list(df.columns))
+[?2004l[?2004h> print(df.head())
+[?2004l[?2004h> PY
+[?2004lTraceback (most recent call last):
+  File "<stdin>", line 2, in <module>
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parquet.py", line 760, in read_parquet
+    return impl.read(
+           ^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parquet.py", line 296, in read
+    pa_table = self.api.parquet.read_table(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/parquet/core.py", line 1915, in read_table
+    dataset = ParquetDataset(
+              ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/parquet/core.py", line 1491, in __init__
+    self._dataset = ds.dataset(path_or_paths, filesystem=filesystem,
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/dataset.py", line 790, in dataset
+    return _filesystem_dataset(source, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/dataset.py", line 472, in _filesystem_dataset
+    fs, paths_or_selector = _ensure_single_source(source, filesystem)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/dataset.py", line 437, in _ensure_single_source
+    raise FileNotFoundError(path)
+FileNotFoundError: features_fixed.parquet
+[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# printf '%s\n' "\"\"\"Activity features over trailing windows (orders, spend, tickets) and simple time‑since features.\n\nThe original implementation aggregated events per day and used a closed=\"both\" rolling window, which included events that occurred on the prediction day—violating the strict‑before rule in `FEATURES.md`. The rewritten version works directly with timestamps and uses cumulative counts and sums via `pd.merge_asof` to compute half‑open windows `[t‑W, t)`.\n\"\"\"" """" "import numpy as np" "import pandas as pd" "" "def _cumulative(events, ts_col, amount_col=None):" "    \"\"\"Return a DataFrame with cumulative count and optional cumulative sum per customer.\n\n    The DataFrame contains the original timestamp column plus `cum_cnt` and, if `amount_col` is provided, `cum_sum`. Rows are sorted by ``customer_id`` and the timestamp column.\n    \"\"\"" "    ev = events[[\"customer_id\", ts_col]].copy()" "    ev = ev.sort_values([\"customer_id\", ts_col])" "    ev[\"cum_cnt\"] = ev.groupby(\"customer_id\").cumcount() + 1" "    if amount_col:" "        ev[\"cum_sum\"] = events.loc[ev.index, amount_col].groupby(events[\"customer_id\"]).cumsum()" "    return ev" "" "def _window_counts(points, events, ts_col, amount_col=None, days=7):" "    \"\"\"Calculate count (and optional sum) of `events` in the half‑open window `[t‑days, t)`.\n\n    Returns a tuple ``(count_series, sum_series_or_None)`` aligned with `points`.\n    Missing values are filled with 0 and cast to ``int64``.\n    \"\"\"" "    cum = _cumulative(events, ts_col, amount_col)" "    left = points[[\"customer_id\", \"as_of\"]].sort_values([\"customer_id\", \"as_of\"])" "    cur = pd.merge_asof(left, cum, left_on=\"as_of\", right_on=ts_col, by=\"customer_id\", direction=\"backward\", allow_exact_matches=False)" "    start = left.copy()" "    start[\"as_of\"] = start[\"as_of\"] - np.timedelta64(days, \"D\")" "    start_cum = pd.merge_asof(start, cum, left_on=\"as_of\", right_on=ts_col, by=\"customer_id\", direction=\"backward\", allow_exact_matches=False)" "    cnt = (cur[\"cum_cnt\"].fillna(0) - start_cum[\"cum_cnt\"].fillna(0)).astype(\"int64\")" "    if amount_col:" "        spend = (cur[\"cum_sum\"].fillna(0) - start_cum[\"cum_sum\"].fillna(0)).astype(\"int64\")" "        return cnt, spend" "    return cnt, None" "" "def activity_features(points, orders, tickets):" "    \"\"\"Return a DataFrame with all activity‑related features.\n\n    Columns produced: ``orders_7d``, ``orders_30d``, ``spend_30d_cents``, ``tickets_30d`` and ``days_since_last_order`` (strictly before the prediction).\n    \"\"\"" "    out = points[[\"customer_id\", \"as_of\"]].copy()" "    out[\"orders_7d\"], _ = _window_counts(points, orders, \"ordered_at\", days=7)" "    out[\"orders_30d\"], out[\"spend_30d_cents\"] = _window_counts(points, orders, \"ordered_at\", amount_col=\"amount_cents\", days=30)" "    out[\"tickets_30d\"], _ = _window_counts(points, tickets, \"opened_at\", days=30)" "    orders_sorted = orders.sort_values(\"ordered_at\")[[\"customer_id\", \"ordered_at\"]]" "    left = out[[\"customer_id\", \"as_of\"]].reset_index().sort_values(\"as_of\")" "    last = pd.merge_asof(left, orders_sorted, left_on=\"as_of\", right_on=\"ordered_at\", by=\"customer_id\", allow_exact_matches=False).set_index(\"index\").sort_index()[\"ordered_at\"]" "    out[\"days_since_last_order\"] = (out[\"as_of\"] - last).dt.total_seconds() / 86400" "    echo out" > churn/windows.pyprintf '%s\n' "\"\"\"Account status from the billing system's status snapshots.\n\nThe specification requires using the latest snapshot whose ``snapshot_date`` is strictly before the *date* of the prediction (`as_of`). The previous implementation ignored `as_of` and always returned the globally most recent snapshot, causing leakage.\n\"\"\"" "import pandas as pd" "" "def latest_status(points, snapshots):" "    \"\"\"Return a Series of the most recent status before the prediction date.\n\n    Parameters\n    ----------\n    points : DataFrame with ``customer_id`` and ``as_of``.\n    snapshots : DataFrame with ``customer_id``, ``snapshot_date`` (UTC datetime) and ``status``.\n    \"\"\"" "    snaps = snapshots.sort_values([\"customer_id\", \"snapshot_date\"])" "    pts = points[[\"customer_id\", \"as_of\"]].copy()" "    pts[\"pred_date\"] = pts[\"as_of\"].dt.floor(\"D\")" "    merged = pd.merge_asof(pts.sort_values([\"customer_id\", \"pred_date\"]), snaps, left_on=\"pred_date\", right_on=\"snapshot_date\", by=\"customer_id\", direction=\"backward\", allow_exact_matches=False)" "    return merged[\"status\"]" > churn/status.pypython -m churn.build_features --data data --out features_fixed.parquet
+[?2004lbash: FEATURES.md: command not found
+bash: pd.merge_asof: command not found
+bash: command substitution: line 1: syntax error near unexpected token `)'
+bash: command substitution: line 1: `[t‑W, t)'
+bash: cum_cnt: command not found
+bash: amount_col: command not found
+bash: cum_sum: command not found
+bash: events: command not found
+bash: command substitution: line 1: syntax error near unexpected token `)'
+bash: command substitution: line 1: `[t‑days, t)'
+bash: points: command not found
+bash: as_of: command not found
+bash: as_of: command not found
+[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# python - <<'PY'
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> df = pd.read_parquet('features_fixed.parquet')
+[?2004l[?2004h> print('rows:', len(df))
+[?2004l[?2004h> print('columns:', list(df.columns))
+[?2004l[?2004h> print(df.head())
+[?2004l[?2004h> PY
+[?2004lTraceback (most recent call last):
+  File "<stdin>", line 2, in <module>
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parquet.py", line 760, in read_parquet
+    return impl.read(
+           ^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parquet.py", line 296, in read
+    pa_table = self.api.parquet.read_table(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/parquet/core.py", line 1915, in read_table
+    dataset = ParquetDataset(
+              ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/parquet/core.py", line 1491, in __init__
+    self._dataset = ds.dataset(path_or_paths, filesystem=filesystem,
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/dataset.py", line 790, in dataset
+    return _filesystem_dataset(source, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/dataset.py", line 472, in _filesystem_dataset
+    fs, paths_or_selector = _ensure_single_source(source, filesystem)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/dataset.py", line 437, in _ensure_single_source
+    raise FileNotFoundError(path)
+FileNotFoundError: features_fixed.parquet
+[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# cat > churn/windows.py <<'PY'
+[?2004l[?2004h> """Activity features over trailing windows (orders, spend, tickets) and simple time‑since features.
+[?2004l[?2004h> 
+[?2004l[?2004h> The original implementation aggregated events per day and used a closed="both" rolling window, which included events that occurred on the prediction day—violating the strict‑before rule in `FEATURES.md`. The rewritten version works directly with timestamps and uses cumulative counts and sums via `pd.merge_asof` to compute half‑open windows `[t‑W, t)`."""
+[?2004l[?2004h> 
+[?2004l[?2004h> import numpy as np
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def _cumulative(events, ts_col, amount_col=None):
+[?2004l[?2004h>     """Return a DataFrame with cumulative count and optional cumulative sum per customer.
+[?2004l[?2004h> 
+[?2004l[?2004h>     The DataFrame contains the original timestamp column plus `cum_cnt` and, if `amount_col`
+[?2004l[?2004h>     is provided, `cum_sum`. Rows are sorted by ``customer_id`` and the timestamp column.
+[?2004l[?2004h>     """
+[?2004l[?2004h>     ev = events[["customer_id", ts_col]].copy()
+[?2004l[?2004h>     ev = ev.sort_values(["customer_id", ts_col])
+[?2004l[?2004h>     ev["cum_cnt"] = ev.groupby("customer_id").cumcount() + 1
+[?2004l[?2004h>     if amount_col:
+[?2004l[?2004h>         ev["cum_sum"] = events.loc[ev.index, amount_col].groupby(events["customer_id"]).cumsum()
+[?2004l[?2004h>     return ev
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def _window_counts(points, events, ts_col, amount_col=None, days=7):
+[?2004l[?2004h>     """Calculate count (and optional sum) of `events` in the half‑open window `[t‑days, t)`.
+[?2004l[?2004h> 
+[?2004l[?2004h>     Returns a tuple ``(count_series, sum_series_or_None)`` aligned with `points`.
+[?2004l[?2004h>     Missing values are filled with 0 and cast to ``int64``.
+[?2004l[?2004h>     """
+[?2004l[?2004h>     cum = _cumulative(events, ts_col, amount_col)
+[?2004l[?2004h>     left = points[["customer_id", "as_of"]].sort_values(["customer_id", "as_of"])
+[?2004l[?2004h>     cur = pd.merge_asof(
+[?2004l[?2004h>         left,
+[?2004l[?2004h>         cum,
+[?2004l[?2004h>         left_on="as_of",
+[?2004l[?2004h>         right_on=ts_col,
+[?2004l[?2004h>         by="customer_id",
+[?2004l[?2004h>         direction="backward",
+[?2004l[?2004h>         allow_exact_matches=False,
+[?2004l[?2004h>     )
+[?2004l[?2004h>     start = left.copy()
+[?2004l[?2004h>     start["as_of"] = start["as_of"] - np.timedelta64(days, "D")
+[?2004l[?2004h>     start_cum = pd.merge_asof(
+[?2004l[?2004h>         start,
+[?2004l[?2004h>         cum,
+[?2004l[?2004h>         left_on="as_of",
+[?2004l[?2004h>         right_on=ts_col,
+[?2004l[?2004h>         by="customer_id",
+[?2004l[?2004h>         direction="backward",
+[?2004l[?2004h>         allow_exact_matches=False,
+[?2004l[?2004h>     )
+[?2004l[?2004h>     cnt = (cur["cum_cnt"].fillna(0) - start_cum["cum_cnt"].fillna(0)).astype("int64")
+[?2004l[?2004h>     if amount_col:
+[?2004l[?2004h>         spend = (cur["cum_sum"].fillna(0) - start_cum["cum_sum"].fillna(0)).astype("int64")
+[?2004l[?2004h>         return cnt, spend
+[?2004l[?2004h>     return cnt, None
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def activity_features(points, orders, tickets):
+[?2004l[?2004h>     """Return a DataFrame with all activity‑related features.
+[?2004l[?2004h> 
+[?2004l[?2004h>     Columns produced: ``orders_7d``, ``orders_30d``, ``spend_30d_cents``, ``tickets_30d``
+[?2004l[?2004h>     and ``days_since_last_order`` (strictly before the prediction).
+[?2004l[?2004h>     """
+[?2004l[?2004h>     out = points[["customer_id", "as_of"]].copy()
+[?2004l[?2004h>     out["orders_7d"], _ = _window_counts(points, orders, "ordered_at", days=7)
+[?2004l[?2004h>     out["orders_30d"], out["spend_30d_cents"] = _window_counts(
+[?2004l[?2004h>         points, orders, "ordered_at", amount_col="amount_cents", days=30
+[?2004l[?2004h>     )
+[?2004l[?2004h>     out["tickets_30d"], _ = _window_counts(points, tickets, "opened_at", days=30)
+[?2004l[?2004h> 
+[?2004l[?2004h>     # days_since_last_order – strictly before as_of
+[?2004l[?2004h>     orders_sorted = orders.sort_values("ordered_at")[["customer_id", "ordered_at"]]
+[?2004l[?2004h>     left = out[["customer_id", "as_of"]].reset_index().sort_values("as_of")
+[?2004l[?2004h>     last = pd.merge_asof(
+[?2004l[?2004h>         left,
+[?2004l[?2004h>         orders_sorted,
+[?2004l[?2004h>         left_on="as_of",
+[?2004l[?2004h>         right_on="ordered_at",
+[?2004l[?2004h>         by="customer_id",
+[?2004l[?2004h>         allow_exact_matches=False,
+[?2004l[?2004h>     ).set_index("index").sort_index()["ordered_at"]
+[?2004l[?2004h>     out["days_since_last_order"] = (out["as_of"] - last).dt.total_seconds() / 86400
+[?2004l[?2004h>     return out
+[?2004l[?2004h> PY
+[?2004l[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# cat > churn/status.py <<'PY'
+[?2004l[?2004h> """Account status from the billing system's status snapshots.
+[?2004l[?2004h> 
+[?2004l[?2004h> The specification requires using the latest snapshot whose ``snapshot_date`` is strictly before the *date* of the prediction (`as_of`). The previous implementation ignored `as_of` and always returned the globally most recent snapshot, causing leakage.
+[?2004l[?2004h> """
+[?2004l[?2004h> 
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def latest_status(points, snapshots):
+[?2004l[?2004h>     """Return a Series of the most recent status before the prediction date.
+[?2004l[?2004h> 
+[?2004l[?2004h>     Parameters
+[?2004l[?2004h>     ----------
+[?2004l[?2004h>     points : DataFrame with ``customer_id`` and ``as_of``.
+[?2004l[?2004h>     snapshots : DataFrame with ``customer_id``, ``snapshot_date`` (UTC datetime) and ``status``.
+[?2004l[?2004h>     """
+[?2004l[?2004h>     snaps = snapshots.sort_values(["customer_id", "snapshot_date"])
+[?2004l[?2004h>     pts = points[["customer_id", "as_of"]].copy()
+[?2004l[?2004h>     pts["pred_date"] = pts["as_of"].dt.floor("D")
+[?2004l[?2004h>     merged = pd.merge_asof(
+[?2004l[?2004h>         pts.sort_values(["customer_id", "pred_date"]),
+[?2004l[?2004h>         snaps,
+[?2004l[?2004h>         left_on="pred_date",
+[?2004l[?2004h>         right_on="snapshot_date",
+[?2004l[?2004h>         by="customer_id",
+[?2004l[?2004h>         direction="backward",
+[?2004l[?2004h>         allow_exact_matches=False,
+[?2004l[?2004h>     )
+[?2004l[?2004h>     return merged["status"]
+[?2004l[?2004h> PY
+[?2004l[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# python -m churn.build_features --data data --out features_fixed.parquet
+[?2004lTraceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/app/churn/build_features.py", line 9, in <module>
+    from churn.windows import activity_features, tenure_days
+ImportError: cannot import name 'tenure_days' from 'churn.windows' (/app/churn/windows.py)
+[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# python - <<'PY'
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> df = pd.read_parquet('features_fixed.parquet')
+[?2004l[?2004h> print('rows:', len(df))
+[?2004l[?2004h> print('columns:', list(df.columns))
+[?2004l[?2004h> print(df.head())
+[?2004l[?2004h> PY
+[?2004lTraceback (most recent call last):
+  File "<stdin>", line 2, in <module>
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parquet.py", line 760, in read_parquet
+    return impl.read(
+           ^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parquet.py", line 296, in read
+    pa_table = self.api.parquet.read_table(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/parquet/core.py", line 1915, in read_table
+    dataset = ParquetDataset(
+              ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/parquet/core.py", line 1491, in __init__
+    self._dataset = ds.dataset(path_or_paths, filesystem=filesystem,
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/dataset.py", line 790, in dataset
+    return _filesystem_dataset(source, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/dataset.py", line 472, in _filesystem_dataset
+    fs, paths_or_selector = _ensure_single_source(source, filesystem)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/dataset.py", line 437, in _ensure_single_source
+    raise FileNotFoundError(path)
+FileNotFoundError: features_fixed.parquet
+[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# cat > churn/windows.py <<'PY'
+[?2004lues("ordered_at")[["customer_id", "ordered_at"]]
+    left = out[["customer_id", "as_of"]].reset_index().sort_values("as_of")
+    last = pd.merge_asof(
+        left,
+        orders_sorted,
+        left_on="as_of",
+        right_on="ordered_at",
+        by="customer_id",
+        allow_exact_matches=False,
+    ).set_index("index").sort_index()["ordered_at"]
+    out["days_since_last_order"] = (out["as_of"] - last).dt.total_seconds() / 86400
+    return out
+
+
+def tenure_days(points, customers):
+    """Return the number of days between `as_of` and the customer's signup date.
+
+    This function is unchanged from the original implementation and is required by
+    `build_features.py`.
+    """
+    signup = points["customer_id"].map(customers.set_index("customer_id")["signup_at"])
+    return (points["as_of"] - signup).dt.total_seconds() / 86400
+PY
+[?2004h> """Activity features over trailing windows (orders, spend, tickets) and simple time‑since features.
+[?2004l[?2004h> 
+[?2004l[?2004h> The original implementation aggregated events per day and used a closed="both" rolling window, which included events that occurred on the prediction day—violating the strict‑before rule in `FEATURES.md`. The rewritten version works directly with timestamps and uses cumulative counts and sums via `pd.merge_asof` to compute half‑open windows `[t‑W, t)`."""
+[?2004l[?2004h> 
+[?2004l[?2004h> import numpy as np
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def _cumulative(events, ts_col, amount_col=None):
+[?2004l[?2004h>     """Return a DataFrame with cumulative count and optional cumulative sum per customer.
+[?2004l[?2004h> 
+[?2004l[?2004h>     The DataFrame contains the original timestamp column plus `cum_cnt` and, if `amount_col`
+[?2004l[?2004h>     is provided, `cum_sum`. Rows are sorted by ``customer_id`` and the timestamp column.
+[?2004l[?2004h>     """
+[?2004l[?2004h>     ev = events[["customer_id", ts_col]].copy()
+[?2004l[?2004h>     ev = ev.sort_values(["customer_id", ts_col])
+[?2004l[?2004h>     ev["cum_cnt"] = ev.groupby("customer_id").cumcount() + 1
+[?2004l[?2004h>     if amount_col:
+[?2004l[?2004h>         ev["cum_sum"] = events.loc[ev.index, amount_col].groupby(events["customer_id"]).cumsum()
+[?2004l[?2004h>     return ev
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def _window_counts(points, events, ts_col, amount_col=None, days=7):
+[?2004l[?2004h>     """Calculate count (and optional sum) of `events` in the half‑open window `[t‑days, t)`.
+[?2004l[?2004h> 
+[?2004l[?2004h>     Returns a tuple ``(count_series, sum_series_or_None)`` aligned with `points`.
+[?2004l[?2004h>     Missing values are filled with 0 and cast to ``int64``.
+[?2004l[?2004h>     """
+[?2004l[?2004h>     cum = _cumulative(events, ts_col, amount_col)
+[?2004l[?2004h>     left = points[["customer_id", "as_of"]].sort_values(["customer_id", "as_of"])
+[?2004l[?2004h>     cur = pd.merge_asof(
+[?2004l[?2004h>         left,
+[?2004l[?2004h>         cum,
+[?2004l[?2004h>         left_on="as_of",
+[?2004l[?2004h>         right_on=ts_col,
+[?2004l[?2004h>         by="customer_id",
+[?2004l[?2004h>         direction="backward",
+[?2004l[?2004h>         allow_exact_matches=False,
+[?2004l[?2004h>     )
+[?2004l[?2004h>     start = left.copy()
+[?2004l[?2004h>     start["as_of"] = start["as_of"] - np.timedelta64(days, "D")
+[?2004l[?2004h>     start_cum = pd.merge_asof(
+[?2004l[?2004h>         start,
+[?2004l[?2004h>         cum,
+[?2004l[?2004h>         left_on="as_of",
+[?2004l[?2004h>         right_on=ts_col,
+[?2004l[?2004h>         by="customer_id",
+[?2004l[?2004h>         direction="backward",
+[?2004l[?2004h>         allow_exact_matches=False,
+[?2004l[?2004h>     )
+[?2004l[?2004h>     cnt = (cur["cum_cnt"].fillna(0) - start_cum["cum_cnt"].fillna(0)).astype("int64")
+[?2004l[?2004h>     if amount_col:
+[?2004l[?2004h>         spend = (cur["cum_sum"].fillna(0) - start_cum["cum_sum"].fillna(0)).astype("int64")
+[?2004l[?2004h>         return cnt, spend
+[?2004l[?2004h>     return cnt, None
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def activity_features(points, orders, tickets):
+[?2004l[?2004h>     """Return a DataFrame with all activity‑related features.
+[?2004l[?2004h> 
+[?2004l[?2004h>     Columns produced: ``orders_7d``, ``orders_30d``, ``spend_30d_cents``, ``tickets_30d``
+[?2004l[?2004h>     and ``days_since_last_order`` (strictly before the prediction).
+[?2004l[?2004h>     """
+[?2004l[?2004h>     out = points[["customer_id", "as_of"]].copy()
+[?2004l[?2004h>     out["orders_7d"], _ = _window_counts(points, orders, "ordered_at", days=7)
+[?2004l[?2004h>     out["orders_30d"], out["spend_30d_cents"] = _window_counts(
+[?2004l[?2004h>         points, orders, "ordered_at", amount_col="amount_cents", days=30
+[?2004l[?2004h>     )
+[?2004l[?2004h>     out["tickets_30d"], _ = _window_counts(points, tickets, "opened_at", days=30)
+[?2004l[?2004h> 
+[?2004l[?2004h>     # days_since_last_order – strictly before as_of
+[?2004l[?2004h>     orders_sorted = orders.sort_values("ordered_at")[["customer_id", "ordered_at"]]
+[?2004l[?2004h>     left = out[["customer_id", "as_of"]].reset_index().sort_values("as_of")
+[?2004l[?2004h>     last = pd.merge_asof(
+[?2004l[?2004h>         left,
+[?2004l[?2004h>         orders_sorted,
+[?2004l[?2004h>         left_on="as_of",
+[?2004l[?2004h>         right_on="ordered_at",
+[?2004l[?2004h>         by="customer_id",
+[?2004l[?2004h>         allow_exact_matches=False,
+[?2004l[?2004h>     ).set_index("index").sort_index()["ordered_at"]
+[?2004l[?2004h>     out["days_since_last_order"] = (out["as_of"] - last).dt.total_seconds() / 86400
+[?2004l[?2004h>     return out
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def tenure_days(points, customers):
+[?2004l[?2004h>     """Return the number of days between `as_of` and the customer's signup date.
+[?2004l[?2004h> 
+[?2004l[?2004h>     This function is unchanged from the original implementation and is required by
+[?2004l[?2004h>     `build_features.py`.
+[?2004l[?2004h>     """
+[?2004l[?2004h>     signup = points["customer_id"].map(customers.set_index("customer_id")["signup_at"])
+[?2004l[?2004h>     return (points["as_of"] - signup).dt.total_seconds() / 86400
+[?2004l[?2004h> PY
+[?2004l[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# python -m churn.build_features --data data --out features_fixed.parquet
+[?2004lTraceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/app/churn/build_features.py", line 38, in <module>
+    main()
+  File "/app/churn/build_features.py", line 31, in main
+    feats = build(a.data)
+            ^^^^^^^^^^^^^
+  File "/app/churn/build_features.py", line 18, in build
+    feats = activity_features(points, t["orders"], t["tickets"])
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/churn/windows.py", line 65, in activity_features
+    out["orders_7d"], _ = _window_counts(points, orders, "ordered_at", days=7)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/churn/windows.py", line 31, in _window_counts
+    cur = pd.merge_asof(
+          ^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/core/reshape/merge.py", line 930, in merge_asof
+    return op.get_result()
+           ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/core/reshape/merge.py", line 2387, in get_result
+    join_index, left_indexer, right_indexer = self._get_join_info()
+                                              ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/core/reshape/merge.py", line 1447, in _get_join_info
+    (left_indexer, right_indexer) = self._get_join_indexers()
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/core/reshape/merge.py", line 2699, in _get_join_indexers
+    left_values = self._convert_values_for_libjoin(left_values, "left")
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/core/reshape/merge.py", line 2643, in _convert_values_for_libjoin
+    raise ValueError(f"{side} keys must be sorted")
+ValueError: left keys must be sorted
+[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# python - <<'PY'
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> df = pd.read_parquet('features_fixed.parquet')
+[?2004l[?2004h> print('rows:', len(df))
+[?2004l[?2004h> print('columns:', list(df.columns))
+[?2004l[?2004h> print(df.head())
+[?2004l[?2004h> PY
+[?2004lTraceback (most recent call last):
+  File "<stdin>", line 2, in <module>
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parquet.py", line 760, in read_parquet
+    return impl.read(
+           ^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parquet.py", line 296, in read
+    pa_table = self.api.parquet.read_table(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/parquet/core.py", line 1915, in read_table
+    dataset = ParquetDataset(
+              ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/parquet/core.py", line 1491, in __init__
+    self._dataset = ds.dataset(path_or_paths, filesystem=filesystem,
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/dataset.py", line 790, in dataset
+    return _filesystem_dataset(source, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/dataset.py", line 472, in _filesystem_dataset
+    fs, paths_or_selector = _ensure_single_source(source, filesystem)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/dataset.py", line 437, in _ensure_single_source
+    raise FileNotFoundError(path)
+FileNotFoundError: features_fixed.parquet
+[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# cat > churn/windows.py <<'PY'
+[?2004l
+        right_on='ordered_at[?2004h> """Activity features over trailing windows (orders, spend, tickets) and simple time‑since features.
+[?2004l[?2004h> 
+[?2004l[?2004h> We avoid pandas `merge_asof` and instead compute window counts by per‑customer binary search. This guarantees that the windows are half‑open `[t‑W, t)` and respects the strict‑before rule.
+[?2004l[?2004h> """
+[?2004l[?2004h> 
+[?2004l[?2004h> import numpy as np
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def _window_counts(points, events, ts_col, amount_col=None, days=7):
+[?2004l[?2004h>     """Return count (and optional sum) of `events` in the half‑open window `[t‑days, t)`.
+[?2004l[?2004h> 
+[?2004l[?2004h>     Parameters
+[?2004l[?2004h>     ----------
+[?2004l[?2004h>     points : DataFrame with ``customer_id`` and ``as_of``.
+[?2004l[?2004h>     events : DataFrame containing ``customer_id`` and a timestamp column named `ts_col`.
+[?2004l[?2004h>     amount_col : optional column name for a numeric amount to be summed (used for spend).
+[?2004l[?2004h>     days : window length in days.
+[?2004l[?2004h> 
+[?2004l[?2004h>     Returns a tuple ``(count_series, sum_series_or_None)`` aligned with `points`.
+[?2004l[?2004h>     """
+[?2004l[?2004h>     # Prepare result arrays
+[?2004l[?2004h>     count_res = np.zeros(len(points), dtype=np.int64)
+[?2004l[?2004h>     sum_res = np.zeros(len(points), dtype=np.int64) if amount_col else None
+[?2004l[?2004h> 
+[?2004l[?2004h>     # Ensure points are sorted for deterministic output
+[?2004l[?2004h>     pts = points[['customer_id', 'as_of']].reset_index()
+[?2004l[?2004h>     pts = pts.sort_values(['customer_id', 'as_of']).reset_index(drop=True)
+[?2004l[?2004h> 
+[?2004l[?2004h>     # Group by customer for vectorised processing
+[?2004l[?2004h>     for cid, grp in pts.groupby('customer_id'):
+[?2004l[?2004h>         # Events for this customer, sorted by timestamp
+[?2004l[?2004h>         ev = events[events['customer_id'] == cid].sort_values(ts_col)
+[?2004l[?2004h>         if ev.empty:
+[?2004l[?2004h>             # No events -> counts remain zero
+[?2004l[?2004h>             continue
+[?2004l[?2004h>         ev_ts = ev[ts_col].values.astype('datetime64[ns]')
+[?2004l[?2004h>         # Cumulative sum if needed
+[?2004l[?2004h>         if amount_col:
+[?2004l[?2004h>             ev_amount = ev[amount_col].values.astype(np.int64)
+[?2004l[?2004h>             cum_amount = np.cumsum(ev_amount)
+[?2004l[?2004h>         else:
+[?2004l[?2004h>             cum_amount = None
+[?2004l[?2004h> 
+[?2004l[?2004h>         # Process each prediction point for this customer
+[?2004l[?2004h>         idxs = grp['index'].values
+[?2004l[?2004h>         as_of_vals = grp['as_of'].values.astype('datetime64[ns]')
+[?2004l[?2004h>         start_vals = as_of_vals - np.timedelta64(days, 'D')
+[?2004l[?2004h>         # Use searchsorted on the event timestamps (right side excludes exact matches at t)
+[?2004l[?2004h>         end_pos = np.searchsorted(ev_ts, as_of_vals, side='right')
+[?2004l[?2004h>         start_pos = np.searchsorted(ev_ts, start_vals, side='right')
+[?2004l[?2004h>         counts = end_pos - start_pos
+[?2004l[?2004h>         count_res[idxs] = counts
+[?2004l[?2004h>         if amount_col:
+[?2004l[?2004h>             # Sum of amounts in window = cum_amount[end-1] - cum_amount[start-1]
+[?2004l[?2004h>             sum_vals = np.zeros_like(counts, dtype=np.int64)
+[?2004l[?2004h>             # Where end_pos > 0, take cumulative at end-1
+[?2004l[?2004h>             end_nonzero = end_pos > 0
+[?2004l[?2004h>             sum_vals[end_nonzero] = cum_amount[end_pos[end_nonzero] - 1]
+[?2004l[?2004h>             # Subtract cumulative at start-1 where start_pos > 0
+[?2004l[?2004h>             start_nonzero = start_pos > 0
+[?2004l[?2004h>             sum_vals[start_nonzero] -= cum_amount[start_pos[start_nonzero] - 1]
+[?2004l[?2004h>             sum_res[idxs] = sum_vals
+[?2004l[?2004h> 
+[?2004l[?2004h>     count_series = pd.Series(count_res, index=points.index).astype('int64')
+[?2004l[?2004h>     sum_series = pd.Series(sum_res, index=points.index).astype('int64') if amount_col else None
+[?2004l[?2004h>     return count_series, sum_series
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def activity_features(points, orders, tickets):
+[?2004l[?2004h>     """Compute activity related features for each scoring point.
+[?2004l[?2004h> 
+[?2004l[?2004h>     Returns a DataFrame with columns:
+[?2004l[?2004h>         orders_7d, orders_30d, spend_30d_cents, tickets_30d, days_since_last_order
+[?2004l[?2004h>     """
+[?2004l[?2004h>     out = points[['customer_id', 'as_of']].copy()
+[?2004l[?2004h>     # orders and spend windows
+[?2004l[?2004h>     out['orders_7d'], _ = _window_counts(points, orders, 'ordered_at', days=7)
+[?2004l[?2004h>     out['orders_30d'], out['spend_30d_cents'] = _window_counts(
+[?2004l[?2004h>         points, orders, 'ordered_at', amount_col='amount_cents', days=30)
+[?2004l[?2004h>     # tickets window
+[?2004l[?2004h>     out['tickets_30d'], _ = _window_counts(points, tickets, 'opened_at', days=30)
+[?2004l[?2004h> 
+[?2004l[?2004h>     # days_since_last_order – strictly before as_of
+[?2004l[?2004h>     orders_sorted = orders.sort_values('ordered_at')[['customer_id', 'ordered_at']]
+[?2004l[?2004h>     left = out[['customer_id', 'as_of']].reset_index().sort_values('as_of')
+[?2004l[?2004h>     last = pd.merge_asof(
+[?2004l[?2004h>         left,
+[?2004l[?2004h>         orders_sorted,
+[?2004l[?2004h>         left_on='as_of',
+[?2004l[?2004h>         right_on='ordered_at',
+[?2004l[?2004h>         by='customer_id',
+[?2004l[?2004h>         allow_exact_matches=False,
+[?2004l[?2004h>     ).set_index('index').sort_index()['ordered_at']
+[?2004l[?2004h>     out['days_since_last_order'] = (out['as_of'] - last).dt.total_seconds() / 86400
+[?2004l[?2004h>     return out
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def tenure_days(points, customers):
+[?2004l[?2004h>     """Compute days between `as_of` and the customer's signup date."""
+[?2004l[?2004h>     signup = points['customer_id'].map(customers.set_index('customer_id')['signup_at'])
+[?2004l[?2004h>     return (points['as_of'] - signup).dt.total_seconds() / 86400
+[?2004l[?2004h> PY
+[?2004l[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# python -m churn.build_features --data data --out features_fixed.parquet
+[?2004lTraceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/app/churn/build_features.py", line 38, in <module>
+    main()
+  File "/app/churn/build_features.py", line 31, in main
+    feats = build(a.data)
+            ^^^^^^^^^^^^^
+  File "/app/churn/build_features.py", line 20, in build
+    feats["status"] = latest_status(points, t["status_snapshots"])
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/churn/status.py", line 20, in latest_status
+    merged = pd.merge_asof(
+             ^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/core/reshape/merge.py", line 930, in merge_asof
+    return op.get_result()
+           ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/core/reshape/merge.py", line 2387, in get_result
+    join_index, left_indexer, right_indexer = self._get_join_info()
+                                              ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/core/reshape/merge.py", line 1447, in _get_join_info
+    (left_indexer, right_indexer) = self._get_join_indexers()
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/core/reshape/merge.py", line 2699, in _get_join_indexers
+    left_values = self._convert_values_for_libjoin(left_values, "left")
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/core/reshape/merge.py", line 2643, in _convert_values_for_libjoin
+    raise ValueError(f"{side} keys must be sorted")
+ValueError: left keys must be sorted
+[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# python - <<'PY'
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> df = pd.read_parquet('features_fixed.parquet')
+[?2004l[?2004h> print('rows:', len(df))
+[?2004l[?2004h> print('columns:', list(df.columns))
+[?2004l[?2004h> print(df.head())
+[?2004l[?2004h> PY
+[?2004lTraceback (most recent call last):
+  File "<stdin>", line 2, in <module>
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parquet.py", line 760, in read_parquet
+    return impl.read(
+           ^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parquet.py", line 296, in read
+    pa_table = self.api.parquet.read_table(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/parquet/core.py", line 1915, in read_table
+    dataset = ParquetDataset(
+              ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/parquet/core.py", line 1491, in __init__
+    self._dataset = ds.dataset(path_or_paths, filesystem=filesystem,
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/dataset.py", line 790, in dataset
+    return _filesystem_dataset(source, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/dataset.py", line 472, in _filesystem_dataset
+    fs, paths_or_selector = _ensure_single_source(source, filesystem)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/dataset.py", line 437, in _ensure_single_source
+    raise FileNotFoundError(path)
+FileNotFoundError: features_fixed.parquet
+[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# cat > churn/status.py <<'PY'
+[?2004l[?2004h> """Account status from the billing system's status snapshots.
+[?2004l[?2004h> 
+[?2004l[?2004h> For each scoring point we must return the status from the most recent snapshot whose
+[?2004l[?2004h> `snapshot_date` is **strictly before** the date of the prediction (`as_of`).
+[?2004l[?2004h> """
+[?2004l[?2004h> 
+[?2004l[?2004h> import numpy as np
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def latest_status(points, snapshots):
+[?2004l[?2004h>     """Return a Series of the latest status before each prediction.
+[?2004l[?2004h> 
+[?2004l[?2004h>     Parameters
+[?2004l[?2004h>     ----------
+[?2004l[?2004h>     points : DataFrame with ``customer_id`` and ``as_of``.
+[?2004l[?2004h>     snapshots : DataFrame with ``customer_id``, ``snapshot_date`` (UTC datetime) and ``status``.
+[?2004l[?2004h>     """
+[?2004l[?2004h>     # Prepare result array
+[?2004l[?2004h>     result = pd.Series([np.nan] * len(points), index=points.index, dtype=object)
+[?2004l[?2004h> 
+[?2004l[?2004h>     # Ensure points are sorted for deterministic processing
+[?2004l[?2004h>     pts = points[['customer_id', 'as_of']].reset_index()
+[?2004l[?2004h>     pts = pts.sort_values(['customer_id', 'as_of']).reset_index(drop=True)
+[?2004l[?2004h> 
+[?2004l[?2004h>     for cid, grp in pts.groupby('customer_id'):
+[?2004l[?2004h>         # Snapshots for this customer, sorted by snapshot_date
+[?2004l[?2004h>         snap = snapshots[snapshots['customer_id'] == cid].sort_values('snapshot_date')
+[?2004l[?2004h>         if snap.empty:
+[?2004l[?2004h>             continue
+[?2004l[?2004h>         snap_dates = snap['snapshot_date'].values.astype('datetime64[ns]')
+[?2004l[?2004h>         # For each prediction, find the last snapshot_date < date(as_of)
+[?2004l[?2004h>         as_of_dates = grp['as_of'].values.astype('datetime64[ns]')
+[?2004l[?2004h>         # Convert to date (midnight) because snapshot_date marks end of day
+[?2004l[?2004h>         pred_dates = np.floor(as_of_dates.astype('datetime64[D]')).astype('datetime64[ns]')
+[?2004l[?2004h>         idx = np.searchsorted(snap_dates, pred_dates, side='right') - 1
+[?2004l[?2004h>         valid = idx >= 0
+[?2004l[?2004h>         statuses = np.empty(len(grp), dtype=object)
+[?2004l[?2004h>         statuses[:] = np.nan
+[?2004l[?2004h>         statuses[valid] = snap['status'].values[idx[valid]]
+[?2004l[?2004h>         result.iloc[grp['index'].values] = statuses
+[?2004l[?2004h>     return result
+[?2004l[?2004h> PY
+[?2004l[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# python -m churn.build_features --data data --out features_fixed.parquet
+[?2004lTraceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/app/churn/build_features.py", line 38, in <module>
+    main()
+  File "/app/churn/build_features.py", line 31, in main
+    feats = build(a.data)
+            ^^^^^^^^^^^^^
+  File "/app/churn/build_features.py", line 20, in build
+    feats["status"] = latest_status(points, t["status_snapshots"])
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/churn/status.py", line 35, in latest_status
+    pred_dates = np.floor(as_of_dates.astype('datetime64[D]')).astype('datetime64[ns]')
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: ufunc 'floor' not supported for the input types, and the inputs could not be safely coerced to any supported types according to the casting rule ''safe''
+[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# python - <<'PY'
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> df = pd.read_parquet('features_fixed.parquet')
+[?2004l[?2004h> print('rows:', len(df))
+[?2004l[?2004h> print('columns:', list(df.columns))
+[?2004l[?2004h> print(df.head())
+[?2004l[?2004h> PY
+[?2004lTraceback (most recent call last):
+  File "<stdin>", line 2, in <module>
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parquet.py", line 760, in read_parquet
+    return impl.read(
+           ^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parquet.py", line 296, in read
+    pa_table = self.api.parquet.read_table(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/parquet/core.py", line 1915, in read_table
+    dataset = ParquetDataset(
+              ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/parquet/core.py", line 1491, in __init__
+    self._dataset = ds.dataset(path_or_paths, filesystem=filesystem,
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/dataset.py", line 790, in dataset
+    return _filesystem_dataset(source, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/dataset.py", line 472, in _filesystem_dataset
+    fs, paths_or_selector = _ensure_single_source(source, filesystem)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/dataset.py", line 437, in _ensure_single_source
+    raise FileNotFoundError(path)
+FileNotFoundError: features_fixed.parquet
+[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# cat > churn/status.py <<'PY'
+[?2004l[?2004h> """Account status from the billing system's status snapshots.
+[?2004l[?2004h> 
+[?2004l[?2004h> For each scoring point we need the status from the latest snapshot whose
+[?2004l[?2004h> `snapshot_date` is **strictly before** the date of the prediction (`as_of`).
+[?2004l[?2004h> This implementation uses pandas `merge_asof` after sorting both inputs, which
+[?2004l[?2004h> avoids the "left keys must be sorted" error.
+[?2004l[?2004h> """
+[?2004l[?2004h> 
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def latest_status(points, snapshots):
+[?2004l[?2004h>     """Return a Series of the latest status before each prediction.
+[?2004l[?2004h> 
+[?2004l[?2004h>     Parameters
+[?2004l[?2004h>     ----------
+[?2004l[?2004h>     points : DataFrame with ``customer_id`` and ``as_of``.
+[?2004l[?2004h>     snapshots : DataFrame with ``customer_id``, ``snapshot_date`` (UTC datetime) and ``status``.
+[?2004l[?2004h>     """
+[?2004l[?2004h>     # Prepare left table: prediction date (UTC date, not datetime) for comparison
+[?2004l[?2004h>     left = points[['customer_id', 'as_of']].copy()
+[?2004l[?2004h>     left['pred_date'] = left['as_of'].dt.floor('D')  # snapshot_date marks end of day D
+[?2004l[?2004h>     left = left.sort_values(['customer_id', 'pred_date'])
+[?2004l[?2004h> 
+[?2004l[?2004h>     # Ensure snapshots are sorted
+[?2004l[?2004h>     right = snapshots.sort_values(['customer_id', 'snapshot_date'])
+[?2004l[?2004h> 
+[?2004l[?2004h>     merged = pd.merge_asof(
+[?2004l[?2004h>         left,
+[?2004l[?2004h>         right,
+[?2004l[?2004h>         left_on='pred_date',
+[?2004l[?2004h>         right_on='snapshot_date',
+[?2004l[?2004h>         by='customer_id',
+[?2004l[?2004h>         direction='backward',
+[?2004l[?2004h>         allow_exact_matches=False,
+[?2004l[?2004h>     )
+[?2004l[?2004h>     return merged['status']
+[?2004l[?2004h> PY
+[?2004l[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# python -m churn.build_features --data data --out features_fixed.parquet
+[?2004lTraceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/app/churn/build_features.py", line 38, in <module>
+    main()
+  File "/app/churn/build_features.py", line 31, in main
+    feats = build(a.data)
+            ^^^^^^^^^^^^^
+  File "/app/churn/build_features.py", line 20, in build
+    feats["status"] = latest_status(points, t["status_snapshots"])
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/churn/status.py", line 28, in latest_status
+    merged = pd.merge_asof(
+             ^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/core/reshape/merge.py", line 930, in merge_asof
+    return op.get_result()
+           ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/core/reshape/merge.py", line 2387, in get_result
+    join_index, left_indexer, right_indexer = self._get_join_info()
+                                              ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/core/reshape/merge.py", line 1447, in _get_join_info
+    (left_indexer, right_indexer) = self._get_join_indexers()
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/core/reshape/merge.py", line 2699, in _get_join_indexers
+    left_values = self._convert_values_for_libjoin(left_values, "left")
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/core/reshape/merge.py", line 2643, in _convert_values_for_libjoin
+    raise ValueError(f"{side} keys must be sorted")
+ValueError: left keys must be sorted
+[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# python - <<'PY'
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> df = pd.read_parquet('features_fixed.parquet')
+[?2004l[?2004h> print('rows:', len(df))
+[?2004l[?2004h> print('columns:', list(df.columns))
+[?2004l[?2004h> print(df.head())
+[?2004l[?2004h> PY
+[?2004lTraceback (most recent call last):
+  File "<stdin>", line 2, in <module>
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parquet.py", line 760, in read_parquet
+    return impl.read(
+           ^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parquet.py", line 296, in read
+    pa_table = self.api.parquet.read_table(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/parquet/core.py", line 1915, in read_table
+    dataset = ParquetDataset(
+              ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/parquet/core.py", line 1491, in __init__
+    self._dataset = ds.dataset(path_or_paths, filesystem=filesystem,
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/dataset.py", line 790, in dataset
+    return _filesystem_dataset(source, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/dataset.py", line 472, in _filesystem_dataset
+    fs, paths_or_selector = _ensure_single_source(source, filesystem)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/dataset.py", line 437, in _ensure_single_source
+    raise FileNotFoundError(path)
+FileNotFoundError: features_fixed.parquet
+[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# cat > churn/status.py <<'PY'
+[?2004l[?2004h> """Account status from the billing system's status snapshots.
+[?2004l[?2004h> 
+[?2004l[?2004h> For each scoring point we need the status from the most recent snapshot whose
+[?2004l[?2004h> `snapshot_date` is **strictly before** the date of the prediction (`as_of`).
+[?2004l[?2004h> We implement this with a per‑customer binary search to avoid pandas sorting
+[?2004l[?2004h> requirements.
+[?2004l[?2004h> """
+[?2004l[?2004h> 
+[?2004l[?2004h> import numpy as np
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def latest_status(points, snapshots):
+[?2004l[?2004h>     """Return a Series of the latest status before each prediction.
+[?2004l[?2004h> 
+[?2004l[?2004h>     Parameters
+[?2004l[?2004h>     ----------
+[?2004l[?2004h>     points : DataFrame with ``customer_id`` and ``as_of``.
+[?2004l[?2004h>     snapshots : DataFrame with ``customer_id``, ``snapshot_date`` (UTC datetime) and ``status``.
+[?2004l[?2004h>     """
+[?2004l[?2004h>     # Prepare result Series with NaN default
+[?2004l[?2004h>     result = pd.Series([np.nan] * len(points), index=points.index, dtype=object)
+[?2004l[?2004h> 
+[?2004l[?2004h>     # Work on a sorted copy of points for deterministic processing
+[?2004l[?2004h>     pts = points[['customer_id', 'as_of']].reset_index()
+[?2004l[?2004h>     pts = pts.sort_values(['customer_id', 'as_of']).reset_index(drop=True)
+[?2004l[?2004h> 
+[?2004l[?2004h>     for cid, grp in pts.groupby('customer_id'):
+[?2004l[?2004h>         # Snapshots for this customer, sorted by snapshot_date
+[?2004l[?2004h>         snap = snapshots[snapshots['customer_id'] == cid].sort_values('snapshot_date')
+[?2004l[?2004h>         if snap.empty:
+[?2004l[?2004h>             continue
+[?2004l[?2004h>         snap_dates = snap['snapshot_date'].values.astype('datetime64[ns]')
+[?2004l[?2004h>         # For each prediction compute the date (midnight) of as_of
+[?2004l[?2004h>         pred_dates = np.floor(grp['as_of'].values.astype('datetime64[ns]').astype('datetime64[D]')).astype('datetime64[ns]')
+[?2004l[?2004h>         # Find rightmost snapshot_date < pred_date
+[?2004l[?2004h>         idx = np.searchsorted(snap_dates, pred_dates, side='right') - 1
+[?2004l[?2004h>         valid = idx >= 0
+[?2004l[?2004h>         statuses = np.empty(len(grp), dtype=object)
+[?2004l[?2004h>         statuses[:] = np.nan
+[?2004l[?2004h>         statuses[valid] = snap['status'].values[idx[valid]]
+[?2004l[?2004h>         result.iloc[grp['index'].values] = statuses
+[?2004l[?2004h>     return result
+[?2004l[?2004h> PY
+[?2004l[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# python -m churn.build_features --data data --out features_fixed.parquet
+[?2004lTraceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/app/churn/build_features.py", line 38, in <module>
+    main()
+  File "/app/churn/build_features.py", line 31, in main
+    feats = build(a.data)
+            ^^^^^^^^^^^^^
+  File "/app/churn/build_features.py", line 20, in build
+    feats["status"] = latest_status(points, t["status_snapshots"])
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/churn/status.py", line 35, in latest_status
+    pred_dates = np.floor(grp['as_of'].values.astype('datetime64[ns]').astype('datetime64[D]')).astype('datetime64[ns]')
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: ufunc 'floor' not supported for the input types, and the inputs could not be safely coerced to any supported types according to the casting rule ''safe''
+[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# python - <<'PY'
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> df = pd.read_parquet('features_fixed.parquet')
+[?2004l[?2004h> print('rows:', len(df))
+[?2004l[?2004h> print('columns:', list(df.columns))
+[?2004l[?2004h> print(df.head())
+[?2004l[?2004h> PY
+[?2004lTraceback (most recent call last):
+  File "<stdin>", line 2, in <module>
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parquet.py", line 760, in read_parquet
+    return impl.read(
+           ^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parquet.py", line 296, in read
+    pa_table = self.api.parquet.read_table(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/parquet/core.py", line 1915, in read_table
+    dataset = ParquetDataset(
+              ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/parquet/core.py", line 1491, in __init__
+    self._dataset = ds.dataset(path_or_paths, filesystem=filesystem,
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/dataset.py", line 790, in dataset
+    return _filesystem_dataset(source, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/dataset.py", line 472, in _filesystem_dataset
+    fs, paths_or_selector = _ensure_single_source(source, filesystem)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/dataset.py", line 437, in _ensure_single_source
+    raise FileNotFoundError(path)
+FileNotFoundError: features_fixed.parquet
+[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# cat > churn/status.py <<'PY'
+[?2004l[?2004h> """Account status from the billing system's status snapshots.
+[?2004l[?2004h> 
+[?2004l[?2004h> For each scoring point we need the status from the most recent snapshot whose
+[?2004l[?2004h> `snapshot_date` is **strictly before** the date of the prediction (`as_of`).
+[?2004l[?2004h> We implement this with a per‑customer binary search to avoid pandas sorting
+[?2004l[?2004h> requirements.
+[?2004l[?2004h> """
+[?2004l[?2004h> 
+[?2004l[?2004h> import numpy as np
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def latest_status(points, snapshots):
+[?2004l[?2004h>     """Return a Series of the latest status before each prediction.
+[?2004l[?2004h> 
+[?2004l[?2004h>     Parameters
+[?2004l[?2004h>     ----------
+[?2004l[?2004h>     points : DataFrame with ``customer_id`` and ``as_of``.
+[?2004l[?2004h>     snapshots : DataFrame with ``customer_id``, ``snapshot_date`` (UTC datetime) and ``status``.
+[?2004l[?2004h>     """
+[?2004l[?2004h>     # Result series (default NaN)
+[?2004l[?2004h>     result = pd.Series([np.nan] * len(points), index=points.index, dtype=object)
+[?2004l[?2004h> 
+[?2004l[?2004h>     # Sort points for deterministic processing
+[?2004l[?2004h>     pts = points[['customer_id', 'as_of']].reset_index()
+[?2004l[?2004h>     pts = pts.sort_values(['customer_id', 'as_of']).reset_index(drop=True)
+[?2004l[?2004h> 
+[?2004l[?2004h>     for cid, grp in pts.groupby('customer_id'):
+[?2004l[?2004h>         # Snapshots for this customer, sorted by snapshot_date
+[?2004l[?2004h>         snap = snapshots[snapshots['customer_id'] == cid].sort_values('snapshot_date')
+[?2004l[?2004h>         if snap.empty:
+[?2004l[?2004h>             continue
+[?2004l[?2004h>         snap_dates = snap['snapshot_date'].values.astype('datetime64[ns]')
+[?2004l[?2004h>         # Prediction dates at midnight (snapshot_date marks end of day)
+[?2004l[?2004h>         pred_dates = grp['as_of'].dt.normalize().values.astype('datetime64[ns]')
+[?2004l[?2004h>         # Find rightmost snapshot_date < pred_date
+[?2004l[?2004h>         idx = np.searchsorted(snap_dates, pred_dates, side='right') - 1
+[?2004l[?2004h>         valid = idx >= 0
+[?2004l[?2004h>         statuses = np.empty(len(grp), dtype=object)
+[?2004l[?2004h>         statuses[:] = np.nan
+[?2004l[?2004h>         statuses[valid] = snap['status'].values[idx[valid]]
+[?2004l[?2004h>         result.iloc[grp['index'].values] = statuses
+[?2004l[?2004h>     return result
+[?2004l[?2004h> PY
+[?2004l[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# python -m churn.build_features --data data --out features_fixed.parquet
+[?2004lTraceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/app/churn/build_features.py", line 38, in <module>
+    main()
+  File "/app/churn/build_features.py", line 31, in main
+    feats = build(a.data)
+            ^^^^^^^^^^^^^
+  File "/app/churn/build_features.py", line 22, in build
+    feats["te_district"] = district_encoding(points, t["labels"], t["customers"])
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/churn/encoding.py", line 52, in district_encoding
+    merged = pd.merge_asof(
+             ^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/core/reshape/merge.py", line 930, in merge_asof
+    return op.get_result()
+           ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/core/reshape/merge.py", line 2387, in get_result
+    join_index, left_indexer, right_indexer = self._get_join_info()
+                                              ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/core/reshape/merge.py", line 1447, in _get_join_info
+    (left_indexer, right_indexer) = self._get_join_indexers()
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/core/reshape/merge.py", line 2699, in _get_join_indexers
+    left_values = self._convert_values_for_libjoin(left_values, "left")
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/core/reshape/merge.py", line 2643, in _convert_values_for_libjoin
+    raise ValueError(f"{side} keys must be sorted")
+ValueError: left keys must be sorted
+[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# python - <<'PY'
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> df = pd.read_parquet('features_fixed.parquet')
+[?2004l[?2004h> print('rows:', len(df))
+[?2004l[?2004h> print('columns:', list(df.columns))
+[?2004l[?2004h> print(df.head())
+[?2004l[?2004h> PY
+[?2004lTraceback (most recent call last):
+  File "<stdin>", line 2, in <module>
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parquet.py", line 760, in read_parquet
+    return impl.read(
+           ^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parquet.py", line 296, in read
+    pa_table = self.api.parquet.read_table(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/parquet/core.py", line 1915, in read_table
+    dataset = ParquetDataset(
+              ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/parquet/core.py", line 1491, in __init__
+    self._dataset = ds.dataset(path_or_paths, filesystem=filesystem,
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/dataset.py", line 790, in dataset
+    return _filesystem_dataset(source, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/dataset.py", line 472, in _filesystem_dataset
+    fs, paths_or_selector = _ensure_single_source(source, filesystem)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pyarrow/dataset.py", line 437, in _ensure_single_source
+    raise FileNotFoundError(path)
+FileNotFoundError: features_fixed.parquet
+[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# cat > churn/encoding.py <<'PY'
+[?2004l[?2004h> """Target encoding of high‑cardinality categoricals.
+[?2004l[?2004h> 
+[?2004l[?2004h> `te_district` must be computed using only label rows whose `label_available_at`
+[?2004l[?2004h> is strictly before the prediction's `as_of`. The original implementation ignored this
+[?2004l[?2004h> temporal constraint, causing leakage. This version uses per‑district binary search
+[?2004l[?2004h> to respect the strict‑before rule and applies the smoothed mean formula:
+[?2004l[?2004h> 
+[?2004l[?2004h>     te = (s + m * p) / (n + m)
+[?2004l[?2004h> 
+[?2004l[?2004h> where `s` and `n` are the district‑specific cumulative sum and count, `p` is the
+[?2004l[?2004h> global prior mean (computed from all labels available before `as_of`), and `m`
+[?2004l[?2004h> is the prior weight.
+[?2004l[?2004h> """
+[?2004l[?2004h> 
+[?2004l[?2004h> import numpy as np
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> 
+[?2004l[?2004h> PRIOR_WEIGHT = 20
+[?2004l[?2004h> DEFAULT_PRIOR = 0.05
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def district_encoding(points, labels, customers, m=PRIOR_WEIGHT):
+[?2004l[?2004h>     """Return the smoothed churn rate per postcode district respecting label availability.
+[?2004l[?2004h> 
+[?2004l[?2004h>     Parameters
+[?2004l[?2004h>     ----------
+[?2004l[?2004h>     points : DataFrame with ``customer_id`` and ``as_of``.
+[?2004l[?2004h>     labels : DataFrame with ``customer_id``, ``churned_30d`` and ``label_available_at``.
+[?2004l[?2004h>     customers : DataFrame with ``customer_id`` and ``postcode_district``.
+[?2004l[?2004h>     m : int, optional
+[?2004l[?2004h>         Prior weight (default 20).
+[?2004l[?2004h>     """
+[?2004l[?2004h>     # Map customers to districts
+[?2004l[?2004h>     district_map = customers.set_index('customer_id')['postcode_district']
+[?2004l[?2004h>     pts = points.copy()
+[?2004l[?2004h>     pts['district'] = pts['customer_id'].map(district_map)
+[?2004l[?2004h>     # Drop rows where district cannot be resolved (should be rare)
+[?2004l[?2004h>     pts = pts.reset_index()
+[?2004l[?2004h>     pts = pts.dropna(subset=['district'])
+[?2004l[?2004h>     # Prepare result array
+[?2004l[?2004h>     result = np.empty(len(pts), dtype=np.float64)
+[?2004l[?2004h>     result[:] = np.nan
+[?2004l[?2004h> 
+[?2004l[?2004h>     # Global cumulative stats (all labels irrespective of district)
+[?2004l[?2004h>     lbl_global = labels.sort_values('label_available_at')
+[?2004l[?2004h>     global_times = lbl_global['label_available_at'].values.astype('datetime64[ns]')
+[?2004l[?2004h>     global_cum_sum = np.cumsum(lbl_global['churned_30d'].values.astype(np.float64))
+[?2004l[?2004h>     global_cum_cnt = np.arange(1, len(lbl_global) + 1)
+[?2004l[?2004h> 
+[?2004l[?2004h>     # Process each district separately
+[?2004l[?2004h>     for district, grp in pts.groupby('district'):
+[?2004l[?2004h>         # Labels for this district
+[?2004l[?2004h>         lbl = labels[labels['customer_id'].map(district_map) == district].copy()
+[?2004l[?2004h>         if lbl.empty:
+[?2004l[?2004h>             # No labels for district: use global prior for all points in this district
+[?2004l[?2004h>             # Compute prior per point using global cumulative up to as_of
+[?2004l[?2004h>             as_of_vals = grp['as_of'].values.astype('datetime64[ns]')
+[?2004l[?2004h>             idx_global = np.searchsorted(global_times, as_of_vals, side='right') - 1
+[?2004l[?2004h>             prior = np.full(len(as_of_vals), DEFAULT_PRIOR, dtype=np.float64)
+[?2004l[?2004h>             valid = idx_global >= 0
+[?2004l[?2004h>             prior[valid] = global_cum_sum[idx_global[valid]] / global_cum_cnt[idx_global[valid]]
+[?2004l[?2004h>             result[grp['index'].values] = prior  # no district info, use prior directly
+[?2004l[?2004h>             continue
+[?2004l[?2004h>         lbl = lbl.sort_values('label_available_at')
+[?2004l[?2004h>         times = lbl['label_available_at'].values.astype('datetime64[ns]')
+[?2004l[?2004h>         cum_sum = np.cumsum(lbl['churned_30d'].values.astype(np.float64))
+[?2004l[?2004h>         cum_cnt = np.arange(1, len(lbl) + 1)
+[?2004l[?2004h>         as_of_vals = grp['as_of'].values.astype('datetime64[ns]')
+[?2004l[?2004h>         # Find last label_available_at < as_of for district
+[?2004l[?2004h>         idx = np.searchsorted(times, as_of_vals, side='right') - 1
+[?2004l[?2004h>         # Global prior for each point
+[?2004l[?2004h>         idx_global = np.searchsorted(global_times, as_of_vals, side='right') - 1
+[?2004l[?2004h>         prior = np.full(len(as_of_vals), DEFAULT_PRIOR, dtype=np.float64)
+[?2004l[?2004h>         valid_global = idx_global >= 0
+[?2004l[?2004h>         prior[valid_global] = global_cum_sum[idx_global[valid_global]] / global_cum_cnt[idx_global[valid_global]]
+[?2004l[?2004h>         # Compute smoothed encoding where district label exists
+[?2004l[?2004h>         te = np.empty(len(as_of_vals), dtype=np.float64)
+[?2004l[?2004h>         te[:] = prior  # fallback to prior
+[?2004l[?2004h>         valid = idx >= 0
+[?2004l[?2004h>         if np.any(valid):
+[?2004l[?2004h>             s = cum_sum[idx[valid]]
+[?2004l[?2004h>             n = cum_cnt[idx[valid]]
+[?2004l[?2004h>             te[valid] = (s + m * prior[valid]) / (n + m)
+[?2004l[?2004h>         result[grp['index'].values] = te
+[?2004l[?2004h> 
+[?2004l[?2004h>     # Align with original ordering of points
+[?2004l[?2004h>     final_series = pd.Series(result, index=pts['index']).reindex(points.index)
+[?2004l[?2004h>     return final_series.astype('float64')
+[?2004l[?2004h> PY
+[?2004l[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# python -m churn.build_features --data data --out features_fixed.parquet
+[?2004lwrote 48966 rows x 11 columns to features_fixed.parquet
+[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# python - <<'PY'
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> df = pd.read_parquet('features_fixed.parquet')
+[?2004l[?2004h> print('rows:', len(df))
+[?2004l[?2004h> print('columns:', list(df.columns))
+[?2004l[?2004h> print(df.head())
+[?2004l[?2004h> PY
+[?2004lrows: 48966
+columns: ['customer_id', 'as_of', 'orders_7d', 'orders_30d', 'spend_30d_cents', 'tickets_30d', 'days_since_last_order', 'tenure_days', 'status', 'app_minutes_7d', 'te_district']
+   customer_id                     as_of  orders_7d  orders_30d  spend_30d_cents  ...  days_since_last_order  tenure_days  status  app_minutes_7d  te_district
+0       100001 2025-04-13 06:00:00+00:00          1           2             9980  ...               7.000000    16.702639  active             NaN     0.097622
+1       100001 2025-04-27 06:00:00+00:00          1           6            21396  ...               7.000000    30.702639  active            56.0     0.096457
+2       100001 2025-05-11 06:00:00+00:00          2           8            27008  ...               0.382731    44.702639  active            56.0     0.095533
+3       100001 2025-05-25 06:00:00+00:00          3           8            26033  ...               6.241435    58.702639  active            52.0     0.090836
+4       100001 2025-06-08 06:00:00+00:00          2           9            28883  ...               1.066481    72.702639  active            59.0     0.086453
+
+[5 rows x 11 columns]
+[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# cat > churn/build_features.py <<'PY'
+[?2004l[?2004h> """Build the churn feature table: python -m churn.build_features --data <dir> --out <file.parquet>"""
+[?2004l[?2004h> import argparse
+[?2004l[?2004h> import os
+[?2004l[?2004h> 
+[?2004l[?2004h> from churn.encoding import district_encoding
+[?2004l[?2004h> from churn.impute import fill_app_minutes
+[?2004l[?2004h> from churn.extract import load_extract
+[?2004l[?2004h> from churn.status import latest_status
+[?2004l[?2004h> from churn.windows import activity_features, tenure_days
+[?2004l[?2004h> 
+[?2004l[?2004h> FEATURE_COLUMNS = ["orders_7d", "orders_30d", "spend_30d_cents", "tickets_30d", "days_since_last_order",
+[?2004l[?2004h>                    "tenure_days", "status", "app_minutes_7d", "te_district"]
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def build(data_dir):
+[?2004l[?2004h>     t = load_extract(data_dir)
+[?2004l[?2004h>     points = t["scoring_points"].reset_index(drop=True)
+[?2004l[?2004h>     feats = activity_features(points, t["orders"], t["tickets"])
+[?2004l[?2004h>     feats["tenure_days"] = tenure_days(points, t["customers"])
+[?2004l[?2004h>     feats["status"] = latest_status(points, t["status_snapshots"])
+[?2004l[?2004h>     # Fill app minutes and ensure the column name is exactly 'app_minutes_7d'
+[?2004l[?2004h>     filled = fill_app_minutes(points)
+[?2004l[?2004h>     feats["app_minutes_7d"] = filled
+[?2004l[?2004h>     feats["te_district"] = district_encoding(points, t["labels"], t["customers"])
+[?2004l[?2004h>     return feats[["customer_id", "as_of"] + FEATURE_COLUMNS]
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def main():
+[?2004l[?2004h>     ap = argparse.ArgumentParser(description=__doc__)
+[?2004l[?2004h>     ap.add_argument("--data", required=True, help="folder with the extract CSVs")
+[?2004l[?2004h>     ap.add_argument("--out", required=True, help="output parquet file")
+[?2004l[?2004h>     a = ap.parse_args()
+[?2004l[?2004h>     feats = build(a.data)
+[?2004l[?2004h>     os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
+[?2004l[?2004h>     feats.to_parquet(a.out, index=False)
+[?2004l[?2004h>     print(f"wrote {len(feats)} rows x {feats.shape[1]} columns to {a.out}")
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> if __name__ == "__main__":
+[?2004l[?2004h>     main()
+[?2004l[?2004h> PY
+[?2004l[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# python -m churn.build_features --data data --out features_fixed.parquet
+[?2004lwrote 48966 rows x 11 columns to features_fixed.parquet
+[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# python - <<'PY'
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> df = pd.read_parquet('features_fixed.parquet')
+[?2004l[?2004h> print('columns:', list(df.columns))
+[?2004l[?2004h> print('column reprs:', [repr(c) for c in df.columns])
+[?2004l[?2004h> print(df.head())
+[?2004l[?2004h> PY
+[?2004lcolumns: ['customer_id', 'as_of', 'orders_7d', 'orders_30d', 'spend_30d_cents', 'tickets_30d', 'days_since_last_order', 'tenure_days', 'status', 'app_minutes_7d', 'te_district']
+column reprs: ["'customer_id'", "'as_of'", "'orders_7d'", "'orders_30d'", "'spend_30d_cents'", "'tickets_30d'", "'days_since_last_order'", "'tenure_days'", "'status'", "'app_minutes_7d'", "'te_district'"]
+   customer_id                     as_of  orders_7d  orders_30d  spend_30d_cents  ...  days_since_last_order  tenure_days  status  app_minutes_7d  te_district
+0       100001 2025-04-13 06:00:00+00:00          1           2             9980  ...               7.000000    16.702639  active             NaN     0.097622
+1       100001 2025-04-27 06:00:00+00:00          1           6            21396  ...               7.000000    30.702639  active            56.0     0.096457
+2       100001 2025-05-11 06:00:00+00:00          2           8            27008  ...               0.382731    44.702639  active            56.0     0.095533
+3       100001 2025-05-25 06:00:00+00:00          3           8            26033  ...               6.241435    58.702639  active            52.0     0.090836
+4       100001 2025-06-08 06:00:00+00:00          2           9            28883  ...               1.066481    72.702639  active            59.0     0.086453
+
+[5 rows x 11 columns]
+[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# cat > churn/extract.py <<'PY'
+[?2004l[?2004h> """Load a warehouse extract (the CSV layout described in FEATURES.md) into pandas frames with UTC timestamps.
+[?2004l[?2004h> 
+[?2004l[?2004h> This implementation strips any leading/trailing whitespace (including newlines) from column names to ensure
+[?2004l[?2004h> that column names match the specification exactly (e.g., ``app_minutes_7d`` without a trailing newline).
+[?2004l[?2004h> """
+[?2004l[?2004h> 
+[?2004l[?2004h> import os
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> 
+[?2004l[?2004h> TIMESTAMPS = {
+[?2004l[?2004h>     "customers": ["signup_at"],
+[?2004l[?2004h>     "scoring_points": ["as_of"],
+[?2004l[?2004h>     "orders": ["ordered_at"],
+[?2004l[?2004h>     "tickets": ["opened_at"],
+[?2004l[?2004h>     "status_snapshots": ["snapshot_date"],
+[?2004l[?2004h>     "labels": ["as_of", "label_available_at"],
+[?2004l[?2004h> }
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def _clean_columns(df):
+[?2004l[?2004h>     """Strip whitespace from column names of a DataFrame."""
+[?2004l[?2004h>     df.columns = df.columns.str.strip()
+[?2004l[?2004h>     return df
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def load_extract(data_dir):
+[?2004l[?2004h>     tables = {}
+[?2004l[?2004h>     for name, cols in TIMESTAMPS.items():
+[?2004l[?2004h>         df = pd.read_csv(os.path.join(data_dir, f"{name}.csv"), dtype={"postcode_district": "str"})
+[?2004l[?2004h>         df = _clean_columns(df)
+[?2004l[?2004h>         for c in cols:
+[?2004l[?2004h>             df[c] = pd.to_datetime(df[c], utc=True)
+[?2004l[?2004h>         tables[name] = df
+[?2004l[?2004h>     # Ensure app_minutes_7d column is numeric after cleaning column names
+[?2004l[?2004h>     tables["scoring_points"]["app_minutes_7d"] = tables["scoring_points"]["app_minutes_7d"].astype("float64")
+[?2004l[?2004h>     return tables
+[?2004l[?2004h> PY
+[?2004l[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# python -m churn.build_features --data data --out features_fixed.parquet
+[?2004lwrote 48966 rows x 11 columns to features_fixed.parquet
+[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# python - <<'PY'
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> df = pd.read_parquet('features_fixed.parquet')
+[?2004l[?2004h> print('columns:', list(df.columns))
+[?2004l[?2004h> print('column reprs:', [repr(c) for c in df.columns])
+[?2004l[?2004h> print(df.head())
+[?2004l[?2004h> PY
+[?2004lcolumns: ['customer_id', 'as_of', 'orders_7d', 'orders_30d', 'spend_30d_cents', 'tickets_30d', 'days_since_last_order', 'tenure_days', 'status', 'app_minutes_7d', 'te_district']
+column reprs: ["'customer_id'", "'as_of'", "'orders_7d'", "'orders_30d'", "'spend_30d_cents'", "'tickets_30d'", "'days_since_last_order'", "'tenure_days'", "'status'", "'app_minutes_7d'", "'te_district'"]
+   customer_id                     as_of  orders_7d  orders_30d  spend_30d_cents  ...  days_since_last_order  tenure_days  status  app_minutes_7d  te_district
+0       100001 2025-04-13 06:00:00+00:00          1           2             9980  ...               7.000000    16.702639  active             NaN     0.097622
+1       100001 2025-04-27 06:00:00+00:00          1           6            21396  ...               7.000000    30.702639  active            56.0     0.096457
+2       100001 2025-05-11 06:00:00+00:00          2           8            27008  ...               0.382731    44.702639  active            56.0     0.095533
+3       100001 2025-05-25 06:00:00+00:00          3           8            26033  ...               6.241435    58.702639  active            52.0     0.090836
+4       100001 2025-06-08 06:00:00+00:00          2           9            28883  ...               1.066481    72.702639  active            59.0     0.086453
+
+[5 rows x 11 columns]
+[?2004hroot@17a3e0e7-f835-42a4-9265-4eb0b35eea7d:/app# 

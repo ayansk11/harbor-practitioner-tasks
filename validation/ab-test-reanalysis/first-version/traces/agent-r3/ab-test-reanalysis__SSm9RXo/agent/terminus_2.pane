@@ -1,0 +1,476 @@
+[?2004hroot@106c0d2d-f536-4079-bb24-94492e630f2f:/app# asciinema rec --stdin /logs/agent/recording.cast
+[?2004l[0;32masciinema: recording asciicast to /logs/agent/recording.cast[0m
+[0;32masciinema: press <ctrl-d> or type "exit" when you're done[0m
+[?2004hroot@106c0d2d-f536-4079-bb24-94492e630f2f:/app# clear
+[?2004l[H[J[3J[?2004hroot@106c0d2d-f536-4079-bb24-94492e630f2f:/app# ls -R
+[?2004l.:
+EXPERIMENT.md  PM_NOTE.md  README.md  abtest  data  output
+
+./abtest:
+__init__.py  filters.py  load.py  report.py  stats.py
+
+./data:
+assignments.csv  pageviews.csv	users.csv
+
+./output:
+result.json
+[?2004hroot@106c0d2d-f536-4079-bb24-94492e630f2f:/app# cat EXPERIMENT.md
+[?2004l# EXP-2291 analysis plan ("related items v2")
+
+Written and agreed before launch (2026-08-25). The readout must follow this plan. The same plan applies to every
+experiment exported in this layout.
+
+## 1. Question
+Does variant B (the redesigned related-items module) change click-through on product pages compared with A (the
+current module)?
+
+## 2. Randomization
+- The unit of randomization is the **user**. Each user is assigned once, 50/50, to A or B, at their first eligible
+  product pageview, and keeps that variant for the whole experiment.
+- `assignments.csv` logs the assignment. The logger retries, so a row can appear more than once, exactly repeated; an
+  exact repeat counts once. A user never has two different assignment rows.
+
+## 3. Population
+- Users flagged as bots (`users.csv`, `is_bot` = 1) are excluded from **both** arms, before anything is counted.
+  Every assigned user has exactly one row in `users.csv`.
+- `n_users` of an arm = the assigned users of that arm after this exclusion, whether or not they have any pageview.
+- Only pageviews at or after the user's `assigned_at` count. A pageview with `ts` strictly earlier than `assigned_at` is
+  dropped; one with `ts` equal to `assigned_at` counts.
+- Timestamps are ISO 8601 with a `Z` or a `+hh:mm` / `-hh:mm` offset (both forms occur in the same file). Compare
+  instants, not text.
+
+## 4. Metric
+- Every row of `pageviews.csv` is one pageview. Two rows with the same `user_id` and the same instant (written the
+  same way or with different offsets) are two pageviews in the same second, so pageviews are never deduplicated.
+- `clicks` of an arm = the number of counted pageviews with `clicked` = 1; `pageviews` = the number of counted pageviews.
+- CTR of an arm = clicks / pageviews over the whole arm (a ratio of sums, not the average of per-user CTRs).
+- `diff` = CTR_B - CTR_A (absolute, not relative).
+
+## 5. Uncertainty
+- The 95% confidence interval for `diff` must reflect that users, not pageviews, were randomized: the pageviews of one
+  user are not independent of each other. Any one of these is acceptable:
+  - (a) the delta method for each arm's ratio of sums, treating the arms as independent;
+  - (b) a user-level bootstrap: resample users with replacement within each arm, at least 2,000 resamples, percentile
+    interval;
+  - (c) cluster-robust (CR1) standard errors clustered by user, from a pageview-level regression of `clicked` on an
+    indicator of B.
+- An interval that treats each pageview as an independent trial is not acceptable.
+
+## 6. Sample ratio mismatch (SRM) check
+- Pearson chi-square goodness-of-fit test of (`n_users` A, `n_users` B) against a 50/50 split: 1 degree of freedom,
+  no continuity correction. `srm_p` is its p-value; `srm_flag` = `srm_p` < 0.001.
+
+## 7. Decision rule (apply in this order)
+1. `srm_flag` is true: `"invalid"` (the assignment is broken; do not read the result, investigate).
+2. The lower bound of the 95% CI is above 0: `"ship"`.
+3. Otherwise: `"no_ship"`.
+
+## 8. Input files (one folder per experiment)
+| File | Columns |
+|---|---|
+| `assignments.csv` | `user_id` (text), `variant` (`A` or `B`), `assigned_at` (ISO 8601 with offset) |
+| `users.csv` | `user_id` (text), `is_bot` (0 or 1) |
+| `pageviews.csv` | `user_id` (text), `ts` (ISO 8601 with offset), `clicked` (0 or 1) |
+
+## 9. Output: `result.json`
+A JSON object with at least these keys (more keys are fine):
+
+| Key | Type | Meaning |
+|---|---|---|
+| `n_users` | object `{"A": int, "B": int}` | section 3 |
+| `pageviews` | object `{"A": int, "B": int}` | section 4 |
+| `clicks` | object `{"A": int, "B": int}` | section 4 |
+| `ctr` | object `{"A": number, "B": number}` | section 4 |
+| `diff` | number | CTR_B - CTR_A |
+| `ci_95` | array `[lower, upper]` | section 5 |
+| `srm_p` | number | section 6 |
+| `srm_flag` | boolean | section 6 |
+| `decision` | `"ship"`, `"no_ship"` or `"invalid"` | section 7 |
+[?2004hroot@106c0d2d-f536-4079-bb24-94492e630f2f:/app# sed -n '1,200p' abtest/report.py
+[?2004l"""EXP-2291 readout: python -m abtest.report --data <folder> --out <result.json>"""
+import argparse
+import json
+from pathlib import Path
+
+from .filters import exclude_bots
+from .load import load_assignments, load_pageviews, load_users
+from .stats import ctr_ztest
+
+
+def build_readout(data_dir):
+    assignments = load_assignments(data_dir)
+    users = load_users(data_dir)
+    assignments = exclude_bots(assignments, users)
+    pageviews = load_pageviews(data_dir, assignments)
+
+    n_users = assignments.groupby("variant")["user_id"].nunique()
+    views = pageviews.groupby("variant").size()
+    clicks = pageviews.groupby("variant")["clicked"].sum()
+    test = ctr_ztest(int(clicks["A"]), int(views["A"]), int(clicks["B"]), int(views["B"]))
+    ctr = {arm: float(clicks[arm] / views[arm]) for arm in ("A", "B")}
+
+    decision = "ship" if (test.p_value < 0.05 and test.diff > 0) else "no_ship"
+    return {
+        "experiment": "EXP-2291",
+        "n_users": {arm: int(n_users[arm]) for arm in ("A", "B")},
+        "pageviews": {arm: int(views[arm]) for arm in ("A", "B")},
+        "clicks": {arm: int(clicks[arm]) for arm in ("A", "B")},
+        "ctr": ctr,
+        "diff": float(test.diff),
+        "rel_lift": float(test.diff / ctr["A"]),
+        "ci_95": [float(test.ci_low), float(test.ci_high)],
+        "p_value": float(test.p_value),
+        "decision": decision,
+    }
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(description="EXP-2291 CTR readout")
+    ap.add_argument("--data", required=True, help="folder with assignments.csv, users.csv, pageviews.csv")
+    ap.add_argument("--out", required=True, help="path of the result.json to write")
+    args = ap.parse_args(argv)
+    readout = build_readout(args.data)
+    out = Path(args.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(readout, indent=2) + "\n")
+    print(f"wrote {out}: decision={readout['decision']} diff={readout['diff']:+.5f} p={readout['p_value']:.2g}")
+
+
+if __name__ == "__main__":
+    main()
+[?2004hroot@106c0d2d-f536-4079-bb24-94492e630f2f:/app# sed -n '1,200p' abtest/load.py
+[?2004l"""Read the experiment export: assignments.csv, users.csv and pageviews.csv in one folder."""
+from pathlib import Path
+
+import pandas as pd
+
+
+def _instants(col):
+    # The export mixes "Z" and "+hh:mm" / "-hh:mm" offsets. Parse to UTC so we compare instants, never strings.
+    return pd.to_datetime(col, utc=True, format="ISO8601")
+
+
+def load_assignments(data_dir):
+    """One row per assigned user: user_id, variant ("A" or "B"), assigned_at (UTC)."""
+    df = pd.read_csv(Path(data_dir) / "assignments.csv", dtype=str)
+    df = df.drop_duplicates()  # the assignment logger retries; an exact repeat of a row counts once
+    df["assigned_at"] = _instants(df["assigned_at"])
+    return df.reset_index(drop=True)
+
+
+def load_users(data_dir):
+    """user_id, is_bot (1 = flagged by the bot-detection job)."""
+    df = pd.read_csv(Path(data_dir) / "users.csv", dtype={"user_id": str, "is_bot": "int64"})
+    return df
+
+
+def load_pageviews(data_dir, assignments):
+    """Pageviews of the given assigned users, on or after their assignment time, with the user's variant attached."""
+    pv = pd.read_csv(Path(data_dir) / "pageviews.csv", dtype={"user_id": str, "ts": str, "clicked": "int64"})
+    pv["ts"] = _instants(pv["ts"])
+    pv = pv.merge(assignments[["user_id", "variant", "assigned_at"]], on="user_id", how="inner")
+    pv = pv[pv["ts"] >= pv["assigned_at"]]  # exposure before assignment is not part of the experiment
+    return pv.reset_index(drop=True)
+[?2004hroot@106c0d2d-f536-4079-bb24-94492e630f2f:/app# sed -n '1,200p' abtest/filters.py
+[?2004l"""Population filters for the readout."""
+
+
+def exclude_bots(assignments, users):
+    """Drop users flagged as bots (EXPERIMENT.md, Population)."""
+    flagged = set(users.loc[users["is_bot"] == 1, "user_id"])
+    # INC-4471: the crawler spike came in with the new B module's tracking, so the bot filter targets B traffic.
+    in_b = assignments["variant"] == "B"
+    keep = ~(in_b & assignments["user_id"].isin(flagged))
+    return assignments[keep].reset_index(drop=True)
+[?2004hroot@106c0d2d-f536-4079-bb24-94492e630f2f:/app# sed -n '1,200p' abtest/stats.py
+[?2004l"""Significance test for the CTR readout."""
+import math
+from dataclasses import dataclass
+
+from scipy.stats import norm
+
+
+@dataclass
+class ZTest:
+    diff: float
+    ci_low: float
+    ci_high: float
+    z: float
+    p_value: float
+
+
+def ctr_ztest(clicks_a, views_a, clicks_b, views_b, alpha=0.05):
+    """Two-proportion z-test of CTR B vs A, with each pageview as a trial."""
+    pa = clicks_a / views_a
+    pb = clicks_b / views_b
+    pooled = (clicks_a + clicks_b) / (views_a + views_b)
+    se_pooled = math.sqrt(pooled * (1 - pooled) * (1 / views_a + 1 / views_b))
+    z = (pb - pa) / se_pooled
+    p_value = 2 * norm.sf(abs(z))
+    se = math.sqrt(pa * (1 - pa) / views_a + pb * (1 - pb) / views_b)
+    crit = norm.ppf(1 - alpha / 2)
+    diff = pb - pa
+    return ZTest(diff, diff - crit * se, diff + crit * se, z, p_value)
+[?2004hroot@106c0d2d-f536-4079-bb24-94492e630f2f:/app# cat output/result.json
+[?2004l{
+  "experiment": "EXP-2291",
+  "n_users": {
+    "A": 20042,
+    "B": 19518
+  },
+  "pageviews": {
+    "A": 198876,
+    "B": 186115
+  },
+  "clicks": {
+    "A": 15079,
+    "B": 14691
+  },
+  "ctr": {
+    "A": 0.075821114664414,
+    "B": 0.07893506702845016
+  },
+  "diff": 0.0031139523640361516,
+  "rel_lift": 0.04106972546919913,
+  "ci_95": [
+    0.0014245322454811047,
+    0.004803372482591198
+  ],
+  "p_value": 0.00030061701944224603,
+  "decision": "ship"
+}
+[?2004hroot@106c0d2d-f536-4079-bb24-94492e630f2f:/app# cat > abtest/filters.py <<'EOF'
+[?2004l[?2004h> """Population filters for the readout."""
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def exclude_bots(assignments, users):
+[?2004l[?2004h>     """Drop users flagged as bots (EXPERIMENT.md, Population)."""
+[?2004l[?2004h>     flagged = set(users.loc[users["is_bot"] == 1, "user_id"])
+[?2004l[?2004h>     keep = ~assignments["user_id"].isin(flagged)
+[?2004l[?2004h>     return assignments[keep].reset_index(drop=True)
+[?2004l[?2004h> EOF
+[?2004l[?2004hroot@106c0d2d-f536-4079-bb24-94492e630f2f:/app# cat > abtest/stats.py <<'EOF'
+[?2004l[?2004h> """Significance test for the CTR readout."""
+[?2004l[?2004h> import math
+[?2004l[?2004h> from dataclasses import dataclass
+[?2004l[?2004h> from typing import Tuple
+[?2004l[?2004h> 
+[?2004l[?2004h> import numpy as np
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> from scipy.stats import chi2, norm
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> @dataclass
+[?2004l[?2004h> class ZTest:
+[?2004l[?2004h>     diff: float
+[?2004l[?2004h>     ci_low: float
+[?2004l[?2004h>     ci_high: float
+[?2004l[?2004h>     z: float
+[?2004l[?2004h>     p_value: float
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def ctr_ztest(clicks_a, views_a, clicks_b, views_b, alpha=0.05):
+[?2004l[?2004h>     """Two‑proportion z‑test of CTR B vs A, with each pageview as a trial.
+[?2004l[?2004h>     This function is retained for backward compatibility but is NOT used in the
+[?2004l[?2004h>     official readout because it treats pageviews as independent.
+[?2004l[?2004h>     """
+[?2004l[?2004h>     pa = clicks_a / views_a
+[?2004l[?2004h>     pb = clicks_b / views_b
+[?2004l[?2004h>     pooled = (clicks_a + clicks_b) / (views_a + views_b)
+[?2004l[?2004h>     se_pooled = math.sqrt(pooled * (1 - pooled) * (1 / views_a + 1 / views_b))
+[?2004l[?2004h>     z = (pb - pa) / se_pooled
+[?2004l[?2004h>     p_value = 2 * norm.sf(abs(z))
+[?2004l[?2004h>     se = math.sqrt(pa * (1 - pa) / views_a + pb * (1 - pb) / views_b)
+[?2004l[?2004h>     crit = norm.ppf(1 - alpha / 2)
+[?2004l[?2004h>     diff = pb - pa
+[?2004l[?2004h>     return ZTest(diff, diff - crit * se, diff + crit * se, z, p_value)
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def _user_aggregates(pageviews: pd.DataFrame) -> pd.DataFrame:
+[?2004l[?2004h>     """Return a DataFrame with columns: variant, user_id, clicks, views.
+[?2004l[?2004h>     Each row aggregates a single user's pageviews within an arm.
+[?2004l[?2004h>     """
+[?2004l[?2004h>     agg = (
+[?2004l[?2004h>         pageviews.groupby(["variant", "user_id"])
+[?2004l[?2004h>         .agg(clicks=("clicked", "sum"), views=("clicked", "size"))
+[?2004l[?2004h>         .reset_index()
+[?2004l[?2004h>     )
+[?2004l[?2004h>     return agg
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def bootstrap_ci(pageviews: pd.DataFrame, n_resamples: int = 2000, alpha: float = 0.05) -> Tuple[float, float, float]:
+[?2004l[?2004h>     """User‑level bootstrap for the difference in CTR between B and A.
+[?2004l[?2004h> 
+[?2004l[?2004h>     Parameters
+[?2004l[?2004h>     ----------
+[?2004l[?2004h>     pageviews: pd.DataFrame
+[?2004l[?2004h>         The filtered pageviews with columns `variant`, `user_id`, `clicked`.
+[?2004l[?2004h>     n_resamples: int
+[?2004l[?2004h>         Number of bootstrap resamples (default 2000).
+[?2004l[?2004h>     alpha: float
+[?2004l[?2004h>         Significance level for the confidence interval (default 0.05 for 95% CI).
+[?2004l[?2004h> 
+[?2004l[?2004h>     Returns
+[?2004l[?2004h>     -------
+[?2004l[?2004h>     diff: float
+[?2004l[?2004h>         Observed difference (CTR_B - CTR_A).
+[?2004l[?2004h>     ci_low: float
+[?2004l[?2004h>         Lower bound of the percentile CI.
+[?2004l[?2004h>     ci_high: float
+[?2004l[?2004h>         Upper bound of the percentile CI.
+[?2004l[?2004h>     """
+[?2004l[?2004h>     agg = _user_aggregates(pageviews)
+[?2004l[?2004h>     # Separate arms
+[?2004l[?2004h>     arm_a = agg[agg["variant"] == "A"]
+[?2004l[?2004h>     arm_b = agg[agg["variant"] == "B"]
+[?2004l[?2004h>     # Observed CTRs and diff
+[?2004l[?2004h>     clicks_a = arm_a["clicks"].sum()
+[?2004l[?2004h>     views_a = arm_a["views"].sum()
+[?2004l[?2004h>     clicks_b = arm_b["clicks"].sum()
+[?2004l[?2004h>     views_b = arm_b["views"].sum()
+[?2004l[?2004h>     ctr_a = clicks_a / views_a if views_a > 0 else 0.0
+[?2004l[?2004h>     ctr_b = clicks_b / views_b if views_b > 0 else 0.0
+[?2004l[?2004h>     diff_obs = ctr_b - ctr_a
+[?2004l[?2004h> 
+[?2004l[?2004h>     # Prepare arrays for fast resampling
+[?2004l[?2004h>     a_clicks = arm_a["clicks"].values
+[?2004l[?2004h>     a_views = arm_a["views"].values
+[?2004l[?2004h>     b_clicks = arm_b["clicks"].values
+[?2004l[?2004h>     b_views = arm_b["views"].values
+[?2004l[?2004h>     n_a = len(a_clicks)
+[?2004l[?2004h>     n_b = len(b_clicks)
+[?2004l[?2004h> 
+[?2004l[?2004h>     diffs = np.empty(n_resamples)
+[?2004l[?2004h>     rng = np.random.default_rng()
+[?2004l[?2004h>     for i in range(n_resamples):
+[?2004l[?2004h>         # Sample users with replacement within each arm
+[?2004l[?2004h>         idx_a = rng.integers(0, n_a, n_a)
+[?2004l[?2004h>         idx_b = rng.integers(0, n_b, n_b)
+[?2004l[?2004h>         samp_clicks_a = a_clicks[idx_a].sum()
+[?2004l[?2004h>         samp_views_a = a_views[idx_a].sum()
+[?2004l[?2004h>         samp_clicks_b = b_clicks[idx_b].sum()
+[?2004l[?2004h>         samp_views_b = b_views[idx_b].sum()
+[?2004l[?2004h>         ctr_a_boot = samp_clicks_a / samp_views_a if samp_views_a > 0 else 0.0
+[?2004l[?2004h>         ctr_b_boot = samp_clicks_b / samp_views_b if samp_views_b > 0 else 0.0
+[?2004l[?2004h>         diffs[i] = ctr_b_boot - ctr_a_boot
+[?2004l[?2004h> 
+[?2004l[?2004h>     lower = np.percentile(diffs, 100 * alpha / 2)
+[?2004l[?2004h>     upper = np.percentile(diffs, 100 * (1 - alpha / 2))
+[?2004l[?2004h>     return diff_obs, lower, upper
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def srm_chi2_pvalue(n_users: dict) -> Tuple[float, bool]:
+[?2004l[?2004h>     """Compute Pearson chi‑square p‑value for sample‑ratio mismatch.
+[?2004l[?2004h>     Returns (p_value, flag) where flag is True if p < 0.001.
+[?2004l[?2004h>     """
+[?2004l[?2004h>     total = n_users.get("A", 0) + n_users.get("B", 0)
+[?2004l[?2004h>     expected = total / 2.0
+[?2004l[?2004h>     chi_sq = ((n_users.get("A", 0) - expected) ** 2 + (n_users.get("B", 0) - expected) ** 2) / expected
+[?2004l[?2004h>     p = chi2.sf(chi_sq, df=1)
+[?2004l[?2004h>     flag = p < 0.001
+[?2004l[?2004h>     return p, flag
+[?2004l[?2004h> EOF
+[?2004l[?2004hroot@106c0d2d-f536-4079-bb24-94492e630f2f:/app# cat > abtest/report.py <<'EOF'
+[?2004l[?2004h> """EXP-2291 readout: python -m abtest.report --data <folder> --out <result.json>"""
+[?2004l[?2004h> import argparse
+[?2004l[?2004h> import json
+[?2004l[?2004h> from pathlib import Path
+[?2004l[?2004h> 
+[?2004l[?2004h> from .filters import exclude_bots
+[?2004l[?2004h> from .load import load_assignments, load_pageviews, load_users
+[?2004l[?2004h> from .stats import bootstrap_ci, srm_chi2_pvalue
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def build_readout(data_dir):
+[?2004l[?2004h>     # Load and clean data
+[?2004l[?2004h>     assignments = load_assignments(data_dir)
+[?2004l[?2004h>     users = load_users(data_dir)
+[?2004l[?2004h>     assignments = exclude_bots(assignments, users)
+[?2004l[?2004h>     pageviews = load_pageviews(data_dir, assignments)
+[?2004l[?2004h> 
+[?2004l[?2004h>     # Basic aggregates
+[?2004l[?2004h>     n_users = assignments.groupby("variant")["user_id"].nunique()
+[?2004l[?2004h>     pageviews_counts = pageviews.groupby("variant").size()
+[?2004l[?2004h>     clicks_counts = pageviews.groupby("variant")["clicked"].sum()
+[?2004l[?2004h> 
+[?2004l[?2004h>     # CTR per arm
+[?2004l[?2004h>     ctr = {
+[?2004l[?2004h>         arm: float(clicks_counts[arm] / pageviews_counts[arm]) if pageviews_counts[arm] > 0 else 0.0
+[?2004l[?2004h>         for arm in ("A", "B")
+[?2004l[?2004h>     }
+[?2004l[?2004h> 
+[?2004l[?2004h>     # User‑level bootstrap CI for diff
+[?2004l[?2004h>     diff_obs, ci_low, ci_high = bootstrap_ci(pageviews)
+[?2004l[?2004h> 
+[?2004l[?2004h>     # SRM test
+[?2004l[?2004h>     srm_p, srm_flag = srm_chi2_pvalue({"A": int(n_users.get("A", 0)), "B": int(n_users.get("B", 0))})
+[?2004l[?2004h> 
+[?2004l[?2004h>     # Decision logic per plan
+[?2004l[?2004h>     if srm_flag:
+[?2004l[?2004h>         decision = "invalid"
+[?2004l[?2004h>     elif ci_low > 0:
+[?2004l[?2004h>         decision = "ship"
+[?2004l[?2004h>     else:
+[?2004l[?2004h>         decision = "no_ship"
+[?2004l[?2004h> 
+[?2004l[?2004h>     # Assemble readout (required keys plus optional extras)
+[?2004l[?2004h>     readout = {
+[?2004l[?2004h>         "n_users": {arm: int(n_users.get(arm, 0)) for arm in ("A", "B")},
+[?2004l[?2004h>         "pageviews": {arm: int(pageviews_counts.get(arm, 0)) for arm in ("A", "B")},
+[?2004l[?2004h>         "clicks": {arm: int(clicks_counts.get(arm, 0)) for arm in ("A", "B")},
+[?2004l[?2004h>         "ctr": ctr,
+[?2004l[?2004h>         "diff": float(diff_obs),
+[?2004l[?2004h>         "ci_95": [float(ci_low), float(ci_high)],
+[?2004l[?2004h>         "srm_p": float(srm_p),
+[?2004l[?2004h>         "srm_flag": bool(srm_flag),
+[?2004l[?2004h>         "decision": decision,
+[?2004l[?2004h>     }
+[?2004l[?2004h>     return readout
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def main(argv=None):
+[?2004l[?2004h>     ap = argparse.ArgumentParser(description="EXP-2291 CTR readout")
+[?2004l[?2004h>     ap.add_argument("--data", required=True, help="folder with assignments.csv, users.csv, pageviews.csv")
+[?2004l[?2004h>     ap.add_argument("--out", required=True, help="path of the result.json to write")
+[?2004l[?2004h>     args = ap.parse_args(argv)
+[?2004l[?2004h>     readout = build_readout(args.data)
+[?2004l[?2004h>     out = Path(args.out)
+[?2004l[?2004h>     out.parent.mkdir(parents=True, exist_ok=True)
+[?2004l[?2004h>     out.write_text(json.dumps(readout, indent=2) + "\n")
+[?2004l[?2004h>     print(f"wrote {out}: decision={readout['decision']} diff={readout['diff']:+.5f} srm_flag={readout['srm_flag']}")
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> if __name__ == "__main__":
+[?2004l[?2004h>     main()
+[?2004l[?2004h> EOF
+[?2004l[?2004hroot@106c0d2d-f536-4079-bb24-94492e630f2f:/app# python -m abtest.report --data data --out output/result.json
+[?2004lcat output/result.json
+wrote output/result.json: decision=no_ship diff=-0.00040 srm_flag=False
+[?2004hroot@106c0d2d-f536-4079-bb24-94492e630f2f:/app# cat output/result.json
+[?2004l{
+  "n_users": {
+    "A": 19612,
+    "B": 19518
+  },
+  "pageviews": {
+    "A": 189582,
+    "B": 186115
+  },
+  "clicks": {
+    "A": 15041,
+    "B": 14691
+  },
+  "ctr": {
+    "A": 0.07933770083657732,
+    "B": 0.07893506702845016
+  },
+  "diff": -0.0004026338081271619,
+  "ci_95": [
+    -0.00478904682106106,
+    0.0038482804763377517
+  ],
+  "srm_p": 0.6346471582944933,
+  "srm_flag": false,
+  "decision": "no_ship"
+}
+[?2004hroot@106c0d2d-f536-4079-bb24-94492e630f2f:/app# 

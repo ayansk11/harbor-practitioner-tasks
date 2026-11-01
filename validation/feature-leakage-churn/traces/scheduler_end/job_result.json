@@ -1,0 +1,519 @@
+{
+    "id": "e5e43037-12ca-40d9-8562-9346b8019141",
+    "started_at": "2026-10-31T19:26:19.627097",
+    "updated_at": "2026-10-31T19:26:49.881637",
+    "finished_at": "2026-10-31T19:26:49.881637",
+    "n_total_trials": 1,
+    "stats": {
+        "n_completed_trials": 1,
+        "n_errored_trials": 0,
+        "n_running_trials": 0,
+        "n_pending_trials": 0,
+        "n_cancelled_trials": 0,
+        "n_retries": 0,
+        "evals": {
+            "oracle__adhoc": {
+                "n_trials": 1,
+                "n_errors": 0,
+                "metrics": [
+                    {
+                        "A_duplicate_rows": 0.0,
+                        "A_extra_rows": 0.0,
+                        "A_mismatch_app_minutes_7d": 0.0,
+                        "A_mismatch_days_since_last_order": 74.0,
+                        "A_mismatch_orders_30d": 74.0,
+                        "A_mismatch_orders_7d": 74.0,
+                        "A_mismatch_plan": 0.0,
+                        "A_mismatch_spend_30d_cents": 74.0,
+                        "A_mismatch_status": 0.0,
+                        "A_mismatch_te_district": 0.0,
+                        "A_mismatch_tenure_days": 0.0,
+                        "A_mismatch_tickets_30d": 0.0,
+                        "A_mismatched_cells": 296.0,
+                        "A_missing_rows": 0.0,
+                        "B_cut1_changed_cells": 0.0,
+                        "B_cut1_duplicate_rows": 0.0,
+                        "B_cut1_extra_rows": 0.0,
+                        "B_cut1_invariant_problems": 0.0,
+                        "B_cut1_mismatch_app_minutes_7d": 0.0,
+                        "B_cut1_mismatch_days_since_last_order": 0.0,
+                        "B_cut1_mismatch_orders_30d": 0.0,
+                        "B_cut1_mismatch_orders_7d": 0.0,
+                        "B_cut1_mismatch_plan": 0.0,
+                        "B_cut1_mismatch_spend_30d_cents": 0.0,
+                        "B_cut1_mismatch_status": 0.0,
+                        "B_cut1_mismatch_te_district": 0.0,
+                        "B_cut1_mismatch_tenure_days": 0.0,
+                        "B_cut1_mismatch_tickets_30d": 0.0,
+                        "B_cut1_missing_rows": 0.0,
+                        "B_cut1_points": 54077.0,
+                        "B_cut1_rows_compared": 9451.0,
+                        "B_cut2_changed_cells": 0.0,
+                        "B_cut2_duplicate_rows": 0.0,
+                        "B_cut2_extra_rows": 0.0,
+                        "B_cut2_invariant_problems": 0.0,
+                        "B_cut2_mismatch_app_minutes_7d": 0.0,
+                        "B_cut2_mismatch_days_since_last_order": 0.0,
+                        "B_cut2_mismatch_orders_30d": 0.0,
+                        "B_cut2_mismatch_orders_7d": 0.0,
+                        "B_cut2_mismatch_plan": 0.0,
+                        "B_cut2_mismatch_spend_30d_cents": 0.0,
+                        "B_cut2_mismatch_status": 0.0,
+                        "B_cut2_mismatch_te_district": 0.0,
+                        "B_cut2_mismatch_tenure_days": 0.0,
+                        "B_cut2_mismatch_tickets_30d": 0.0,
+                        "B_cut2_missing_rows": 0.0,
+                        "B_cut2_points": 56906.0,
+                        "B_cut2_rows_compared": 45706.0,
+                        "H_days_since_last_login_nonnull": 0.0,
+                        "check_A": 0.0,
+                        "check_B_cut1": 1.0,
+                        "check_B_cut2": 1.0,
+                        "cut1_days_since_last_login_nonnull": 0.0,
+                        "cut2_days_since_last_login_nonnull": 0.0,
+                        "net_private_H": 1.0,
+                        "net_private_cut1": 1.0,
+                        "net_private_cut2": 1.0,
+                        "residual_runner_paths_H": 0.0,
+                        "residual_runner_paths_cut1": 0.0,
+                        "residual_runner_paths_cut2": 0.0,
+                        "reward": 0.0,
+                        "seconds_H": 0.671,
+                        "seconds_convert_H": 0.622,
+                        "seconds_convert_cut1": 0.683,
+                        "seconds_convert_cut2": 0.634,
+                        "seconds_cut1": 0.781,
+                        "seconds_cut2": 0.78,
+                        "seconds_grade_total": 12.79219239577651,
+                        "seconds_sweep_H": 0.656,
+                        "seconds_sweep_cut1": 0.689,
+                        "seconds_sweep_cut2": 0.705,
+                        "sweep_errors_H": 0.0,
+                        "sweep_errors_cut1": 0.0,
+                        "sweep_errors_cut2": 0.0,
+                        "swept_runner_paths_H": 1.0,
+                        "swept_runner_paths_cut1": 5.0,
+                        "swept_runner_paths_cut2": 5.0,
+                        "verifier_cpu_quota": 2.0,
+                        "verifier_cpus_visible": 48.0,
+                        "verifier_memory_limit_mib": 4096.0,
+                        "verifier_memtotal_mib": 386464.3
+                    }
+                ],
+                "pass_at_k": {},
+                "reward_stats": {
+                    "reward": {
+                        "0.0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "check_A": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "check_B_cut1": {
+                        "1": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "check_B_cut2": {
+                        "1": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "verifier_cpus_visible": {
+                        "48": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "verifier_cpu_quota": {
+                        "2.0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "verifier_memory_limit_mib": {
+                        "4096.0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "verifier_memtotal_mib": {
+                        "386464.3": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "swept_runner_paths_H": {
+                        "1": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "residual_runner_paths_H": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "seconds_sweep_H": {
+                        "0.656": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "sweep_errors_H": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "seconds_H": {
+                        "0.671": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "net_private_H": {
+                        "1": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "seconds_convert_H": {
+                        "0.622": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "H_days_since_last_login_nonnull": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "A_duplicate_rows": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "A_missing_rows": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "A_extra_rows": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "A_mismatch_orders_7d": {
+                        "74": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "A_mismatch_orders_30d": {
+                        "74": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "A_mismatch_spend_30d_cents": {
+                        "74": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "A_mismatch_tickets_30d": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "A_mismatch_days_since_last_order": {
+                        "74": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "A_mismatch_tenure_days": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "A_mismatch_app_minutes_7d": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "A_mismatch_te_district": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "A_mismatch_status": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "A_mismatch_plan": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "A_mismatched_cells": {
+                        "296": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "B_cut1_invariant_problems": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "B_cut1_points": {
+                        "54077": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "swept_runner_paths_cut1": {
+                        "5": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "residual_runner_paths_cut1": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "seconds_sweep_cut1": {
+                        "0.689": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "sweep_errors_cut1": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "seconds_cut1": {
+                        "0.781": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "net_private_cut1": {
+                        "1": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "seconds_convert_cut1": {
+                        "0.683": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "cut1_days_since_last_login_nonnull": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "B_cut1_rows_compared": {
+                        "9451": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "B_cut1_changed_cells": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "B_cut1_mismatch_orders_7d": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "B_cut1_mismatch_orders_30d": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "B_cut1_mismatch_spend_30d_cents": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "B_cut1_mismatch_tickets_30d": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "B_cut1_mismatch_days_since_last_order": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "B_cut1_mismatch_tenure_days": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "B_cut1_mismatch_app_minutes_7d": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "B_cut1_mismatch_te_district": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "B_cut1_mismatch_status": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "B_cut1_mismatch_plan": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "B_cut1_duplicate_rows": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "B_cut1_missing_rows": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "B_cut1_extra_rows": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "B_cut2_invariant_problems": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "B_cut2_points": {
+                        "56906": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "swept_runner_paths_cut2": {
+                        "5": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "residual_runner_paths_cut2": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "seconds_sweep_cut2": {
+                        "0.705": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "sweep_errors_cut2": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "seconds_cut2": {
+                        "0.78": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "net_private_cut2": {
+                        "1": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "seconds_convert_cut2": {
+                        "0.634": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "cut2_days_since_last_login_nonnull": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "B_cut2_rows_compared": {
+                        "45706": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "B_cut2_changed_cells": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "B_cut2_mismatch_orders_7d": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "B_cut2_mismatch_orders_30d": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "B_cut2_mismatch_spend_30d_cents": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "B_cut2_mismatch_tickets_30d": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "B_cut2_mismatch_days_since_last_order": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "B_cut2_mismatch_tenure_days": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "B_cut2_mismatch_app_minutes_7d": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "B_cut2_mismatch_te_district": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "B_cut2_mismatch_status": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "B_cut2_mismatch_plan": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "B_cut2_duplicate_rows": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "B_cut2_missing_rows": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "B_cut2_extra_rows": {
+                        "0": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    },
+                    "seconds_grade_total": {
+                        "12.79219239577651": [
+                            "feature-leakage-churn__KNgNaS8"
+                        ]
+                    }
+                },
+                "exception_stats": {}
+            }
+        },
+        "n_input_tokens": null,
+        "n_cache_tokens": null,
+        "n_output_tokens": null,
+        "cost_usd": null
+    }
+}

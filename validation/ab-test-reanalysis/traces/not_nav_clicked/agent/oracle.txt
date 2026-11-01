@@ -1,0 +1,2 @@
+solve.sh: SOLUTION=not_nav_clicked
+wrote output/result.json: decision=no_ship diff=+0.00108 ci=[-0.00419, +0.00635] srm_p=0.469

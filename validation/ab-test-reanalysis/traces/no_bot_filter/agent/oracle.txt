@@ -1,0 +1,2 @@
+solve.sh: SOLUTION=no_bot_filter
+wrote output/result.json: decision=no_ship diff=+0.00071 ci=[-0.00446, +0.00588] srm_p=0.481

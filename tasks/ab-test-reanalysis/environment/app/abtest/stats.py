@@ -1,28 +1,37 @@
-"""Significance test for the CTR readout."""
+"""Statistics for the CTR readout (EXPERIMENT.md sections 5 and 6). The unit of randomization is the user."""
 import math
-from dataclasses import dataclass
 
-from scipy.stats import norm
+import numpy as np
+from scipy.stats import chisquare, norm
 
-
-@dataclass
-class ZTest:
-    diff: float
-    ci_low: float
-    ci_high: float
-    z: float
-    p_value: float
+Z = float(norm.ppf(0.975))
+SRM_ALPHA = 0.001
+CI_METHOD = "delta method, users as the unit"
 
 
-def ctr_ztest(clicks_a, views_a, clicks_b, views_b, alpha=0.05):
-    """Two-proportion z-test of CTR B vs A, with each pageview as a trial."""
-    pa = clicks_a / views_a
-    pb = clicks_b / views_b
-    pooled = (clicks_a + clicks_b) / (views_a + views_b)
-    se_pooled = math.sqrt(pooled * (1 - pooled) * (1 / views_a + 1 / views_b))
-    z = (pb - pa) / se_pooled
-    p_value = 2 * norm.sf(abs(z))
-    se = math.sqrt(pa * (1 - pa) / views_a + pb * (1 - pb) / views_b)
-    crit = norm.ppf(1 - alpha / 2)
-    diff = pb - pa
-    return ZTest(diff, diff - crit * se, diff + crit * se, z, p_value)
+def ratio_delta(clicks, views):
+    """CTR = sum(clicks) / sum(views) over users, and its delta-method variance.
+
+    clicks, views: one entry per counted user, users with zero pageviews included. Var = N/(N-1) * sum((c - r v)^2) /
+    (sum v)^2, the usual linearisation of a ratio of two user-level means.
+    """
+    c = np.asarray(clicks, dtype=float)
+    v = np.asarray(views, dtype=float)
+    n = len(c)
+    r = c.sum() / v.sum()
+    var = n / (n - 1) * float(np.sum((c - r * v) ** 2)) / float(v.sum()) ** 2
+    return float(r), var
+
+
+def diff_ci(arm_a, arm_b):
+    """CTR_B - CTR_A and its 95% CI; arm_a, arm_b: per-user frames with columns clicks, views."""
+    ra, va = ratio_delta(arm_a["clicks"], arm_a["views"])
+    rb, vb = ratio_delta(arm_b["clicks"], arm_b["views"])
+    diff = rb - ra
+    se = math.sqrt(va + vb)
+    return diff, (diff - Z * se, diff + Z * se)
+
+
+def srm_pvalue(n_a, n_b):
+    """Pearson chi-square goodness of fit of the user counts against 50/50 (1 df, no continuity correction)."""
+    return float(chisquare([n_a, n_b]).pvalue)

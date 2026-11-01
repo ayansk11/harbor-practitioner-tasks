@@ -1,0 +1,13 @@
+[test.sh] lock ok: /logs/verifier 0:0 755, /logs 0:0 755, owner before 0:0; protected_symlinks=1 protected_hardlinks=1 protected_regular=2; setid files left: 0
+[kit] /app copied to the root-only /tmp/kit-scratch-tq4rqfte/app; skipped 0 special files
+[kit] resources: verifier_cpus_visible=48, verifier_cpu_quota=2.0, verifier_memory_limit_mib=4096.0, verifier_memtotal_mib=386464.3
+[kit] sweep before H: removed 1 uid-1001 entries and IPC objects , 0 left, 0 unreadable, 0.694s
+[kit] submission copied to /work/sub; removed 0 auto-run entries; skipped 0 special files
+[kit] staged /tmp/kit-scratch-tq4rqfte/H for uid 1001 at /work/in
+[kit] staged (empty) for uid 1001 at /work/out
+[kit] network isolation: ON (private namespace, loopback only); probe rc=0 out=b'NETNS-OK' err=b''
+[kit] ran ['/usr/local/bin/python3', '-m', 'churn.build_features', '--data']... rc=0 timed_out=False 0.724s net=private strays_killed=0
+[kit] staged /tmp/kit-scratch-tq4rqfte/converter for uid 1001 at /work/conv
+[kit] ran ['/usr/local/bin/python3', '-I', '/work/conv/convert.py', '/work/out/features.parquet']... rc=3 timed_out=False 0.374s net=private strays_killed=0
+[kit] H: output rejected: BadOutput: rc=3 timed_out=False: BadOutput: missing columns: ['plan']
+[kit] reward=0.0 (killed 0 runner processes) metrics={'reward': 0.0, 'check_A': 0, 'check_B_cut1': 0, 'check_B_cut2': 0, 'verifier_cpus_visible': 48, 'verifier_cpu_quota': 2.0, 'verifier_memory_limit_mib': 4096.0, 'verifier_memtotal_mib': 386464.3, 'swept_runner_paths_H': 1, 'residual_runner_paths_H': 0, 'seconds_sweep_H': 0.694, 'sweep_errors_H': 0, 'seconds_H': 0.724, 'net_private_H': 1, 'seconds_convert_H': 0.374, 'bad_output_H': 1, 'seconds_grade_total': 1.8763502724468708}

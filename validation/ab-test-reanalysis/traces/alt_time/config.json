@@ -1,0 +1,18 @@
+{
+    "task": {
+        "path": "<submission>/jobs/ab-test-reanalysis/package-rev1/ab-test-reanalysis"
+    },
+    "trial_name": "ab-test-reanalysis__KeEfSE8",
+    "trials_dir": "<submission>/jobs/ab-test-reanalysis/ab-test-reanalysis-alt_time-rev1",
+    "environment_build_timeout_multiplier": 3.0,
+    "agent": {
+        "name": "oracle",
+        "env": {
+            "SOLUTION": "alt_time"
+        }
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "727e9be3-2834-4006-82b8-6ac6bc12911b"
+}

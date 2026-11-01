@@ -1,3 +1,8 @@
+# Pre-revision record (status line added 2026-10-31): made for the first version of this task (commit 495c9f5 or
+# earlier); it reads the first version's six sets, h_bots and h_twin among them, which the revision removed or
+# replaced, so it no longer runs. The section numbers it cites are those of that version's design record (git show
+# 495c9f5:docs/ab-test-reanalysis/DESIGN.md). Kept as history; the revision's records are
+# calibration_study.out.md, generation_report.out.md and local_check.out.md.
 """Probes of interval rules that use the clicks (DESIGN.md limitation 9(c)-(d) and section 16; authoring only).
 
 The twin pair h_null / h_twin closes every rule built from the pageview data alone (DESIGN.md section 15). This script

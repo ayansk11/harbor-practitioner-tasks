@@ -1,0 +1,2 @@
+solve.sh: SOLUTION=fix_visible_only
+output/result.json rewritten by a one-off script; the pipeline is unchanged

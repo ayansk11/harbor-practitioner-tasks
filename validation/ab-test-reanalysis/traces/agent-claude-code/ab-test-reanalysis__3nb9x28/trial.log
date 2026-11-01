@@ -1,0 +1,15 @@
+# Redacted 2026-10-31: machine-specific paths replaced (<submission> x2). <submission> = the submission folder on the authoring Mac, <home> = the author's home folder, <local-scratch> = the session scratch folder, <model-endpoint> = the URL of the model service the agent called. Nothing else changed: no reward, count or timing.
+Selected strategy: _DaytonaDirect
+Building environment from <submission>/jobs/ab-test-reanalysis/package-rev1/ab-test-reanalysis/environment/Dockerfile
+Running command: apt-get update && apt-get install -y curl nodejs npm procps
+Command outputs captured
+Running command: set -euo pipefail; if command -v apk &> /dev/null; then  npm install -g @anthropic-ai/claude-code; else  curl -fsSL https://downloads.claude.ai/claude-code-releases/bootstrap.sh | bash -s --; fi && echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc && export PATH="$HOME/.local/bin:$PATH" && claude --version
+Command outputs captured
+Running command: mkdir -p $CLAUDE_CONFIG_DIR/debug $CLAUDE_CONFIG_DIR/projects/-app $CLAUDE_CONFIG_DIR/shell-snapshots $CLAUDE_CONFIG_DIR/statsig $CLAUDE_CONFIG_DIR/todos $CLAUDE_CONFIG_DIR/skills && if [ -d ~/.claude/skills ]; then cp -r ~/.claude/skills/. $CLAUDE_CONFIG_DIR/skills/ 2>/dev/null || true; fi
+Command outputs captured
+Running command: export PATH="$HOME/.local/bin:$PATH"; claude_code_instruction_3e8648f1e4894550bf75dc334b4c2371="$CLAUDE_CODE_INSTRUCTION_3E8648F1E4894550BF75DC334B4C2371"; unset CLAUDE_CODE_INSTRUCTION_3E8648F1E4894550BF75DC334B4C2371; printf "%s" "$claude_code_instruction_3e8648f1e4894550bf75dc334b4c2371" | claude --verbose --output-format=stream-json --max-budget-usd 20 --disallowedTools WebSearch,WebFetch --permission-mode=bypassPermissions --print 2>&1 | tee /logs/agent/claude-code.txt
+Command outputs captured
+Wrote Claude Code trajectory to jobs/agent-trials/ab-test-reanalysis-claudecode-opus55-cc1/ab-test-reanalysis__3nb9x28/agent/trajectory.json
+Collecting main service artifacts
+Selected strategy: _DaytonaDirect
+Building environment from <submission>/jobs/ab-test-reanalysis/package-rev1/ab-test-reanalysis/tests/Dockerfile

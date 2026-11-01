@@ -1,12 +1,13 @@
 {
     "task": {
-        "path": "<submission>/tasks/feature-leakage-churn"
+        "path": "<submission>/jobs/feature-leakage-churn/package-v3/feature-leakage-churn"
     },
-    "trial_name": "feature-leakage-churn__DHZxhyB",
-    "trials_dir": "<submission>/jobs/feature-leakage-churn/feature-leakage-churn-force-build-full1",
+    "trial_name": "feature-leakage-churn__zdnsFo9",
+    "trials_dir": "<submission>/jobs/feature-leakage-churn/feature-leakage-churn-force-build-v3",
+    "environment_build_timeout_multiplier": 3.0,
     "environment": {
         "type": "daytona",
         "force_build": true
     },
-    "job_id": "1549d986-17c6-44ac-910e-38ccf6182779"
+    "job_id": "de4c8ae5-319e-4537-8631-4d37161d9813"
 }

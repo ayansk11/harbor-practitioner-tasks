@@ -1,17 +1,17 @@
-# Redactions in this traces folder (2026-10-29; `agent-pilot/` added 2026-10-30)
+# Redactions in this traces folder (2026-10-29; `agent-pilot/` added 2026-10-30; `agent-r3/` added 2026-10-31)
 
-Every file here is a copy of a Harbor trial or job file. Machine-specific paths were replaced, and in `agent-pilot/` also the URL of the model service the agent called; nothing else was changed (no reward, count or timing). The copy scripts checked this: each JSON file parses to the original with only those strings replaced and identical numbers, and each text file differs from the original only on lines that held one of them.
+Every file here is a copy of a Harbor trial or job file. Machine-specific paths were replaced, and in `agent-pilot/` and `agent-r3/` also the URL of the model service the agents called; nothing else was changed (no reward, count or timing). The copy scripts checked this: each JSON file parses to the original with only those strings replaced and identical numbers, and each text file differs from the original only on lines that held one of them.
 
 | Placeholder | What it replaces |
 |---|---|
 | `<submission>` | the absolute path of the `submission/` folder on the authoring Mac (also its URL-encoded form in `trial_uri`) |
 | `<home>` | other paths under the author's home folder (for example the Harbor tool install in a traceback) |
 | `<local-scratch>` | the session scratch folder of the authoring tool (a temporary folder on the Mac) |
-| `<model-endpoint>` | the URL of the OpenAI-compatible model service the agent pilot called (`agent-pilot/` only) |
+| `<model-endpoint>` | the URL of the OpenAI-compatible model service the agents called (`agent-pilot/` and `agent-r3/`) |
 
 Text files that changed carry one extra first line saying so. JSON files cannot carry a comment, so they are listed here.
 
-In `agent-pilot/agent/`, the shell prompt in the terminal records shows the sandbox's host name (a Daytona sandbox id); it is not a credential and was left as is.
+In `agent-pilot/agent/` and in each `agent-r3/<trial>/agent/` (`recording.cast`, `terminus_2.pane`, `trajectory.json`), the shell prompt in the terminal records shows the sandbox's host name (a Daytona sandbox id); it is not a credential and was left as is.
 
 | File | Replacements |
 |---|---|
@@ -71,5 +71,13 @@ In `agent-pilot/agent/`, the shell prompt in the terminal records shows the sand
 | `units_not_latitude/job_lock.json` | `<submission>` x1 |
 | `units_not_latitude/result.json` | `<submission>` x3, `<submission>` (URL-encoded form) x1 |
 | `units_not_latitude/trial.log` (text; first line added) | `<submission>` x2 |
+| `agent-r3/et0-station-ingest__Ac3eDsn/config.json` | `<model-endpoint>` x1 |
+| `agent-r3/et0-station-ingest__Ac3eDsn/result.json` | `<submission>` (URL-encoded form) x1, `<model-endpoint>` x1 |
+| `agent-r3/et0-station-ingest__Ac3eDsn/trial.log` (text; first line added) | `<submission>` x2 |
+| `agent-r3/et0-station-ingest__Ac3eDsn/job_lock.json` | `<model-endpoint>` x2 |
+| `agent-r3/et0-station-ingest__TwBGkQK/config.json` | `<model-endpoint>` x1 |
+| `agent-r3/et0-station-ingest__TwBGkQK/result.json` | `<submission>` (URL-encoded form) x1, `<model-endpoint>` x1 |
+| `agent-r3/et0-station-ingest__TwBGkQK/trial.log` (text; first line added) | `<submission>` x2 |
+| `agent-r3/et0-station-ingest__TwBGkQK/job_lock.json` | `<model-endpoint>` x2 |
 
-Files with no machine-specific path or model URL (copied byte for byte): 86 (78, plus 8 in `agent-pilot/`).
+Files with no machine-specific path or model URL (copied byte for byte): 102 (78, plus 8 in `agent-pilot/` and 16 in `agent-r3/`).

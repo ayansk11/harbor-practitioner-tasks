@@ -1,14 +1,19 @@
-"""Load a warehouse extract (the CSV layout described in FEATURES.md) into pandas frames with UTC timestamps."""
+"""Load a warehouse extract (the seven CSV files described in docs/WAREHOUSE.md) into pandas frames.
+
+Every timestamp column is parsed to a UTC timestamp, the load metadata columns included, so each frame carries
+everything its CSV file has.
+"""
 import os
 import pandas as pd
 
 TIMESTAMPS = {
-    "customers": ["signup_at"],
+    "customers": ["signup_at", "last_login_at", "_updated_at"],
+    "plan_changes": ["changed_at", "_loaded_at"],
     "scoring_points": ["as_of"],
-    "orders": ["ordered_at"],
-    "tickets": ["opened_at"],
-    "status_snapshots": ["snapshot_date"],
-    "labels": ["as_of", "label_available_at"],
+    "orders": ["ordered_at", "_loaded_at"],
+    "tickets": ["opened_at", "_loaded_at"],
+    "status_snapshots": ["snapshot_date", "_loaded_at"],
+    "labels": ["as_of", "_loaded_at"],
 }
 
 

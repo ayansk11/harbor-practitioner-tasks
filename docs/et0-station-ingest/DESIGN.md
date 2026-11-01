@@ -5,7 +5,8 @@ from the plan and why, the local checks, the quality-gate record against `docs/Q
 Daytona proof results and the known limitations. Paths are relative to the repository root; short names such as
 `tests/grade.py` are inside the task folder `tasks/et0-station-ingest/`.
 
-Last updated: 2026-10-30 (Mac clock, MST): limitation 2 (section 11) now records the agent pilot. Before that, 2026-10-29 (Mac clock, MST): wording edited for outside readers and pointers fixed (no number, verdict
+Last updated: 2026-10-31 (Mac clock, MST): limitation 2 (section 11) now records the two agent trials of 2026-10-30.
+Before that, 2026-10-30 (Mac clock, MST): limitation 2 (section 11) now records the agent pilot. Before that, 2026-10-29 (Mac clock, MST): wording edited for outside readers and pointers fixed (no number, verdict
 or limitation changed; a byte count added to section 2). Before that, also 2026-10-29: section 13 adds the Daytona proof results of 2026-10-28 and the gate record
 (section 10) is re-scored from them; the Daytona UNVERIFIED notes of sections 8, 9, 10 and 11 predate that run. Before
 that: 2026-10-28, after the second review (section 12). The plan was a design note written before the build; it is not
@@ -396,10 +397,12 @@ Limitations and open issues (honest):
    nowhere else; `et0/ingest.py` comments the raw columns as already "m/s at 2 m" and "MJ m-2 day-1"; METHOD.md 3.3 and
    3.4 give both conversions; the hemisphere defect is one line in `meta.py`, and CDB's met-service mismatch points to
    it. What difficulty there is comes from not following the altitude hint, fixing all three, and making the wind fix
-   general (1 to 20 m, off-grid heights, leap year). The `task.toml` label stays at the approved "easy-medium": one
-   agent trial has run (a pilot, reward 0.0; `validation/et0-station-ingest/README.md`, "Agent pilot"), which is not a
-   pass rate, so neither "easy" nor "easy-medium" is measured (UNVERIFIED). Relabel to "easy" if trials show a high
-   pass rate.
+   general (1 to 20 m, off-grid heights, leap year). The `task.toml` label stays at the approved "easy-medium": three
+   agent trials have run, all with Harbor's `terminus-2` agent and `openai/gpt-oss-120b` (the pilot of 2026-10-29 and
+   two trials on 2026-10-30; reward 0.0 in each, and each left the hemisphere defect in `et0/meta.py`;
+   `validation/et0-station-ingest/README.md`, "Agent pilot" and "Agent trials"). Three trials of one agent and one
+   model are not a pass rate, so neither "easy" nor "easy-medium" is measured (UNVERIFIED). Relabel to "easy" if
+   trials show a high pass rate.
 3. Synthetic weather, not real station records (the repository README says so, under "Known limitations").
 4. The honest-variant list in section 7 is our judgment of what a careful practitioner might do.
 5. Timings are Mac timings; the 60 s cap and 120 s verifier timeout rest on that margin (UNVERIFIED on Daytona when
@@ -420,7 +423,7 @@ Limitations and open issues (honest):
 A second, independent review on 2026-10-28 (lenses: second reader, shortcuts and valid alternatives, quality gate)
 found no HIGH issue and six MEDIUM or LOW ones. We checked each one again before acting:
 - Difficulty near ceiling (G14, G28): accepted as a limitation, problem unchanged (limitation 2). Relabelling to "easy"
-  was considered and not done: no agent-trial evidence either way (as of that review; the later agent pilot is in
+  was considered and not done: no agent-trial evidence either way (as of that review; the later agent trials are in
   limitation 2).
 - "No absolute /app paths" stated but not enforced on Daytona: fixed (deviation 11, section 6 step 3, attempt
   `abs_app_path`).

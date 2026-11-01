@@ -1,0 +1,137 @@
+{
+    "id": "37deae34-d0fb-4e19-b65c-43bec4d08ce9",
+    "started_at": "2026-10-30T07:20:37.051715",
+    "updated_at": "2026-10-30T07:27:12.835147",
+    "finished_at": "2026-10-30T07:27:12.835147",
+    "n_total_trials": 3,
+    "stats": {
+        "n_completed_trials": 3,
+        "n_errored_trials": 0,
+        "n_running_trials": 0,
+        "n_pending_trials": 0,
+        "n_cancelled_trials": 0,
+        "n_retries": 0,
+        "evals": {
+            "terminus-2__gpt-oss-120b__adhoc": {
+                "n_trials": 3,
+                "n_errors": 0,
+                "metrics": [
+                    {
+                        "agent_seconds": 9.06,
+                        "c1_order_ok": 1.0,
+                        "c2_pages_ok": 1.0,
+                        "c3_customers_ok": 1.0,
+                        "c4_inserts_ok": 1.0,
+                        "c5_errors_ok": 1.0,
+                        "c6_fields_ok": 1.0,
+                        "c7_public_ok": 1.0,
+                        "db_ok": 1.0,
+                        "failed_checks": 0.0,
+                        "grading_seconds": 10.19,
+                        "reward": 1.0
+                    }
+                ],
+                "pass_at_k": {},
+                "reward_stats": {
+                    "reward": {
+                        "1.0": [
+                            "orders-export-missing-rows__Ro8uMJk",
+                            "orders-export-missing-rows__8QFnJgD",
+                            "orders-export-missing-rows__jmkPRP3"
+                        ]
+                    },
+                    "c1_order_ok": {
+                        "1": [
+                            "orders-export-missing-rows__Ro8uMJk",
+                            "orders-export-missing-rows__8QFnJgD",
+                            "orders-export-missing-rows__jmkPRP3"
+                        ]
+                    },
+                    "c2_pages_ok": {
+                        "1": [
+                            "orders-export-missing-rows__Ro8uMJk",
+                            "orders-export-missing-rows__8QFnJgD",
+                            "orders-export-missing-rows__jmkPRP3"
+                        ]
+                    },
+                    "c3_customers_ok": {
+                        "1": [
+                            "orders-export-missing-rows__Ro8uMJk",
+                            "orders-export-missing-rows__8QFnJgD",
+                            "orders-export-missing-rows__jmkPRP3"
+                        ]
+                    },
+                    "c4_inserts_ok": {
+                        "1": [
+                            "orders-export-missing-rows__Ro8uMJk",
+                            "orders-export-missing-rows__8QFnJgD",
+                            "orders-export-missing-rows__jmkPRP3"
+                        ]
+                    },
+                    "c5_errors_ok": {
+                        "1": [
+                            "orders-export-missing-rows__Ro8uMJk",
+                            "orders-export-missing-rows__8QFnJgD",
+                            "orders-export-missing-rows__jmkPRP3"
+                        ]
+                    },
+                    "c6_fields_ok": {
+                        "1": [
+                            "orders-export-missing-rows__Ro8uMJk",
+                            "orders-export-missing-rows__8QFnJgD",
+                            "orders-export-missing-rows__jmkPRP3"
+                        ]
+                    },
+                    "c7_public_ok": {
+                        "1": [
+                            "orders-export-missing-rows__Ro8uMJk",
+                            "orders-export-missing-rows__8QFnJgD",
+                            "orders-export-missing-rows__jmkPRP3"
+                        ]
+                    },
+                    "db_ok": {
+                        "1": [
+                            "orders-export-missing-rows__Ro8uMJk",
+                            "orders-export-missing-rows__8QFnJgD",
+                            "orders-export-missing-rows__jmkPRP3"
+                        ]
+                    },
+                    "failed_checks": {
+                        "0": [
+                            "orders-export-missing-rows__Ro8uMJk",
+                            "orders-export-missing-rows__8QFnJgD",
+                            "orders-export-missing-rows__jmkPRP3"
+                        ]
+                    },
+                    "agent_seconds": {
+                        "10.41": [
+                            "orders-export-missing-rows__Ro8uMJk"
+                        ],
+                        "9.58": [
+                            "orders-export-missing-rows__8QFnJgD"
+                        ],
+                        "7.19": [
+                            "orders-export-missing-rows__jmkPRP3"
+                        ]
+                    },
+                    "grading_seconds": {
+                        "11.58": [
+                            "orders-export-missing-rows__Ro8uMJk"
+                        ],
+                        "10.7": [
+                            "orders-export-missing-rows__8QFnJgD"
+                        ],
+                        "8.29": [
+                            "orders-export-missing-rows__jmkPRP3"
+                        ]
+                    }
+                },
+                "exception_stats": {}
+            }
+        },
+        "n_input_tokens": 707681,
+        "n_cache_tokens": 0,
+        "n_output_tokens": 40579,
+        "cost_usd": null
+    }
+}

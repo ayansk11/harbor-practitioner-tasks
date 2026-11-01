@@ -1,0 +1,2 @@
+solve.sh: SOLUTION=alt_recount
+wrote output/result.json: decision=no_ship

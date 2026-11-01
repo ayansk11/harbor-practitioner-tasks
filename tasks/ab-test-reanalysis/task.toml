@@ -3,20 +3,25 @@ artifacts = [{ source = "/app", exclude = ["data", "__pycache__", ".venv"] }]
 
 [task]
 name = "diffuse-labs/ab-test-reanalysis"
-description = "Audit an A/B readout that declared a false win: bots filtered from one arm only, a pageview-level CI for a user-randomized test, no SRM check; fix the pipeline so it follows the analysis plan on any experiment export."
+description = "Re-analyse a disputed A/B readout before a launch decision: check the readout pipeline against the analysis plan, the data platform's documentation and the export, and fix it so that it gives the plan's readout on any export of this layout."
 keywords = ["data-analysis", "ab-testing", "experimentation", "statistics", "audit"]
 
 [metadata]
 category = "data-analysis"
-difficulty = "easy-medium"
+difficulty = "hard"
 
 [agent]
-timeout_sec = 1800.0
+timeout_sec = 3600.0
+network_mode = "no-network"
 
 [verifier]
 environment_mode = "separate"
-timeout_sec = 950.0
+timeout_sec = 1000.0
 
-[environment]
+[verifier.environment]
 cpus = 1
 memory_mb = 2048
+
+[environment]
+cpus = 2
+memory_mb = 4096

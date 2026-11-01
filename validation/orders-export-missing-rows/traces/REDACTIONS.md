@@ -1,14 +1,17 @@
-# Redactions in this traces folder (2026-10-29)
+# Redactions in this traces folder (2026-10-29; `agent-r3/` added 2026-10-31)
 
-Every file here is a copy of a Harbor trial or job file. Machine-specific paths were replaced; nothing else was changed (no reward, count or timing). The copy script checked this: each JSON file parses to the original with only the path strings replaced and identical numbers, and each text file differs from the original only on lines that held one of these paths.
+Every file here is a copy of a Harbor trial or job file. Machine-specific paths were replaced, and in `agent-r3/` also the URL of the model service the agents called; nothing else was changed (no reward, count or timing). The copy script checked this: each JSON file parses to the original with only the path strings replaced and identical numbers, and each text file differs from the original only on lines that held one of these paths.
 
 | Placeholder | What it replaces |
 |---|---|
 | `<submission>` | the absolute path of the `submission/` folder on the authoring Mac (also its URL-encoded form in `trial_uri`) |
 | `<home>` | other paths under the author's home folder (for example the Harbor tool install in a traceback) |
 | `<local-scratch>` | the session scratch folder of the authoring tool (a temporary folder on the Mac) |
+| `<model-endpoint>` | the URL of the OpenAI-compatible model service the agents of `agent-r3/` called |
 
 Text files that changed carry one extra first line saying so. JSON files cannot carry a comment, so they are listed here.
+
+In each `agent-r3/<trial>/agent/` (`recording.cast`, `terminus_2.pane`, `trajectory.json`), the shell prompt in the terminal records shows the sandbox's host name (a Daytona sandbox id); it is not a credential and was left as is.
 
 | File | Replacements |
 |---|---|
@@ -76,5 +79,17 @@ Text files that changed carry one extra first line saying so. JSON files cannot 
 | `unique_timestamps_dev_db/job_lock.json` | `<submission>` x1 |
 | `unique_timestamps_dev_db/result.json` | `<submission>` x3, `<submission>` (URL-encoded form) x1 |
 | `unique_timestamps_dev_db/trial.log` (text; first line added) | `<submission>` x2 |
+| `agent-r3/orders-export-missing-rows__8QFnJgD/config.json` | `<model-endpoint>` x1 |
+| `agent-r3/orders-export-missing-rows__8QFnJgD/result.json` | `<submission>` (URL-encoded form) x1, `<model-endpoint>` x1 |
+| `agent-r3/orders-export-missing-rows__8QFnJgD/trial.log` (text; first line added) | `<submission>` x2 |
+| `agent-r3/orders-export-missing-rows__8QFnJgD/job_lock.json` | `<model-endpoint>` x3 |
+| `agent-r3/orders-export-missing-rows__Ro8uMJk/config.json` | `<model-endpoint>` x1 |
+| `agent-r3/orders-export-missing-rows__Ro8uMJk/result.json` | `<submission>` (URL-encoded form) x1, `<model-endpoint>` x1 |
+| `agent-r3/orders-export-missing-rows__Ro8uMJk/trial.log` (text; first line added) | `<submission>` x2 |
+| `agent-r3/orders-export-missing-rows__Ro8uMJk/job_lock.json` | `<model-endpoint>` x3 |
+| `agent-r3/orders-export-missing-rows__jmkPRP3/config.json` | `<model-endpoint>` x1 |
+| `agent-r3/orders-export-missing-rows__jmkPRP3/result.json` | `<submission>` (URL-encoded form) x1, `<model-endpoint>` x1 |
+| `agent-r3/orders-export-missing-rows__jmkPRP3/trial.log` (text; first line added) | `<submission>` x2 |
+| `agent-r3/orders-export-missing-rows__jmkPRP3/job_lock.json` | `<model-endpoint>` x3 |
 
-Files with no machine-specific path (copied byte for byte): 95.
+Files with no machine-specific path or model URL (copied byte for byte): 119 (95, plus 24 in `agent-r3/`).

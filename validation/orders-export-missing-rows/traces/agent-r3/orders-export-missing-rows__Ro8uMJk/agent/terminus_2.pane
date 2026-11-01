@@ -1,0 +1,662 @@
+[?2004hroot@d729ffce-f3f1-4d94-8061-5ea6fbde87a4:/app# asciinema rec --stdin /logs/agent/recording.cast
+[?2004l[0;32masciinema: recording asciicast to /logs/agent/recording.cast[0m
+[0;32masciinema: press <ctrl-d> or type "exit" when you're done[0m
+[?2004hroot@d729ffce-f3f1-4d94-8061-5ea6fbde87a4:/app# clear
+[?2004l[H[J[3J[?2004hroot@d729ffce-f3f1-4d94-8061-5ea6fbde87a4:/app# ls -R
+[?2004l.:
+INCIDENT.md  README.md	data  docs  logs  orders_service  tests  tools
+
+./data:
+orders.db
+
+./docs:
+API.md
+
+./logs:
+export-2026-10-27.log
+
+./orders_service:
+__init__.py  __main__.py  app.py  db.py  pagination.py	queries.py
+
+./tests:
+test_api.py
+
+./tools:
+export_orders.py
+[?2004hroot@d729ffce-f3f1-4d94-8061-5ea6fbde87a4:/app# sed -n '1,200p' README.md
+[?2004l# orders-api
+
+Read-only HTTP API over the merchant's orders database (Flask, served by waitress). Contract: `docs/API.md`.
+Open incident: `INCIDENT.md`.
+
+| Path | What |
+|---|---|
+| `orders_service/app.py` | routes |
+| `orders_service/pagination.py` | `limit` and cursor parsing, the shared keyset pagination helper |
+| `orders_service/queries.py` | customer views (account page, support tool) |
+| `orders_service/db.py` | one SQLite connection per request, the order fields |
+| `orders_service/__main__.py` | `python -m orders_service --db ... --port ...` |
+| `tools/export_orders.py` | the nightly finance export (a client of `GET /orders`) |
+| `tests/test_api.py` | API tests (pytest, Flask test client, small temporary databases) |
+| `data/orders.db` | development copy of the production database, taken when the 2026-10-27 export started |
+| `logs/export-2026-10-27.log` | request log of that export |
+
+Run the service and the export against the development copy:
+
+```
+cd /app
+python -m orders_service --db data/orders.db --port 8080 &
+python tools/export_orders.py --base http://127.0.0.1:8080 --limit 200 --out /tmp/orders.csv
+```
+
+Run the tests: `cd /app && python -m pytest -q tests`. Inspect the data: `python -c "import sqlite3; ..."` (there is
+no `sqlite3` command-line tool in the image).
+[?2004hroot@d729ffce-f3f1-4d94-8061-5ea6fbde87a4:/app# sed -n '1,200p' docs/API.md
+[?2004l# Orders API (v1)
+
+Read-only HTTP API over the merchant's orders database. Clients: the nightly finance export
+(`tools/export_orders.py`), the support tool and the customer account page. The API never writes orders; checkout, the
+POS sync and the import jobs insert them into the same database, also while clients are paging.
+
+Start: `python -m orders_service --db <path to orders.db> --port <port>` from `/app`. It listens on 127.0.0.1.
+All responses are JSON. An error answers `{"error": "<message>"}` with the status code given below.
+
+## The order object
+| Field | Type | Meaning |
+|---|---|---|
+| `id` | integer | order id. Ids grow in the order rows are written, not in the order orders were placed: an order synced late (for example an offline POS sale) has a high id and an old `created_at`. |
+| `customer_id` | integer | the customer who placed the order |
+| `created_at` | string | when the order was placed, UTC, `YYYY-MM-DDTHH:MM:SSZ`, whole seconds. Many orders can share one second (bulk imports write hundreds at once). |
+| `status` | string | `paid`, `shipped`, `refunded` or `cancelled` |
+| `total_cents` | integer | order total in the currency's minor unit |
+| `currency` | string | ISO 4217 code |
+
+## Listings and paging
+`GET /orders` and `GET /customers/<id>/orders` return pages of orders.
+
+- **Order.** Newest first: by `created_at` descending; orders with the same `created_at` by `id` descending.
+- **`limit`** (query parameter): page size, an integer from 1 to 500. Default 100 when the parameter is absent.
+- **`cursor`** (query parameter): leave it out for the first page; for the next page, pass the `next_cursor` value
+  of the previous page exactly as received. Cursors are opaque strings: clients do not build or read them.
+- **Response 200:** `{"orders": [<order>, ...], "next_cursor": "<string>" or null}`.
+- Every page holds exactly `limit` orders, except the last page, which holds at most `limit`.
+- `next_cursor` is null on the last page and only there. When the number of orders is a multiple of `limit`, the
+  last page may be empty.
+- Following `next_cursor` from the first page to the last returns every order of the listing exactly once, in the
+  order above.
+- **Orders written while a client pages:** every order that existed when the client asked for the first page is
+  returned exactly once. An order written after that may or may not appear in that pass, and never more than once.
+  A listing started later includes it.
+- **Errors:** `400` if `limit` is not an integer from 1 to 500; `400` if `cursor` is malformed.
+
+## Endpoints
+### `GET /orders`
+All orders, paged as above.
+
+### `GET /orders/count`
+`{"count": <number of orders>}`.
+
+### `GET /orders/<id>`
+The order object. `404` if there is no order with that id.
+
+### `GET /customers/<id>/orders`
+The customer's orders, paged and ordered as above. `404` if there is no customer with that id. A customer without
+orders gets `{"orders": [], "next_cursor": null}`.
+
+## Database (for maintainers)
+SQLite, tables `customers` and `orders` (schema: `SELECT sql FROM sqlite_master` on `data/orders.db`). Indexes: `orders_created_at`
+on `orders(created_at)`, `orders_customer` on `orders(customer_id, created_at)`. Other systems insert into `orders`
+naming its columns; they rely on the tables and columns keeping their names and meaning.
+[?2004hroot@d729ffce-f3f1-4d94-8061-5ea6fbde87a4:/app# sed -n '1,200p' INCIDENT.md
+[?2004l# INC-2291 (P1): nightly order export is missing orders
+
+**Reported** 2026-10-27 08:12 UTC by Finance Operations (month-end reconciliation)
+**Service** orders API (`/app/orders_service`), owned by the commerce backend team
+**Severity** P1: the accounting close is blocked
+
+## What happened
+The nightly export job (`/app/tools/export_orders.py`, cron 02:00 UTC) pages through `GET /orders` with
+`limit=200` and writes one CSV row per order. Last night's file has **47,961 rows**. `GET /orders/count`,
+called by the same job right before the first page, returned **48,213**. The reconciliation against the payment
+processor flags the 252 missing orders. Finance spot-checked a few of them: they exist and look normal.
+
+Nothing in the export job changed this month. The request log of last night's run is
+`/app/logs/export-2026-10-27.log`. `/app/data/orders.db` is a copy of the production database taken when the
+export started (no orders were written during that run).
+
+## What we need
+Find why the export loses orders and fix the orders API so that a client that follows `next_cursor` from the first
+page to the last gets every order exactly once, as `/app/docs/API.md` promises. The same holds for every listing that
+pages, not only `/orders`. Checkout, the POS sync and the import jobs keep writing orders into the same database
+while exports run, so the fix must hold while new orders arrive.
+
+## Notes from the on-call engineer
+- Smaller page sizes seem to lose more orders. A re-run with `limit=500` lost fewer, but still some.
+- The support tool (`GET /customers/<id>/orders`, which asks for pages of 20) showed wholesale account 5 with
+  20 orders, while its invoice history has 61. Possibly related, not confirmed.
+[?2004hroot@d729ffce-f3f1-4d94-8061-5ea6fbde87a4:/app# sed -n '1,200p' orders_service/pagination.py
+[?2004l"""Keyset ("seek") pagination for order listings.
+
+We moved off LIMIT/OFFSET in 2025 (PERF-87): OFFSET re-reads every skipped row, so deep pages of the nightly export
+got slower and slower, and rows shifted between pages whenever checkout inserted a new order. A keyset page starts
+right after the last row the client has seen, so it costs the same at any depth and does not move under inserts.
+
+Listings are ordered newest first (created_at DESC, id DESC; docs/API.md). The cursor handed to clients is opaque:
+base64url of the position of the last row on the page.
+"""
+import base64
+import binascii
+import re
+from collections import namedtuple
+
+from werkzeug.exceptions import BadRequest
+
+DEFAULT_LIMIT = 100
+MAX_LIMIT = 500
+
+_TIMESTAMP = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z")
+_DIGITS = re.compile(r"[0-9]{1,6}")
+
+Cursor = namedtuple("Cursor", ["created_at"])
+
+
+def parse_limit(raw):
+    """The `limit` query parameter: an integer from 1 to MAX_LIMIT, DEFAULT_LIMIT when absent."""
+    if raw is None:
+        return DEFAULT_LIMIT
+    if not _DIGITS.fullmatch(raw) or not 1 <= int(raw) <= MAX_LIMIT:
+        raise BadRequest(f"limit must be an integer from 1 to {MAX_LIMIT}")
+    return int(raw)
+
+
+def encode_cursor(row):
+    """Cursor for the page after `row` (the last row of the current page)."""
+    return base64.urlsafe_b64encode(row["created_at"].encode("ascii")).decode("ascii").rstrip("=")
+
+
+def decode_cursor(raw):
+    """Parse the `cursor` query parameter; None when absent. A malformed cursor is a 400."""
+    if raw is None:
+        return None
+    try:
+        text = base64.urlsafe_b64decode((raw + "=" * (-len(raw) % 4)).encode("ascii")).decode("ascii")
+    except (ValueError, binascii.Error, UnicodeError):
+        raise BadRequest("invalid cursor") from None
+    if not _TIMESTAMP.fullmatch(text):
+        raise BadRequest("invalid cursor")
+    return Cursor(created_at=text)
+
+
+def paginate(con, columns, table, limit, cursor, where="", params=()):
+    """One page of `SELECT columns FROM table [WHERE where]`, newest first.
+
+    Returns (rows, next_cursor); next_cursor is None on the last page."""
+    clauses = [where] if where else []
+    args = list(params)
+    if cursor is not None:
+        clauses.append("created_at < ?")
+        args.append(cursor.created_at)
+    sql = f"SELECT {columns} FROM {table}"
+    if clauses:
+        sql += " WHERE " + " AND ".join(f"({c})" for c in clauses)
+    sql += " ORDER BY created_at DESC, id DESC LIMIT ?"
+    args.append(limit)
+    rows = con.execute(sql, args).fetchall()
+    next_cursor = encode_cursor(rows[-1]) if len(rows) == limit else None
+    return rows, next_cursor
+[?2004hroot@d729ffce-f3f1-4d94-8061-5ea6fbde87a4:/app# sed -n '1,200p' orders_service/queries.py
+[?2004l"""Queries behind the customer views (account page, support tool)."""
+from .db import ORDER_COLUMNS
+from .pagination import encode_cursor
+
+
+def customer_exists(con, customer_id):
+    return con.execute("SELECT 1 FROM customers WHERE id = ?", (customer_id,)).fetchone() is not None
+
+
+def customer_orders_page(con, customer_id, limit, cursor):
+    """One page of a customer's orders, newest first. Returns (rows, next_cursor).
+
+    Same keyset scheme as pagination.paginate, written out here so that SQLite picks the orders_customer index
+    (customer_id, created_at) instead of scanning orders_created_at for big wholesale accounts (PERF-112)."""
+    sql = f"SELECT {ORDER_COLUMNS} FROM orders INDEXED BY orders_customer WHERE customer_id = ?"
+    args = [customer_id]
+    if cursor is not None:
+        sql += " AND created_at < ?"
+        args.append(cursor.created_at)
+    sql += " ORDER BY created_at DESC, id DESC LIMIT ?"
+    args.append(limit)
+    rows = con.execute(sql, args).fetchall()
+    next_cursor = encode_cursor(rows[-1]) if len(rows) == limit else None
+    return rows, next_cursor
+[?2004hroot@d729ffce-f3f1-4d94-8061-5ea6fbde87a4:/app# sed -n '1,200p' orders_service/app.py
+[?2004l"""Flask application for the orders API. Endpoints and response formats: docs/API.md."""
+from flask import Flask, abort, jsonify, request
+from werkzeug.exceptions import HTTPException
+
+from . import db, pagination, queries
+
+
+def create_app(database):
+    app = Flask(__name__)
+    app.config["DATABASE"] = database
+    app.json.sort_keys = False
+    app.teardown_appcontext(db.close_db)
+
+    @app.errorhandler(HTTPException)
+    def http_error(exc):
+        return jsonify(error=exc.description), exc.code
+
+    @app.get("/orders")
+    def list_orders():
+        limit = pagination.parse_limit(request.args.get("limit"))
+        cursor = pagination.decode_cursor(request.args.get("cursor"))
+        rows, next_cursor = pagination.paginate(db.get_db(), db.ORDER_COLUMNS, "orders", limit, cursor)
+        return jsonify(orders=[db.order_json(r) for r in rows], next_cursor=next_cursor)
+
+    @app.get("/orders/count")
+    def count_orders():
+        (n,) = db.get_db().execute("SELECT COUNT(*) FROM orders").fetchone()
+        return jsonify(count=n)
+
+    @app.get("/orders/<int:order_id>")
+    def get_order(order_id):
+        row = db.get_db().execute(f"SELECT {db.ORDER_COLUMNS} FROM orders WHERE id = ?", (order_id,)).fetchone()
+        if row is None:
+            abort(404, description="order not found")
+        return jsonify(db.order_json(row))
+
+    @app.get("/customers/<int:customer_id>/orders")
+    def customer_orders(customer_id):
+        con = db.get_db()
+        if not queries.customer_exists(con, customer_id):
+            abort(404, description="customer not found")
+        limit = pagination.parse_limit(request.args.get("limit"))
+        cursor = pagination.decode_cursor(request.args.get("cursor"))
+        rows, next_cursor = queries.customer_orders_page(con, customer_id, limit, cursor)
+        return jsonify(orders=[db.order_json(r) for r in rows], next_cursor=next_cursor)
+
+    return app
+[?2004hroot@d729ffce-f3f1-4d94-8061-5ea6fbde87a4:/app# apply_patch <<'PATCH'
+[?2004lt (ValueError, binascii.Error, UnicodeError):
++        raise BadRequest("invalid cursor") from None
++    # Split into timestamp and id parts.
++    try:
++        ts, id_part = text.split("|", 1)
++    except ValueError:
++        raise BadRequest("invalid cursor") from None
++    if not _TIMESTAMP.fullmatch(ts) or not _DIGITS.fullmatch(id_part):
++        raise BadRequest("invalid cursor")
++    return Cursor(created_at=ts, id=int(id_part))
+@@
+-    if cursor is not None:
+-        clauses.append("created_at < ?")
+-        args.append(cursor.created_at)
++    if cursor is not None:
++        # The keyset condition must handle rows with the same timestamp.
++        # We want rows that are *older* than the cursor row, i.e.:
++        #   created_at < cursor.created_at
++        #   OR (created_at = cursor.created_at AND id < cursor.id)
++        clauses.append("(created_at < ?) OR (created_at = ? AND id < ?)")
++        args.extend([cursor.created_at, cursor.created_at, cursor.id])
+*** End Patch
+PATCH
+PATCH[?2004h> *** Begin Patch
+[?2004l[?2004h> *** Update File: orders_service/pagination.py
+[?2004l[?2004h> @@
+[?2004l[?2004h> -Cursor = namedtuple("Cursor", ["created_at"])
+[?2004l[?2004h> +# The cursor now stores both the timestamp and the id of the last row on the page.
+[?2004l[?2004h> +# This allows correct keyset pagination when multiple rows share the same
+[?2004l[?2004h> +# `created_at` value (the API orders by `created_at DESC, id DESC`).
+[?2004l[?2004h> +Cursor = namedtuple("Cursor", ["created_at", "id"])
+[?2004l[?2004h> @@
+[?2004l[?2004h> -def encode_cursor(row):
+[?2004l[?2004h> -    """Cursor for the page after `row` (the last row of the current page)."""
+[?2004l[?2004h> -    return base64.urlsafe_b64encode(row["created_at"].encode("ascii")).decode("ascii").rstrip("=")
+[?2004l[?2004h> +def encode_cursor(row):
+[?2004l[?2004h> +    """Encode a cursor for the page after `row` (the last row of the current page).
+[?2004l[?2004h> +
+[?2004l[?2004h> +    The cursor contains the `created_at` timestamp and the `id` of the row,
+[?2004l[?2004h> +    concatenated with a pipe character.  The string is then base64‑url
+[?2004l[?2004h> +    encoded without padding to keep it opaque.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    # ``row`` is a sqlite3.Row which supports mapping access.
+[?2004l[?2004h> +    raw = f"{row['created_at']}|{row['id']}"
+[?2004l[?2004h> +    return base64.urlsafe_b64encode(raw.encode("ascii")).decode("ascii").rstrip("=")
+[?2004l[?2004h> @@
+[?2004l[?2004h> -def decode_cursor(raw):
+[?2004l[?2004h> -    """Parse the `cursor` query parameter; None when absent. A malformed cursor is a 400."""
+[?2004l[?2004h> -    if raw is None:
+[?2004l[?2004h> -        return None
+[?2004l[?2004h> -    try:
+[?2004l[?2004h> -        text = base64.urlsafe_b64decode((raw + "=" * (-len(raw) % 4)).encode("ascii")).decode("ascii")
+[?2004l[?2004h> -    except (ValueError, binascii.Error, UnicodeError):
+[?2004l[?2004h> -        raise BadRequest("invalid cursor") from None
+[?2004l[?2004h> -    if not _TIMESTAMP.fullmatch(text):
+[?2004l[?2004h> -        raise BadRequest("invalid cursor")
+[?2004l[?2004h> -    return Cursor(created_at=text)
+[?2004l[?2004h> +def decode_cursor(raw):
+[?2004l[?2004h> +    """Parse the `cursor` query parameter; ``None`` when absent.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    The cursor is expected to be the base64‑url encoding of
+[?2004l[?2004h> +    ``"<timestamp>|<id>"``.  A malformed cursor results in a ``400``.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    if raw is None:
+[?2004l[?2004h> +        return None
+[?2004l[?2004h> +    try:
+[?2004l[?2004h> +        text = base64.urlsafe_b64decode((raw + "=" * (-len(raw) % 4)).encode("ascii")).decode("ascii")
+[?2004l[?2004h> +    except (ValueError, binascii.Error, UnicodeError):
+[?2004l[?2004h> +        raise BadRequest("invalid cursor") from None
+[?2004l[?2004h> +    # Split into timestamp and id parts.
+[?2004l[?2004h> +    try:
+[?2004l[?2004h> +        ts, id_part = text.split("|", 1)
+[?2004l[?2004h> +    except ValueError:
+[?2004l[?2004h> +        raise BadRequest("invalid cursor") from None
+[?2004l[?2004h> +    if not _TIMESTAMP.fullmatch(ts) or not _DIGITS.fullmatch(id_part):
+[?2004l[?2004h> +        raise BadRequest("invalid cursor")
+[?2004l[?2004h> +    return Cursor(created_at=ts, id=int(id_part))
+[?2004l[?2004h> @@
+[?2004l[?2004h> -    if cursor is not None:
+[?2004l[?2004h> -        clauses.append("created_at < ?")
+[?2004l[?2004h> -        args.append(cursor.created_at)
+[?2004l[?2004h> +    if cursor is not None:
+[?2004l[?2004h> +        # The keyset condition must handle rows with the same timestamp.
+[?2004l[?2004h> +        # We want rows that are *older* than the cursor row, i.e.:
+[?2004l[?2004h> +        #   created_at < cursor.created_at
+[?2004l[?2004h> +        #   OR (created_at = cursor.created_at AND id < cursor.id)
+[?2004l[?2004h> +        clauses.append("(created_at < ?) OR (created_at = ? AND id < ?)")
+[?2004l[?2004h> +        args.extend([cursor.created_at, cursor.created_at, cursor.id])
+[?2004l[?2004h> *** End Patch
+[?2004l[?2004h> PATCH
+[?2004lbash: apply_patch: command not found
+[?2004hroot@d729ffce-f3f1-4d94-8061-5ea6fbde87a4:/app# PATCHapply_patch <<'PATCH'
+[?2004lirst. Returns (rows, next_cursor).
++
++    The pagination logic mirrors :func:`pagination.paginate` but forces SQLite to use the
++    ``orders_customer`` index (customer_id, created_at) for efficiency on large accounts.
++    It now uses the composite cursor (created_at, id) to correctly handle rows that share the
++    same timestamp.
++    """
++    sql = f"SELECT {ORDER_COLUMNS} FROM orders INDEXED BY orders_customer WHERE customer_id = ?"
++    args = [customer_id]
++    if cursor is not None:
++        # Same composite condition as in pagination.paginate.
++        sql += " AND ((created_at < ?) OR (created_at = ? AND id < ?))"
++        args.extend([cursor.created_at, cursor.created_at, cursor.id])
++    sql += " ORDER BY created_at DESC, id DESC LIMIT ?"
++    args.append(limit)
++    rows = con.execute(sql, args).fetchall()
++    next_cursor = encode_cursor(rows[-1]) if len(rows) == limit else None
++    return rows, next_cursor
+*** End Patch
+PATCH
+PATCH[?2004h> *** Begin Patch
+[?2004l[?2004h> *** Update File: orders_service/queries.py
+[?2004l[?2004h> @@
+[?2004l[?2004h> -def customer_orders_page(con, customer_id, limit, cursor):
+[?2004l[?2004h> -    """One page of a customer's orders, newest first. Returns (rows, next_cursor).
+[?2004l[?2004h> -
+[?2004l[?2004h> -    Same keyset scheme as pagination.paginate, written out here so that SQLite picks the orders_customer index
+[?2004l[?2004h> -    (customer_id, created_at) instead of scanning orders_created_at for big wholesale accounts (PERF-112)."""
+[?2004l[?2004h> -    sql = f"SELECT {ORDER_COLUMNS} FROM orders INDEXED BY orders_customer WHERE customer_id = ?"
+[?2004l[?2004h> -    args = [customer_id]
+[?2004l[?2004h> -    if cursor is not None:
+[?2004l[?2004h> -        sql += " AND created_at < ?"
+[?2004l[?2004h> -        args.append(cursor.created_at)
+[?2004l[?2004h> -    sql += " ORDER BY created_at DESC, id DESC LIMIT ?"
+[?2004l[?2004h> -    args.append(limit)
+[?2004l[?2004h> -    rows = con.execute(sql, args).fetchall()
+[?2004l[?2004h> -    next_cursor = encode_cursor(rows[-1]) if len(rows) == limit else None
+[?2004l[?2004h> -    return rows, next_cursor
+[?2004l[?2004h> +def customer_orders_page(con, customer_id, limit, cursor):
+[?2004l[?2004h> +    """One page of a customer's orders, newest first. Returns (rows, next_cursor).
+[?2004l[?2004h> +
+[?2004l[?2004h> +    The pagination logic mirrors :func:`pagination.paginate` but forces SQLite to use the
+[?2004l[?2004h> +    ``orders_customer`` index (customer_id, created_at) for efficiency on large accounts.
+[?2004l[?2004h> +    It now uses the composite cursor (created_at, id) to correctly handle rows that share the
+[?2004l[?2004h> +    same timestamp.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    sql = f"SELECT {ORDER_COLUMNS} FROM orders INDEXED BY orders_customer WHERE customer_id = ?"
+[?2004l[?2004h> +    args = [customer_id]
+[?2004l[?2004h> +    if cursor is not None:
+[?2004l[?2004h> +        # Same composite condition as in pagination.paginate.
+[?2004l[?2004h> +        sql += " AND ((created_at < ?) OR (created_at = ? AND id < ?))"
+[?2004l[?2004h> +        args.extend([cursor.created_at, cursor.created_at, cursor.id])
+[?2004l[?2004h> +    sql += " ORDER BY created_at DESC, id DESC LIMIT ?"
+[?2004l[?2004h> +    args.append(limit)
+[?2004l[?2004h> +    rows = con.execute(sql, args).fetchall()
+[?2004l[?2004h> +    next_cursor = encode_cursor(rows[-1]) if len(rows) == limit else None
+[?2004l[?2004h> +    return rows, next_cursor
+[?2004l[?2004h> *** End Patch
+[?2004l[?2004h> PATCH
+[?2004lbash: PATCHapply_patch: command not found
+[?2004hroot@d729ffce-f3f1-4d94-8061-5ea6fbde87a4:/app# PATCHpytest -q tests || true
+[?2004lbash: PATCHpytest: command not found
+[?2004hroot@d729ffce-f3f1-4d94-8061-5ea6fbde87a4:/app# cat > orders_service/pagination.py <<'PY'
+[?2004l[?2004h> """Keyset ("seek") pagination for order listings.
+[?2004l[?2004h> 
+[?2004l[?2004h> We moved off LIMIT/OFFSET in 2025 (PERF-87): OFFSET re-reads every skipped row, so deep pages of the nightly export
+[?2004l[?2004h> got slower and slower, and rows shifted between pages whenever checkout inserted a new order. A keyset page starts
+[?2004l[?2004h> right after the last row the client has seen, so it costs the same at any depth and does not move under inserts.
+[?2004l[?2004h> 
+[?2004l[?2004h> Listings are ordered newest first (created_at DESC, id DESC; docs/API.md). The cursor handed to clients is opaque:
+[?2004l[?2004h> base64url of the position of the last row on the page.
+[?2004l[?2004h> """
+[?2004l[?2004h> import base64
+[?2004l[?2004h> import binascii
+[?2004l[?2004h> import re
+[?2004l[?2004h> from collections import namedtuple
+[?2004l[?2004h> 
+[?2004l[?2004h> from werkzeug.exceptions import BadRequest
+[?2004l[?2004h> 
+[?2004l[?2004h> DEFAULT_LIMIT = 100
+[?2004l[?2004h> MAX_LIMIT = 500
+[?2004l[?2004h> 
+[?2004l[?2004h> _TIMESTAMP = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z")
+[?2004l[?2004h> _DIGITS = re.compile(r"[0-9]{1,6}")
+[?2004l[?2004h> 
+[?2004l[?2004h> # The cursor now stores both timestamp and id to handle rows that share the same created_at.
+[?2004l[?2004h> Cursor = namedtuple("Cursor", ["created_at", "id"])
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def parse_limit(raw):
+[?2004l[?2004h>     """The `limit` query parameter: an integer from 1 to MAX_LIMIT, DEFAULT_LIMIT when absent."""
+[?2004l[?2004h>     if raw is None:
+[?2004l[?2004h>         return DEFAULT_LIMIT
+[?2004l[?2004h>     if not _DIGITS.fullmatch(raw) or not 1 <= int(raw) <= MAX_LIMIT:
+[?2004l[?2004h>         raise BadRequest(f"limit must be an integer from 1 to {MAX_LIMIT}")
+[?2004l[?2004h>     return int(raw)
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def encode_cursor(row):
+[?2004l[?2004h>     """Encode a cursor for the page after `row` (the last row of the current page).
+[?2004l[?2004h> 
+[?2004l[?2004h>     The cursor contains the `created_at` timestamp and the `id` of the row,
+[?2004l[?2004h>     concatenated with a pipe character.  The string is then base64‑url
+[?2004l[?2004h>     encoded without padding to keep it opaque.
+[?2004l[?2004h>     """
+[?2004l[?2004h>     raw = f"{row['created_at']}|{row['id']}"
+[?2004l[?2004h>     return base64.urlsafe_b64encode(raw.encode("ascii")).decode("ascii").rstrip("=")
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def decode_cursor(raw):
+[?2004l[?2004h>     """Parse the `cursor` query parameter; ``None`` when absent.
+[?2004l[?2004h> 
+[?2004l[?2004h>     The cursor is expected to be the base64‑url encoding of
+[?2004l[?2004h>     "<timestamp>|<id>".  A malformed cursor results in a ``400``.
+[?2004l[?2004h>     """
+[?2004l[?2004h>     if raw is None:
+[?2004l[?2004h>         return None
+[?2004l[?2004h>     try:
+[?2004l[?2004h>         text = base64.urlsafe_b64decode((raw + "=" * (-len(raw) % 4)).encode("ascii")).decode("ascii")
+[?2004l[?2004h>     except (ValueError, binascii.Error, UnicodeError):
+[?2004l[?2004h>         raise BadRequest("invalid cursor") from None
+[?2004l[?2004h>     try:
+[?2004l[?2004h>         ts, id_part = text.split("|", 1)
+[?2004l[?2004h>     except ValueError:
+[?2004l[?2004h>         raise BadRequest("invalid cursor") from None
+[?2004l[?2004h>     if not _TIMESTAMP.fullmatch(ts) or not _DIGITS.fullmatch(id_part):
+[?2004l[?2004h>         raise BadRequest("invalid cursor")
+[?2004l[?2004h>     return Cursor(created_at=ts, id=int(id_part))
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def paginate(con, columns, table, limit, cursor, where="", params=()):
+[?2004l[?2004h>     """One page of `SELECT columns FROM table [WHERE where]`, newest first.
+[?2004l[?2004h> 
+[?2004l[?2004h>     Returns (rows, next_cursor); next_cursor is None on the last page.
+[?2004l[?2004h>     """
+[?2004l[?2004h>     clauses = [where] if where else []
+[?2004l[?2004h>     args = list(params)
+[?2004l[?2004h>     if cursor is not None:
+[?2004l[?2004h>         # (created_at < cursor) OR (created_at = cursor AND id < cursor.id)
+[?2004l[?2004h>         clauses.append("(created_at < ?) OR (created_at = ? AND id < ?)")
+[?2004l[?2004h>         args.extend([cursor.created_at, cursor.created_at, cursor.id])
+[?2004l[?2004h>     sql = f"SELECT {columns} FROM {table}"
+[?2004l[?2004h>     if clauses:
+[?2004l[?2004h>         sql += " WHERE " + " AND ".join(f"({c})" for c in clauses)
+[?2004l[?2004h>     sql += " ORDER BY created_at DESC, id DESC LIMIT ?"
+[?2004l[?2004h>     args.append(limit)
+[?2004l[?2004h>     rows = con.execute(sql, args).fetchall()
+[?2004l[?2004h>     next_cursor = encode_cursor(rows[-1]) if len(rows) == limit else None
+[?2004l[?2004h>     return rows, next_cursor
+[?2004l[?2004h> PY
+[?2004l[?2004hroot@d729ffce-f3f1-4d94-8061-5ea6fbde87a4:/app# cat > orders_service/queries.py <<'PY'
+[?2004l[?2004h> """Queries behind the customer views (account page, support tool)."""
+[?2004l[?2004h> from .db import ORDER_COLUMNS
+[?2004l[?2004h> from .pagination import encode_cursor
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def customer_exists(con, customer_id):
+[?2004l[?2004h>     return con.execute("SELECT 1 FROM customers WHERE id = ?", (customer_id,)).fetchone() is not None
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def customer_orders_page(con, customer_id, limit, cursor):
+[?2004l[?2004h>     """One page of a customer's orders, newest first. Returns (rows, next_cursor).
+[?2004l[?2004h> 
+[?2004l[?2004h>     The pagination logic mirrors :func:`pagination.paginate` but forces SQLite to use the
+[?2004l[?2004h>     ``orders_customer`` index (customer_id, created_at) for efficiency on large accounts.
+[?2004l[?2004h>     It now uses the composite cursor (created_at, id) to correctly handle rows that share the
+[?2004l[?2004h>     same timestamp.
+[?2004l[?2004h>     """
+[?2004l[?2004h>     sql = f"SELECT {ORDER_COLUMNS} FROM orders INDEXED BY orders_customer WHERE customer_id = ?"
+[?2004l[?2004h>     args = [customer_id]
+[?2004l[?2004h>     if cursor is not None:
+[?2004l[?2004h>         sql += " AND ((created_at < ?) OR (created_at = ? AND id < ?))"
+[?2004l[?2004h>         args.extend([cursor.created_at, cursor.created_at, cursor.id])
+[?2004l[?2004h>     sql += " ORDER BY created_at DESC, id DESC LIMIT ?"
+[?2004l[?2004h>     args.append(limit)
+[?2004l[?2004h>     rows = con.execute(sql, args).fetchall()
+[?2004l[?2004h>     next_cursor = encode_cursor(rows[-1]) if len(rows) == limit else None
+[?2004l[?2004h>     return rows, next_cursor
+[?2004l[?2004h> PY
+[?2004l[?2004hroot@d729ffce-f3f1-4d94-8061-5ea6fbde87a4:/app# pytest -q tests || true
+[?2004l
+============================================================================ ERRORS ============================================================================
+[31m[1m______________________________________________________________ ERROR collecting tests/test_api.py ______________________________________________________________[0m
+[31mImportError while importing test module '/app/tests/test_api.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_api.py:8: in <module>
+    from orders_service import create_app
+E   ModuleNotFoundError: No module named 'orders_service'[0m
+[36m[1m=================================================================== short test summary info ====================================================================[0m
+[31mERROR[0m tests/test_api.py
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[31m[31m[1m1 error[0m[31m in 0.07s[0m[0m
+[?2004hroot@d729ffce-f3f1-4d94-8061-5ea6fbde87a4:/app# PYTHONPATH=. pytest -q tests || true
+[?2004l[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m                                                                                                                                           [100%][0m
+[32m[32m[1m14 passed[0m[32m in 2.11s[0m[0m
+[?2004hroot@d729ffce-f3f1-4d94-8061-5ea6fbde87a4:/app# python - <<'PY'
+[?2004l[?2004h> import subprocess, time, requests, json, os, signal
+[?2004l[?2004h> 
+[?2004l[?2004h> # Start the service in the background
+[?2004l[?2004h> port = 8081
+[?2004l[?2004h> proc = subprocess.Popen([
+[?2004l[?2004h>     'python', '-m', 'orders_service', '--db', 'data/orders.db', '--port', str(port)
+[?2004l[?2004h> ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+[?2004l[?2004h> # Give it a moment to start
+[?2004l[?2004h> time.sleep(1)
+[?2004l[?2004h> 
+[?2004l[?2004h> base = f'http://127.0.0.1:{port}'
+[?2004l[?2004h> # Get total count
+[?2004l[?2004h> resp = requests.get(f'{base}/orders/count')
+[?2004l[?2004h> count = resp.json()['count']
+[?2004l[?2004h> print('Count endpoint:', count)
+[?2004l[?2004h> 
+[?2004l[?2004h> # Walk through all orders with limit=200
+[?2004l[?2004h> limit = 200
+[?2004l[?2004h> cursor = None
+[?2004l[?2004h> seen = 0
+[?2004l[?2004h> while True:
+[?2004l[?2004h>     params = {'limit': str(limit)}
+[?2004l[?2004h>     if cursor:
+[?2004l[?2004h>         params['cursor'] = cursor
+[?2004l[?2004h>     r = requests.get(f'{base}/orders', params=params)
+[?2004l[?2004h>     data = r.json()
+[?2004l[?2004h>     orders = data['orders']
+[?2004l[?2004h>     seen += len(orders)
+[?2004l[?2004h>     cursor = data['next_cursor']
+[?2004l[?2004h>     if not cursor:
+[?2004l[?2004h>         break
+[?2004l[?2004h> print('Rows walked:', seen)
+[?2004l[?2004h> assert seen == count, f'Walked {seen} vs count {count}'
+[?2004l[?2004h> 
+[?2004l[?2004h> # Clean up service
+[?2004l[?2004h> os.kill(proc.pid, signal.SIGTERM)
+[?2004l[?2004h> proc.wait()
+[?2004l[?2004h> PY
+[?2004lTraceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+ModuleNotFoundError: No module named 'requests'
+[?2004hroot@d729ffce-f3f1-4d94-8061-5ea6fbde87a4:/app# python - <<'PY'
+[?2004l[?2004h> import subprocess, time, os, signal, json, urllib.request, urllib.parse
+[?2004l[?2004h> 
+[?2004l[?2004h> port = 8081
+[?2004l[?2004h> proc = subprocess.Popen([
+[?2004l[?2004h>     'python', '-m', 'orders_service', '--db', 'data/orders.db', '--port', str(port)
+[?2004l[?2004h> ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+[?2004l[?2004h> # give the server a moment to start
+[?2004l[?2004h> time.sleep(1)
+[?2004l[?2004h> 
+[?2004l[?2004h> base = f'http://127.0.0.1:{port}'
+[?2004l[?2004h> 
+[?2004l[?2004h> # helper to perform GET and decode JSON
+[?2004l[?2004h> def get_json(path, params=None):
+[?2004l[?2004h>     url = f"{base}{path}"
+[?2004l[?2004h>     if params:
+[?2004l[?2004h>         url += '?' + urllib.parse.urlencode(params)
+[?2004l[?2004h>     with urllib.request.urlopen(url) as resp:
+[?2004l[?2004h>         return json.load(resp)
+[?2004l[?2004h> 
+[?2004l[?2004h> # 1. total count
+[?2004l[?2004h> count_data = get_json('/orders/count')
+[?2004l[?2004h> count = count_data['count']
+[?2004l[?2004h> print('Count endpoint:', count)
+[?2004l[?2004h> 
+[?2004l[?2004h> # 2. walk through orders
+[?2004l[?2004h> limit = 200
+[?2004l[?2004h> cursor = None
+[?2004l[?2004h> seen = 0
+[?2004l[?2004h> while True:
+[?2004l[?2004h>     params = {'limit': str(limit)}
+[?2004l[?2004h>     if cursor:
+[?2004l[?2004h>         params['cursor'] = cursor
+[?2004l[?2004h>     page = get_json('/orders', params)
+[?2004l[?2004h>     orders = page['orders']
+[?2004l[?2004h>     seen += len(orders)
+[?2004l[?2004h>     cursor = page['next_cursor']
+[?2004l[?2004h>     if not cursor:
+[?2004l[?2004h>         break
+[?2004l[?2004h> print('Rows walked:', seen)
+[?2004l[?2004h> assert seen == count, f'Walked {seen} vs count {count}'
+[?2004l[?2004h> 
+[?2004l[?2004h> # cleanup
+[?2004l[?2004h> os.kill(proc.pid, signal.SIGTERM)
+[?2004l[?2004h> proc.wait()
+[?2004l[?2004h> PY
+[?2004lCount endpoint: 48213
+Rows walked: 48213
+[?2004hroot@d729ffce-f3f1-4d94-8061-5ea6fbde87a4:/app# 

@@ -6,16 +6,19 @@ Six readouts are checked against reference values computed at authoring time by 
 (tests/expected/<set>.json, made by submission/authoring/ab-test-reanalysis/gen_data.py with ref_a.py):
   1. /app/output/result.json, the agent's regenerated readout of the visible experiment (/app/data);
   2. the agent's command `python3 -m abtest.report --data <dir> --out <file>`, run as uid 1001 from a copy of /app, on
-     five hidden experiments of the same layout (h_null, h_pos, h_srm, h_bots, h_twin), each capped at RUN_CAP_SEC.
+     five hidden experiments of the same layout (h_null, h_pos, h_srm, h_plain, h_neg), each capped at RUN_CAP_SEC.
+     Each hidden folder holds the four files of FILES, copied byte for byte (gzip-compressed, as in /app/data), and
+     nothing else; the folders are named exp1 to exp5, so a run never sees which set it reads.
 A readout passes when: n_users, pageviews and clicks per arm are exact; ctr per arm and diff are within CTR_TOL;
 srm_p is within SRM_REL relative (or both are below SRM_TINY); srm_flag and decision are exact; each bound of ci_95 is
 within BAND reference half-widths of the reference (delta-method) bound. Reward 1 only if all six pass and every run
 exits 0 in time. The band and the reasons for it: submission/docs/ab-test-reanalysis/DESIGN.md. Agent code is never
-imported here; its output is read through kit.read_as_runner and parsed as JSON only.
+imported here; its output is read through kit.read_as_runner and parsed as JSON only. Before anything runs, every
+file of tests/SHA256SUMS is verified, and the list must be exactly the 20 hidden inputs and the 6 expected readouts.
 Local authoring: KIT_LOCAL=1 KIT_SUBMISSION=<app copy> KIT_LOGS=<dir> KIT_WORK=<dir> GRADE_TESTS_DIR=<tests dir>
 GRADE_PYTHON=<interpreter with the task's packages> (GRADE_PYTHON is honoured only in local mode).
 """
-import gzip, hashlib, json, math, os, shutil
+import hashlib, json, math, os, shutil
 
 TESTS = kit.TESTS_DIR
 PYTHON = os.environ.get("GRADE_PYTHON", "python3") if kit.LOCAL else "python3"
@@ -24,14 +27,15 @@ CTR_TOL = 1e-9        # ctr per arm and diff, absolute
 SRM_REL = 0.01        # srm_p, relative
 SRM_TINY = 1e-12      # both below this: equal
 RUN_CAP_SEC = 120     # one run of the agent's command on one hidden set; DESIGN.md "Timings and caps"
-HIDDEN = ("h_null", "h_pos", "h_srm", "h_bots", "h_twin")
-FILES = ("assignments.csv", "users.csv", "pageviews.csv")
+HIDDEN = ("h_null", "h_pos", "h_srm", "h_plain", "h_neg")
+FILES = ("assignments.csv.gz", "bot_flags.csv.gz", "pageviews.csv.gz", "module_clicks.csv.gz")
 ARMS = ("A", "B")
 
 
 def check_sums():
-    """Hidden inputs and expected values must be byte-identical to what was committed (tests/SHA256SUMS)."""
-    n = 0
+    """Hidden inputs and expected values must be byte-identical to what was committed (tests/SHA256SUMS), and the list
+    must cover exactly the inputs and answers this grader reads: hidden/<set>/<file> and expected/<readout>.json."""
+    seen = set()
     with open(os.path.join(TESTS, "SHA256SUMS"), encoding="utf-8") as f:
         for line in f:
             if not line.strip():
@@ -40,10 +44,13 @@ def check_sums():
             with open(os.path.join(TESTS, rel), "rb") as g:
                 if hashlib.sha256(g.read()).hexdigest() != digest:
                     raise RuntimeError(f"SHA256 mismatch for tests/{rel}")
-            n += 1
-    if n == 0:
-        raise RuntimeError("SHA256SUMS lists no files")
-    kit.log(f"SHA256SUMS: {n} files verified")
+            seen.add(rel)
+    want = {f"hidden/{h}/{f}" for h in HIDDEN for f in FILES} | {f"expected/{s}.json" for s in ("visible",) + HIDDEN}
+    if seen != want:
+        raise RuntimeError(f"SHA256SUMS does not list exactly the graded files: missing {sorted(want - seen)[:5]}, "
+                           f"extra {sorted(seen - want)[:5]}")
+    kit.log(f"SHA256SUMS: {len(seen)} files verified ({len(HIDDEN) * len(FILES)} hidden inputs, "
+            f"{len(HIDDEN) + 1} expected readouts)")
 
 
 def _read(path):
@@ -178,14 +185,13 @@ def compare(prefix, raw, exp):
     return ok, m
 
 
-def unpack_hidden(name):
-    """tests/hidden/<name>/*.csv.gz -> plain CSV files in a root-only scratch folder. Inputs only, never answers."""
-    dst = os.path.join(kit.SCRATCH, "plain", name)
+def copy_hidden(name):
+    """tests/hidden/<name>/<FILES> -> the same bytes in a root-only scratch folder, exactly those files and nothing
+    else (the .csv.gz files are staged as they are, the layout of /app/data). Inputs only, never answers."""
+    dst = os.path.join(kit.SCRATCH, "inputs", name)
     os.makedirs(dst)
     for f in FILES:
-        with gzip.open(os.path.join(TESTS, "hidden", name, f + ".gz"), "rb") as src, \
-                open(os.path.join(dst, f), "wb") as out:
-            shutil.copyfileobj(src, out)
+        shutil.copyfile(os.path.join(TESTS, "hidden", name, f), os.path.join(dst, f))
     return dst
 
 
@@ -211,7 +217,7 @@ def grade():
 
     # 2. the agent's command on each hidden experiment
     for i, name in enumerate(HIDDEN, 1):      # neutral folder names: the run never sees which set it is
-        inp = kit.stage_for_runner(unpack_hidden(name), f"exp{i}")
+        inp = kit.stage_for_runner(copy_hidden(name), f"exp{i}")
         out = kit.stage_for_runner(None, f"out{i}")
         res = kit.run_as_runner([PYTHON, "-m", "abtest.report", "--data", inp, "--out", os.path.join(out, "result.json")],
                                 cwd=sub, timeout=RUN_CAP_SEC)

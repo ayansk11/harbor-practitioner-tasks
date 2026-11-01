@@ -2,14 +2,15 @@
 import argparse
 import os
 
+from churn.attributes import days_since_last_login, plan
 from churn.encoding import district_encoding
-from churn.impute import fill_app_minutes
 from churn.extract import load_extract
+from churn.impute import fill_app_minutes
 from churn.status import latest_status
 from churn.windows import activity_features, tenure_days
 
 FEATURE_COLUMNS = ["orders_7d", "orders_30d", "spend_30d_cents", "tickets_30d", "days_since_last_order",
-                   "tenure_days", "status", "app_minutes_7d", "te_district"]
+                   "tenure_days", "status", "plan", "days_since_last_login", "app_minutes_7d", "te_district"]
 
 
 def build(data_dir):
@@ -18,6 +19,8 @@ def build(data_dir):
     feats = activity_features(points, t["orders"], t["tickets"])
     feats["tenure_days"] = tenure_days(points, t["customers"])
     feats["status"] = latest_status(points, t["status_snapshots"])
+    feats["plan"] = plan(points, t["customers"])
+    feats["days_since_last_login"] = days_since_last_login(points, t["customers"])
     feats["app_minutes_7d"] = fill_app_minutes(points)
     feats["te_district"] = district_encoding(points, t["labels"], t["customers"])
     return feats[["customer_id", "as_of"] + FEATURE_COLUMNS]

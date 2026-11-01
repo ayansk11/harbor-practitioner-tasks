@@ -1,0 +1,18 @@
+{
+    "task": {
+        "path": "<submission>/jobs/feature-leakage-churn/package-v3/feature-leakage-churn"
+    },
+    "trial_name": "feature-leakage-churn__7vhhJvH",
+    "trials_dir": "<submission>/jobs/feature-leakage-churn/feature-leakage-churn-drop_plan-v3",
+    "environment_build_timeout_multiplier": 3.0,
+    "agent": {
+        "name": "oracle",
+        "env": {
+            "SOLUTION": "drop_plan"
+        }
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "3e940fc3-1d54-4ab8-8db8-00524dd22e00"
+}

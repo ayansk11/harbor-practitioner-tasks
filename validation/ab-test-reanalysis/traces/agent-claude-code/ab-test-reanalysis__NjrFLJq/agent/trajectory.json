@@ -1,0 +1,886 @@
+{
+  "schema_version": "ATIF-v1.7",
+  "session_id": "0eee2780-073e-4f08-affb-068b477e7040",
+  "agent": {
+    "name": "claude-code",
+    "version": "2.1.316",
+    "model_name": "claude-opus-5-5",
+    "extra": {
+      "cwds": [
+        "/app"
+      ],
+      "git_branches": [
+        "HEAD"
+      ]
+    }
+  },
+  "steps": [
+    {
+      "step_id": 1,
+      "timestamp": "2026-10-31T09:30:28.080Z",
+      "source": "user",
+      "message": "# EXP-2291: is \"related items v2\" a win?\n\nThe readout of experiment EXP-2291 (`/app/output/result.json`) came back `\"invalid\"`: the pipeline's sample ratio\ncheck failed, with about 5% fewer users in B than in A. The PM does not trust that verdict (`/app/PM_NOTE.md`): the\nassignment dashboard shows a clean 50/50 split, the team dashboard shows B's click-through 12.3% above A's, and the PM\nwants to turn B on for everyone on Monday.\n\nFind out what this experiment really shows. Fix the readout pipeline in `/app/abtest` so that its readout answers the\nplan's question as the plan defines it, and regenerate `/app/output/result.json` with it from `/app/data`.\n- `/app/EXPERIMENT.md`, the analysis plan agreed before launch, defines the readout: who is in the experiment, what\n  counts as a click, the interval, the sample ratio check and the decision.\n- `/app/docs` holds the data platform's documentation of how each export file and column is produced, which applies\n  to every export of this layout, and the launch record of EXP-2291. Both are accurate.\n- Everything else (the pipeline's code, comments and README, the dashboards in the PM's note, the current readout)\n  is not authoritative: it may be wrong, out of date, or measure something other than the plan's quantities.\n\nCheck the code, the documentation and the data against each other: a readout is right only if every number in it\nmeasures what the plan says it measures. If the experiment itself cannot be read, the readout says so with the\ndecision `\"invalid\"`. Put a short explanation for the PM in the readout as `notes`, a list of strings (not graded).\n\nThe pipeline is reused for every experiment the platform exports in this layout (other experiments differ in what\neach arm shows, and in their traffic, bots and accounts), so this command must give the right readout for any such\nexport folder:\n\n    cd /app && python -m abtest.report --data <folder> --out <file>\n\nHow the result is checked:\n- `/app/output/result.json` must be the readout of `/app/data`, with the keys and types of `/app/EXPERIMENT.md`\n  section 9 (extra keys are fine).\n- A copy of `/app` (at another path) runs the command above, from the copy's top folder, as an unprivileged user\n  without network access, on five other export folders with the same four `.csv.gz` files (each at most 50,000\n  assigned users, 500,000 pageview rows and 100,000 module_clicks rows). Each run must exit with status 0 within 120\n  seconds and write its `--out` file; plan for one CPU and 2 GiB of memory. Do not rely on absolute paths under\n  `/app` or on `/app/data` being there.\n- The grading machine has the Python packages this container started with (numpy, pandas and scipy, with their\n  dependencies) and nothing else; anything installed outside `/app` is not there.\n- Each of the six readouts (`/app/output/result.json` and the five runs) is compared with the reference readout of\n  the same export: `n_users`, `pageviews` and `clicks` exactly; `ctr` and `diff` within 1e-9; `srm_p` within 1%\n  relative (or both below 1e-12); `srm_flag` and `decision` exactly; each bound of `ci_95` within 0.25 times the\n  reference interval's half-width of the reference bound. The reference interval is the plan's delta method (section\n  5a); its bootstrap and cluster-robust options also land within this tolerance.\n- The task passes only if all six readouts pass.\n\nOnly /app is kept when we grade: folders named `data`, `__pycache__` or `.venv` anywhere under /app are dropped, and the packages already installed are available.\n",
+      "extra": {
+        "is_sidechain": false
+      }
+    },
+    {
+      "step_id": 2,
+      "timestamp": "2026-10-31T09:30:29.537Z",
+      "source": "agent",
+      "model_name": "claude-opus-5-5",
+      "message": "",
+      "tool_calls": [
+        {
+          "tool_call_id": "toolu_019K2MxaXLQfjDMkajjceTSJ",
+          "function_name": "Bash",
+          "arguments": {
+            "command": "cd /app; find . -type f -not -path '*/data/*' | head -50; cat EXPERIMENT.md PM_NOTE.md; ls -la data docs"
+          },
+          "extra": {
+            "raw_arguments": {
+              "command": "cd /app; find . -type f -not -path '*/data/*' | head -50; cat EXPERIMENT.md PM_NOTE.md; ls -la data docs"
+            },
+            "tool_use_name": "Bash"
+          }
+        }
+      ],
+      "observation": {
+        "results": [
+          {
+            "source_call_id": "toolu_019K2MxaXLQfjDMkajjceTSJ",
+            "content": "./EXPERIMENT.md\n./PM_NOTE.md\n./README.md\n./abtest/__init__.py\n./abtest/filters.py\n./abtest/load.py\n./abtest/report.py\n./abtest/stats.py\n./docs/BOT_SCREENING.md\n./docs/DATA_DICTIONARY.md\n./docs/LAUNCH_EXP-2291.md\n./docs/TRACKING.md\n./output/result.json\n# EXP-2291 analysis plan (\"related items v2\")\n\nWritten and agreed before launch (2026-08-25). The readout must follow this plan. The same plan applies to every\nexperiment exported in this layout.\n\n## 1. Question\nDoes variant B (the redesigned related-items module) change click-through on product pages compared with A (the\ncurrent module)?\n\n## 2. Randomization\n- The unit of randomization is the **user**. The assignment service randomizes each user once, 50/50, by a hash of\n  the experiment's salt and the user id, at the user's first eligible product pageview; the user keeps that variant\n  for the whole experiment.\n- `assignments` logs it. The logger retries, so a row can appear more than once, exactly repeated; an exact repeat of\n  a row counts once. A user never has two different assignment rows.\n\n## 3. Population\n- The experiment is the users the assignment service randomized; a user whose variant was not set by the\n  randomization is not in the experiment.\n- Bot traffic is excluded from both arms, before anything is counted: a user is excluded if the platform's bot\n  screening flagged the user by a rule that looks only at who the client is (its user agent, network or device),\n  whenever that flag was raised. No user is excluded for anything the user did during the experiment.\n- `n_users` of an arm = the users of the experiment in that arm after the bot exclusion, users with no pageview\n  included.\n- Only pageviews at or after the user's `assigned_at` count. A pageview with `ts` strictly earlier than `assigned_at`\n  is dropped; one with `ts` equal to `assigned_at` counts.\n- Timestamps are ISO 8601 with a `Z` or a `+hh:mm` / `-hh:mm` offset (both forms occur in the same file). Compare\n  instants, not text.\n\n## 4. Metric\n- A counted pageview is a pageview of a user counted in `n_users`, at or after that user's `assigned_at` (section 3).\n- A counted pageview is clicked when the user opened the page of at least one related product from the module on it;\n  opening two product pages from one pageview is still one clicked pageview.\n- `clicks` of an arm = the number of its clicked counted pageviews; `pageviews` = the number of its counted pageviews.\n- CTR of an arm = clicks / pageviews over the whole arm (a ratio of sums, not the average of per-user CTRs).\n- `diff` = CTR_B - CTR_A (absolute, not relative).\n\n## 5. Uncertainty\n- The 95% confidence interval for `diff` must reflect that users, not pageviews, were randomized: the pageviews of one\n  user are not independent of each other. Any one of these is acceptable:\n  - (a) the delta method for each arm's ratio of per-user sums (the sum of the users' clicks over the sum of the\n    users' counted pageviews), treating the arms as independent;\n  - (b) a user-level bootstrap: resample users with replacement within each arm, at least 2,000 resamples, percentile\n    interval;\n  - (c) cluster-robust (CR1) standard errors clustered by user, from a pageview-level regression of the clicked\n    indicator (section 4) on an indicator of B.\n- An interval that treats each pageview as an independent trial is not acceptable.\n\n## 6. Sample ratio mismatch (SRM) check\n- Pearson chi-square goodness-of-fit test of (`n_users` A, `n_users` B) of section 3 against a 50/50 split: 1 degree\n  of freedom, no continuity correction. `srm_p` is its p-value; `srm_flag` = `srm_p` < 0.001.\n- An SRM means the arms, as counted, are not the groups the randomization made. Find the cause before reading\n  anything else: if the assignment itself is unbalanced, the experiment cannot be read; if a step of the analysis\n  made the imbalance, that step is wrong: fix it and check again.\n\n## 7. Decision rule (apply in this order)\n1. `srm_flag` is true: `\"invalid\"` (the assignment is broken; do not read the result, investigate).\n2. The lower bound of the 95% CI is above 0: `\"ship\"`.\n3. Otherwise: `\"no_ship\"`.\n\n## 8. Input files (one folder per experiment)\nFour gzip-compressed CSV files with a header row: `assignments.csv.gz`, `bot_flags.csv.gz`, `pageviews.csv.gz` and\n`module_clicks.csv.gz`. Their rows and columns are as the data platform documents them in `docs/DATA_DICTIONARY.md`.\n\n## 9. Output: `result.json`\nA JSON object with at least these keys (more keys are fine):\n\n| Key | Type | Meaning |\n|---|---|---|\n| `n_users` | object `{\"A\": int, \"B\": int}` | section 3 |\n| `pageviews` | object `{\"A\": int, \"B\": int}` | section 4 |\n| `clicks` | object `{\"A\": int, \"B\": int}` | section 4 |\n| `ctr` | object `{\"A\": number, \"B\": number}` | section 4 |\n| `diff` | number | CTR_B - CTR_A |\n| `ci_95` | array `[lower, upper]` | section 5 |\n| `srm_p` | number | section 6 |\n| `srm_flag` | boolean | section 6 |\n| `decision` | `\"ship\"`, `\"no_ship\"` or `\"invalid\"` | section 7 |\n# Note from Priya (PM, product pages), Wednesday 2026-09-16\n\n**Subject:** EXP-2291 readout: please re-check before the launch on Monday\n\nThe readout in `output/result.json` came back \"invalid\": the sample ratio check failed, with 16,570 users in A and\n15,722 in B (about 5% fewer in B). That verdict does not match the dashboards:\n- the assignment dashboard shows 16,935 users in A and 17,165 in B: a clean 50/50 split (49.7% / 50.3%);\n- the team dashboard, which reads the same export with no filters (every pageview of every assigned user), shows\n  click-through of 11.03% in B against 9.82% in A: B is 12.3% higher.\n\nPlan: turn B on for everyone on Monday 2026-09-21 if B really wins. Requests: check the analysis against the plan in\n`EXPERIMENT.md`, fix whatever is wrong, and put the corrected readout in `output/result.json`. The same pipeline will\nrun the next experiments, so the pipeline needs a proper fix, not just this one file.\ndata:\ntotal 4888\ndrwxr-xr-x 2 root root     128 Oct 31 08:38 .\ndrwxr-xr-x 1 root root     146 Oct 31 08:38 ..\n-rw-r--r-- 1 root root  310712 Jan  1  1970 assignments.csv.gz\n-rw-r--r-- 1 root root   15009 Jan  1  1970 bot_flags.csv.gz\n-rw-r--r-- 1 root root  680612 Jan  1  1970 module_clicks.csv.gz\n-rw-r--r-- 1 root root 3992737 Jan  1  1970 pageviews.csv.gz\n\ndocs:\ntotal 16\ndrwxr-xr-x 2 root root  121 Oct 31 08:38 .\ndrwxr-xr-x 1 root root  146 Oct 31 08:38 ..\n-rw-r--r-- 1 root root 1151 Jan  1  1970 BOT_SCREENING.md\n-rw-r--r-- 1 root root 3086 Jan  1  1970 DATA_DICTIONARY.md\n-rw-r--r-- 1 root root 1030 Jan  1  1970 LAUNCH_EXP-2291.md\n-rw-r--r-- 1 root root 1803 Jan  1  1970 TRACKING.md\n\n[stdout]\n./EXPERIMENT.md\n./PM_NOTE.md\n./README.md\n./abtest/__init__.py\n./abtest/filters.py\n./abtest/load.py\n./abtest/report.py\n./abtest/stats.py\n./docs/BOT_SCREENING.md\n./docs/DATA_DICTIONARY.md\n./docs/LAUNCH_EXP-2291.md\n./docs/TRACKING.md\n./output/result.json\n# EXP-2291 analysis plan (\"related items v2\")\n\nWritten and agreed before launch (2026-08-25). The readout must follow this plan. The same plan applies to every\nexperiment exported in this layout.\n\n## 1. Question\nDoes variant B (the redesigned related-items module) change click-through on product pages compared with A (the\ncurrent module)?\n\n## 2. Randomization\n- The unit of randomization is the **user**. The assignment service randomizes each user once, 50/50, by a hash of\n  the experiment's salt and the user id, at the user's first eligible product pageview; the user keeps that variant\n  for the whole experiment.\n- `assignments` logs it. The logger retries, so a row can appear more than once, exactly repeated; an exact repeat of\n  a row counts once. A user never has two different assignment rows.\n\n## 3. Population\n- The experiment is the users the assignment service randomized; a user whose variant was not set by the\n  randomization is not in the experiment.\n- Bot traffic is excluded from both arms, before anything is counted: a user is excluded if the platform's bot\n  screening flagged the user by a rule that looks only at who the client is (its user agent, network or device),\n  whenever that flag was raised. No user is excluded for anything the user did during the experiment.\n- `n_users` of an arm = the users of the experiment in that arm after the bot exclusion, users with no pageview\n  included.\n- Only pageviews at or after the user's `assigned_at` count. A pageview with `ts` strictly earlier than `assigned_at`\n  is dropped; one with `ts` equal to `assigned_at` counts.\n- Timestamps are ISO 8601 with a `Z` or a `+hh:mm` / `-hh:mm` offset (both forms occur in the same file). Compare\n  instants, not text.\n\n## 4. Metric\n- A counted pageview is a pageview of a user counted in `n_users`, at or after that user's `assigned_at` (section 3).\n- A counted pageview is clicked when the user opened the page of at least one related product from the module on it;\n  opening two product pages from one pageview is still one clicked pageview.\n- `clicks` of an arm = the number of its clicked counted pageviews; `pageviews` = the number of its counted pageviews.\n- CTR of an arm = clicks / pageviews over the whole arm (a ratio of sums, not the average of per-user CTRs).\n- `diff` = CTR_B - CTR_A (absolute, not relative).\n\n## 5. Uncertainty\n- The 95% confidence interval for `diff` must reflect that users, not pageviews, were randomized: the pageviews of one\n  user are not independent of each other. Any one of these is acceptable:\n  - (a) the delta method for each arm's ratio of per-user sums (the sum of the users' clicks over the sum of the\n    users' counted pageviews), treating the arms as independent;\n  - (b) a user-level bootstrap: resample users with replacement within each arm, at least 2,000 resamples, percentile\n    interval;\n  - (c) cluster-robust (CR1) standard errors clustered by user, from a pageview-level regression of the clicked\n    indicator (section 4) on an indicator of B.\n- An interval that treats each pageview as an independent trial is not acceptable.\n\n## 6. Sample ratio mismatch (SRM) check\n- Pearson chi-square goodness-of-fit test of (`n_users` A, `n_users` B) of section 3 against a 50/50 split: 1 degree\n  of freedom, no continuity correction. `srm_p` is its p-value; `srm_flag` = `srm_p` < 0.001.\n- An SRM means the arms, as counted, are not the groups the randomization made. Find the cause before reading\n  anything else: if the assignment itself is unbalanced, the experiment cannot be read; if a step of the analysis\n  made the imbalance, that step is wrong: fix it and check again.\n\n## 7. Decision rule (apply in this order)\n1. `srm_flag` is true: `\"invalid\"` (the assignment is broken; do not read the result, investigate).\n2. The lower bound of the 95% CI is above 0: `\"ship\"`.\n3. Otherwise: `\"no_ship\"`.\n\n## 8. Input files (one folder per experiment)\nFour gzip-compressed CSV files with a header row: `assignments.csv.gz`, `bot_flags.csv.gz`, `pageviews.csv.gz` and\n`module_clicks.csv.gz`. Their rows and columns are as the data platform documents them in `docs/DATA_DICTIONARY.md`.\n\n## 9. Output: `result.json`\nA JSON object with at least these keys (more keys are fine):\n\n| Key | Type | Meaning |\n|---|---|---|\n| `n_users` | object `{\"A\": int, \"B\": int}` | section 3 |\n| `pageviews` | object `{\"A\": int, \"B\": int}` | section 4 |\n| `clicks` | object `{\"A\": int, \"B\": int}` | section 4 |\n| `ctr` | object `{\"A\": number, \"B\": number}` | section 4 |\n| `diff` | number | CTR_B - CTR_A |\n| `ci_95` | array `[lower, upper]` | section 5 |\n| `srm_p` | number | section 6 |\n| `srm_flag` | boolean | section 6 |\n| `decision` | `\"ship\"`, `\"no_ship\"` or `\"invalid\"` | section 7 |\n# Note from Priya (PM, product pages), Wednesday 2026-09-16\n\n**Subject:** EXP-2291 readout: please re-check before the launch on Monday\n\nThe readout in `output/result.json` came back \"invalid\": the sample ratio check failed, with 16,570 users in A and\n15,722 in B (about 5% fewer in B). That verdict does not match the dashboards:\n- the assignment dashboard shows 16,935 users in A and 17,165 in B: a clean 50/50 split (49.7% / 50.3%);\n- the team dashboard, which reads the same export with no filters (every pageview of every assigned user), shows\n  click-through of 11.03% in B against 9.82% in A: B is 12.3% higher.\n\nPlan: turn B on for everyone on Monday 2026-09-21 if B really wins. Requests: check the analysis against the plan in\n`EXPERIMENT.md`, fix whatever is wrong, and put the corrected readout in `output/result.json`. The same pipeline will\nrun the next experiments, so the pipeline needs a proper fix, not just this one file.\ndata:\ntotal 4888\ndrwxr-xr-x 2 root root     128 Oct 31 08:38 .\ndrwxr-xr-x 1 root root     146 Oct 31 08:38 ..\n-rw-r--r-- 1 root root  310712 Jan  1  1970 assignments.csv.gz\n-rw-r--r-- 1 root root   15009 Jan  1  1970 bot_flags.csv.gz\n-rw-r--r-- 1 root root  680612 Jan  1  1970 module_clicks.csv.gz\n-rw-r--r-- 1 root root 3992737 Jan  1  1970 pageviews.csv.gz\n\ndocs:\ntotal 16\ndrwxr-xr-x 2 root root  121 Oct 31 08:38 .\ndrwxr-xr-x 1 root root  146 Oct 31 08:38 ..\n-rw-r--r-- 1 root root 1151 Jan  1  1970 BOT_SCREENING.md\n-rw-r--r-- 1 root root 3086 Jan  1  1970 DATA_DICTIONARY.md\n-rw-r--r-- 1 root root 1030 Jan  1  1970 LAUNCH_EXP-2291.md\n-rw-r--r-- 1 root root 1803 Jan  1  1970 TRACKING.md\n[metadata] {\"noOutputExpected\": false}",
+            "extra": {
+              "tool_result_metadata": {
+                "tool_use_result": {
+                  "stdout": "./EXPERIMENT.md\n./PM_NOTE.md\n./README.md\n./abtest/__init__.py\n./abtest/filters.py\n./abtest/load.py\n./abtest/report.py\n./abtest/stats.py\n./docs/BOT_SCREENING.md\n./docs/DATA_DICTIONARY.md\n./docs/LAUNCH_EXP-2291.md\n./docs/TRACKING.md\n./output/result.json\n# EXP-2291 analysis plan (\"related items v2\")\n\nWritten and agreed before launch (2026-08-25). The readout must follow this plan. The same plan applies to every\nexperiment exported in this layout.\n\n## 1. Question\nDoes variant B (the redesigned related-items module) change click-through on product pages compared with A (the\ncurrent module)?\n\n## 2. Randomization\n- The unit of randomization is the **user**. The assignment service randomizes each user once, 50/50, by a hash of\n  the experiment's salt and the user id, at the user's first eligible product pageview; the user keeps that variant\n  for the whole experiment.\n- `assignments` logs it. The logger retries, so a row can appear more than once, exactly repeated; an exact repeat of\n  a row counts once. A user never has two different assignment rows.\n\n## 3. Population\n- The experiment is the users the assignment service randomized; a user whose variant was not set by the\n  randomization is not in the experiment.\n- Bot traffic is excluded from both arms, before anything is counted: a user is excluded if the platform's bot\n  screening flagged the user by a rule that looks only at who the client is (its user agent, network or device),\n  whenever that flag was raised. No user is excluded for anything the user did during the experiment.\n- `n_users` of an arm = the users of the experiment in that arm after the bot exclusion, users with no pageview\n  included.\n- Only pageviews at or after the user's `assigned_at` count. A pageview with `ts` strictly earlier than `assigned_at`\n  is dropped; one with `ts` equal to `assigned_at` counts.\n- Timestamps are ISO 8601 with a `Z` or a `+hh:mm` / `-hh:mm` offset (both forms occur in the same file). Compare\n  instants, not text.\n\n## 4. Metric\n- A counted pageview is a pageview of a user counted in `n_users`, at or after that user's `assigned_at` (section 3).\n- A counted pageview is clicked when the user opened the page of at least one related product from the module on it;\n  opening two product pages from one pageview is still one clicked pageview.\n- `clicks` of an arm = the number of its clicked counted pageviews; `pageviews` = the number of its counted pageviews.\n- CTR of an arm = clicks / pageviews over the whole arm (a ratio of sums, not the average of per-user CTRs).\n- `diff` = CTR_B - CTR_A (absolute, not relative).\n\n## 5. Uncertainty\n- The 95% confidence interval for `diff` must reflect that users, not pageviews, were randomized: the pageviews of one\n  user are not independent of each other. Any one of these is acceptable:\n  - (a) the delta method for each arm's ratio of per-user sums (the sum of the users' clicks over the sum of the\n    users' counted pageviews), treating the arms as independent;\n  - (b) a user-level bootstrap: resample users with replacement within each arm, at least 2,000 resamples, percentile\n    interval;\n  - (c) cluster-robust (CR1) standard errors clustered by user, from a pageview-level regression of the clicked\n    indicator (section 4) on an indicator of B.\n- An interval that treats each pageview as an independent trial is not acceptable.\n\n## 6. Sample ratio mismatch (SRM) check\n- Pearson chi-square goodness-of-fit test of (`n_users` A, `n_users` B) of section 3 against a 50/50 split: 1 degree\n  of freedom, no continuity correction. `srm_p` is its p-value; `srm_flag` = `srm_p` < 0.001.\n- An SRM means the arms, as counted, are not the groups the randomization made. Find the cause before reading\n  anything else: if the assignment itself is unbalanced, the experiment cannot be read; if a step of the analysis\n  made the imbalance, that step is wrong: fix it and check again.\n\n## 7. Decision rule (apply in this order)\n1. `srm_flag` is true: `\"invalid\"` (the assignment is broken; do not read the result, investigate).\n2. The lower bound of the 95% CI is above 0: `\"ship\"`.\n3. Otherwise: `\"no_ship\"`.\n\n## 8. Input files (one folder per experiment)\nFour gzip-compressed CSV files with a header row: `assignments.csv.gz`, `bot_flags.csv.gz`, `pageviews.csv.gz` and\n`module_clicks.csv.gz`. Their rows and columns are as the data platform documents them in `docs/DATA_DICTIONARY.md`.\n\n## 9. Output: `result.json`\nA JSON object with at least these keys (more keys are fine):\n\n| Key | Type | Meaning |\n|---|---|---|\n| `n_users` | object `{\"A\": int, \"B\": int}` | section 3 |\n| `pageviews` | object `{\"A\": int, \"B\": int}` | section 4 |\n| `clicks` | object `{\"A\": int, \"B\": int}` | section 4 |\n| `ctr` | object `{\"A\": number, \"B\": number}` | section 4 |\n| `diff` | number | CTR_B - CTR_A |\n| `ci_95` | array `[lower, upper]` | section 5 |\n| `srm_p` | number | section 6 |\n| `srm_flag` | boolean | section 6 |\n| `decision` | `\"ship\"`, `\"no_ship\"` or `\"invalid\"` | section 7 |\n# Note from Priya (PM, product pages), Wednesday 2026-09-16\n\n**Subject:** EXP-2291 readout: please re-check before the launch on Monday\n\nThe readout in `output/result.json` came back \"invalid\": the sample ratio check failed, with 16,570 users in A and\n15,722 in B (about 5% fewer in B). That verdict does not match the dashboards:\n- the assignment dashboard shows 16,935 users in A and 17,165 in B: a clean 50/50 split (49.7% / 50.3%);\n- the team dashboard, which reads the same export with no filters (every pageview of every assigned user), shows\n  click-through of 11.03% in B against 9.82% in A: B is 12.3% higher.\n\nPlan: turn B on for everyone on Monday 2026-09-21 if B really wins. Requests: check the analysis against the plan in\n`EXPERIMENT.md`, fix whatever is wrong, and put the corrected readout in `output/result.json`. The same pipeline will\nrun the next experiments, so the pipeline needs a proper fix, not just this one file.\ndata:\ntotal 4888\ndrwxr-xr-x 2 root root     128 Oct 31 08:38 .\ndrwxr-xr-x 1 root root     146 Oct 31 08:38 ..\n-rw-r--r-- 1 root root  310712 Jan  1  1970 assignments.csv.gz\n-rw-r--r-- 1 root root   15009 Jan  1  1970 bot_flags.csv.gz\n-rw-r--r-- 1 root root  680612 Jan  1  1970 module_clicks.csv.gz\n-rw-r--r-- 1 root root 3992737 Jan  1  1970 pageviews.csv.gz\n\ndocs:\ntotal 16\ndrwxr-xr-x 2 root root  121 Oct 31 08:38 .\ndrwxr-xr-x 1 root root  146 Oct 31 08:38 ..\n-rw-r--r-- 1 root root 1151 Jan  1  1970 BOT_SCREENING.md\n-rw-r--r-- 1 root root 3086 Jan  1  1970 DATA_DICTIONARY.md\n-rw-r--r-- 1 root root 1030 Jan  1  1970 LAUNCH_EXP-2291.md\n-rw-r--r-- 1 root root 1803 Jan  1  1970 TRACKING.md",
+                  "stderr": "",
+                  "interrupted": false,
+                  "isImage": false,
+                  "noOutputExpected": false
+                },
+                "raw_tool_result": {
+                  "tool_use_id": "toolu_019K2MxaXLQfjDMkajjceTSJ",
+                  "type": "tool_result",
+                  "content": "./EXPERIMENT.md\n./PM_NOTE.md\n./README.md\n./abtest/__init__.py\n./abtest/filters.py\n./abtest/load.py\n./abtest/report.py\n./abtest/stats.py\n./docs/BOT_SCREENING.md\n./docs/DATA_DICTIONARY.md\n./docs/LAUNCH_EXP-2291.md\n./docs/TRACKING.md\n./output/result.json\n# EXP-2291 analysis plan (\"related items v2\")\n\nWritten and agreed before launch (2026-08-25). The readout must follow this plan. The same plan applies to every\nexperiment exported in this layout.\n\n## 1. Question\nDoes variant B (the redesigned related-items module) change click-through on product pages compared with A (the\ncurrent module)?\n\n## 2. Randomization\n- The unit of randomization is the **user**. The assignment service randomizes each user once, 50/50, by a hash of\n  the experiment's salt and the user id, at the user's first eligible product pageview; the user keeps that variant\n  for the whole experiment.\n- `assignments` logs it. The logger retries, so a row can appear more than once, exactly repeated; an exact repeat of\n  a row counts once. A user never has two different assignment rows.\n\n## 3. Population\n- The experiment is the users the assignment service randomized; a user whose variant was not set by the\n  randomization is not in the experiment.\n- Bot traffic is excluded from both arms, before anything is counted: a user is excluded if the platform's bot\n  screening flagged the user by a rule that looks only at who the client is (its user agent, network or device),\n  whenever that flag was raised. No user is excluded for anything the user did during the experiment.\n- `n_users` of an arm = the users of the experiment in that arm after the bot exclusion, users with no pageview\n  included.\n- Only pageviews at or after the user's `assigned_at` count. A pageview with `ts` strictly earlier than `assigned_at`\n  is dropped; one with `ts` equal to `assigned_at` counts.\n- Timestamps are ISO 8601 with a `Z` or a `+hh:mm` / `-hh:mm` offset (both forms occur in the same file). Compare\n  instants, not text.\n\n## 4. Metric\n- A counted pageview is a pageview of a user counted in `n_users`, at or after that user's `assigned_at` (section 3).\n- A counted pageview is clicked when the user opened the page of at least one related product from the module on it;\n  opening two product pages from one pageview is still one clicked pageview.\n- `clicks` of an arm = the number of its clicked counted pageviews; `pageviews` = the number of its counted pageviews.\n- CTR of an arm = clicks / pageviews over the whole arm (a ratio of sums, not the average of per-user CTRs).\n- `diff` = CTR_B - CTR_A (absolute, not relative).\n\n## 5. Uncertainty\n- The 95% confidence interval for `diff` must reflect that users, not pageviews, were randomized: the pageviews of one\n  user are not independent of each other. Any one of these is acceptable:\n  - (a) the delta method for each arm's ratio of per-user sums (the sum of the users' clicks over the sum of the\n    users' counted pageviews), treating the arms as independent;\n  - (b) a user-level bootstrap: resample users with replacement within each arm, at least 2,000 resamples, percentile\n    interval;\n  - (c) cluster-robust (CR1) standard errors clustered by user, from a pageview-level regression of the clicked\n    indicator (section 4) on an indicator of B.\n- An interval that treats each pageview as an independent trial is not acceptable.\n\n## 6. Sample ratio mismatch (SRM) check\n- Pearson chi-square goodness-of-fit test of (`n_users` A, `n_users` B) of section 3 against a 50/50 split: 1 degree\n  of freedom, no continuity correction. `srm_p` is its p-value; `srm_flag` = `srm_p` < 0.001.\n- An SRM means the arms, as counted, are not the groups the randomization made. Find the cause before reading\n  anything else: if the assignment itself is unbalanced, the experiment cannot be read; if a step of the analysis\n  made the imbalance, that step is wrong: fix it and check again.\n\n## 7. Decision rule (apply in this order)\n1. `srm_flag` is true: `\"invalid\"` (the assignment is broken; do not read the result, investigate).\n2. The lower bound of the 95% CI is above 0: `\"ship\"`.\n3. Otherwise: `\"no_ship\"`.\n\n## 8. Input files (one folder per experiment)\nFour gzip-compressed CSV files with a header row: `assignments.csv.gz`, `bot_flags.csv.gz`, `pageviews.csv.gz` and\n`module_clicks.csv.gz`. Their rows and columns are as the data platform documents them in `docs/DATA_DICTIONARY.md`.\n\n## 9. Output: `result.json`\nA JSON object with at least these keys (more keys are fine):\n\n| Key | Type | Meaning |\n|---|---|---|\n| `n_users` | object `{\"A\": int, \"B\": int}` | section 3 |\n| `pageviews` | object `{\"A\": int, \"B\": int}` | section 4 |\n| `clicks` | object `{\"A\": int, \"B\": int}` | section 4 |\n| `ctr` | object `{\"A\": number, \"B\": number}` | section 4 |\n| `diff` | number | CTR_B - CTR_A |\n| `ci_95` | array `[lower, upper]` | section 5 |\n| `srm_p` | number | section 6 |\n| `srm_flag` | boolean | section 6 |\n| `decision` | `\"ship\"`, `\"no_ship\"` or `\"invalid\"` | section 7 |\n# Note from Priya (PM, product pages), Wednesday 2026-09-16\n\n**Subject:** EXP-2291 readout: please re-check before the launch on Monday\n\nThe readout in `output/result.json` came back \"invalid\": the sample ratio check failed, with 16,570 users in A and\n15,722 in B (about 5% fewer in B). That verdict does not match the dashboards:\n- the assignment dashboard shows 16,935 users in A and 17,165 in B: a clean 50/50 split (49.7% / 50.3%);\n- the team dashboard, which reads the same export with no filters (every pageview of every assigned user), shows\n  click-through of 11.03% in B against 9.82% in A: B is 12.3% higher.\n\nPlan: turn B on for everyone on Monday 2026-09-21 if B really wins. Requests: check the analysis against the plan in\n`EXPERIMENT.md`, fix whatever is wrong, and put the corrected readout in `output/result.json`. The same pipeline will\nrun the next experiments, so the pipeline needs a proper fix, not just this one file.\ndata:\ntotal 4888\ndrwxr-xr-x 2 root root     128 Oct 31 08:38 .\ndrwxr-xr-x 1 root root     146 Oct 31 08:38 ..\n-rw-r--r-- 1 root root  310712 Jan  1  1970 assignments.csv.gz\n-rw-r--r-- 1 root root   15009 Jan  1  1970 bot_flags.csv.gz\n-rw-r--r-- 1 root root  680612 Jan  1  1970 module_clicks.csv.gz\n-rw-r--r-- 1 root root 3992737 Jan  1  1970 pageviews.csv.gz\n\ndocs:\ntotal 16\ndrwxr-xr-x 2 root root  121 Oct 31 08:38 .\ndrwxr-xr-x 1 root root  146 Oct 31 08:38 ..\n-rw-r--r-- 1 root root 1151 Jan  1  1970 BOT_SCREENING.md\n-rw-r--r-- 1 root root 3086 Jan  1  1970 DATA_DICTIONARY.md\n-rw-r--r-- 1 root root 1030 Jan  1  1970 LAUNCH_EXP-2291.md\n-rw-r--r-- 1 root root 1803 Jan  1  1970 TRACKING.md",
+                  "is_error": false
+                }
+              },
+              "tool_result_is_error": false
+            }
+          }
+        ]
+      },
+      "metrics": {
+        "prompt_tokens": 17716,
+        "completion_tokens": 115,
+        "cached_tokens": 17714,
+        "cost_usd": 0.005850800000000001,
+        "extra": {
+          "cache_creation_input_tokens": 0,
+          "cache_read_input_tokens": 17714,
+          "output_tokens_details": {
+            "thinking_tokens": 13
+          },
+          "server_tool_use": {
+            "web_search_requests": 0,
+            "web_fetch_requests": 0
+          },
+          "service_tier": "standard",
+          "cache_creation": {
+            "ephemeral_1h_input_tokens": 0,
+            "ephemeral_5m_input_tokens": 0
+          },
+          "inference_geo": "global",
+          "iterations": [],
+          "speed": "standard",
+          "fallback_credit": null,
+          "cost_source": "litellm_estimate"
+        }
+      },
+      "llm_call_count": 1,
+      "extra": {
+        "stop_reason": "tool_use",
+        "is_sidechain": false,
+        "cwd": "/app"
+      }
+    },
+    {
+      "step_id": 3,
+      "timestamp": "2026-10-31T09:30:31.231Z",
+      "source": "agent",
+      "model_name": "claude-opus-5-5",
+      "message": "",
+      "tool_calls": [
+        {
+          "tool_call_id": "toolu_01KDhTB94suPoKkJHig888w1",
+          "function_name": "Bash",
+          "arguments": {
+            "command": "cd /app; cat docs/*.md README.md; cat abtest/*.py; cat output/result.json"
+          },
+          "extra": {
+            "raw_arguments": {
+              "command": "cd /app; cat docs/*.md README.md; cat abtest/*.py; cat output/result.json"
+            },
+            "tool_use_name": "Bash"
+          }
+        }
+      ],
+      "observation": {
+        "results": [
+          {
+            "source_call_id": "toolu_01KDhTB94suPoKkJHig888w1",
+            "content": "# Bot screening\n\nData platform documentation. It applies to every experiment export of this layout.\n\nThe platform screens traffic for bots with two rules. Every flag is one row of `bot_flags.csv.gz` (`user_id`, `rule`,\n`flagged_at`). A user can be flagged by both rules.\n\n| Rule | In use since | What it looks at | When it runs | `flagged_at` |\n|---|---|---|---|---|\n| `ua_crawler` | 2024-03 | the client: a crawler user agent, or an IP address in a data-centre range | on the client's first request to the platform (any page; it need not be a product pageview of the export) | the time of that first request; one row per flagged user |\n| `velocity` | 2026-08-28 (SEC-219) | the user's `module_click` events (`docs/TRACKING.md`): 8 or more events, of any target, within 60 seconds | nightly at 02:00 UTC, over the module_click events of the previous UTC day | the time of the run (02:00:00 UTC); one row per user and day on which the rule fired |\n\n`velocity` was added against click fraud on the related-items module (scripts that click product cards in bursts).\nIts threshold was set on July 2026 related-items traffic, in which no human reached it.\n# Experiment export: data dictionary\n\nData platform documentation. It applies to every experiment export of this layout.\n\nAn export is one folder with four gzip-compressed CSV files (UTF-8, comma-separated, one header row). It holds:\n- every assignment row the assignment service logged for the experiment;\n- every flag the platform's bot screening raised on the experiment's assigned users, up to the time of the export;\n- each assigned user's product pageviews, from about three days before the user's `assigned_at` to the end of the\n  experiment (so pageviews before a user's assignment are included);\n- every module event logged on those pageviews, whatever its time (an event can come after the end of the\n  experiment when its pageview came just before it).\n\nTimestamps are ISO 8601, to the second, with a `Z` or a `+hh:mm` / `-hh:mm` offset. The offset varies from row to\nrow, so the same instant can be written in different ways; compare instants, not text.\n\n## assignments.csv.gz\nOne row per assignment, as the assignment service logged it. The logger retries, so a row can appear more than once,\nexactly repeated. A user never has two different rows.\n\n| Column | Meaning |\n|---|---|\n| `user_id` | the user (text) |\n| `variant` | `A` or `B` |\n| `assigned_at` | when the user got the variant |\n| `method` | how the variant was set: `hash` = the variant from the hash (the randomization); `override` = set by hand in the feature-flag console's allowlist (dogfood and QA accounts), without the hash |\n\n## bot_flags.csv.gz\nOne row per flag raised by the platform's bot screening (`docs/BOT_SCREENING.md`). A user can have rows of both rules,\nand more than one row of the same rule.\n\n| Column | Meaning |\n|---|---|\n| `user_id` | the flagged user |\n| `rule` | the screening rule that raised the flag: `ua_crawler` or `velocity` |\n| `flagged_at` | when the flag was raised (for each rule: `docs/BOT_SCREENING.md`) |\n\n## pageviews.csv.gz\nOne row per product pageview, logged when the page has loaded. The assignment service assigns a user when the page\nis requested, so the pageview on which a user was assigned has no row if the user left before the page loaded: an\nassigned user need not have a pageview at `assigned_at`, and can have no pageview row at all.\n\n| Column | Meaning |\n|---|---|\n| `pageview_id` | the pageview (text); unique per row |\n| `user_id` | the user |\n| `ts` | when the page loaded |\n| `clicked` | 1 if at least one module_click event was logged on this pageview, else 0 (precomputed for dashboards) |\n\n## module_clicks.csv.gz\nOne row per module_click event of the related-items module (`docs/TRACKING.md`). Times are to the second, so two\nclicks on the same element in the same second give two identical rows; each row is one event.\n\n| Column | Meaning |\n|---|---|\n| `pageview_id` | the pageview the event was logged on (`pageviews.csv.gz`); the event belongs to that pageview's user |\n| `user_id` | the user |\n| `ts` | when the click happened; at or after the pageview's `ts` |\n| `target` | the `data-target` value of the clicked element (`docs/TRACKING.md`) |\n# Launch record: EXP-2291 \"related items v2\"\n\n| Field | Value |\n|---|---|\n| Experiment | EXP-2291, related items v2 (RI-311) |\n| Owner | product pages team |\n| Unit | user |\n| Allocation | 50/50, by the assignment service's hash of the salt and the user id |\n| Salt | `exp-2291-related-items-v2` |\n| Arms | A: module v1 (control); B: module v2, the carousel (`docs/TRACKING.md`) |\n| Assignment | at the user's first eligible product pageview (`EXPERIMENT.md` section 2) |\n| Start | 2026-09-01 00:00Z |\n| End | 2026-09-15 00:00Z |\n| Analysis plan | `EXPERIMENT.md`, agreed 2026-08-25 |\n| Export | taken 2026-09-15 06:00Z, after the nightly bot screening run of 02:00Z |\n\n## Log\n- 2026-08-25: analysis plan agreed.\n- 2026-09-01 00:00Z: started; the assignment service randomizes users 50/50.\n- 2026-09-03: dogfood: the 100 accounts of the product pages team added to the allowlist of variant B in the\n  feature-flag console (RI-322), so that the team can use v2 on the live site.\n- 2026-09-15 00:00Z: ended; export taken at 06:00Z.\n# Tracking: the related-items module\n\nData platform documentation. It applies to every experiment export of this layout.\n\n## module_click events\nThe related-items module on product pages logs one `module_click` event per click on any clickable element inside the\nmodule. Each event records the pageview it happened on, the user, the time of the click and the clicked element's\n`data-target` value. Exports hold these events in `module_clicks.csv.gz`, and `pageviews.clicked` is derived from\nthem (`docs/DATA_DICTIONARY.md`).\n\n| `data-target` | Element | What a click on it does |\n|---|---|---|\n| `item:<product_id>` | a product card | opens that product's page |\n| `nav:prev`, `nav:next` | the previous and next arrows of the v2 carousel | scroll the carousel; open nothing |\n| `link:all` | the \"See all\" link, in every module version from 2026-09-08 | opens the list page of all related items |\n\n## Module versions\n| Version | What the module shows |\n|---|---|\n| v1 | the current module: a row of six product cards |\n| v2 | related items v2 (RI-311): a carousel of 12 product cards with previous and next arrows |\n\nOther experiments test other layouts or rankings of the cards; v2 is the only version with arrows. Since 2026-09-08\nevery version also shows the \"See all\" link.\n\nThe module version is set per experiment arm: from a user's assignment on, every product pageview of the user shows\nthe version of the user's arm, as the experiment's launch record sets it (EXP-2291: v1 in A, v2 in B). Before the\nassignment, every user sees v1.\n\n## Changelog\n- 2025-04-14: `module_click` events logged for every clickable element of the module.\n- 2026-09-01: v2 available to experiments, per arm (EXP-2291 shows it in arm B).\n- 2026-09-08: \"See all\" link (`link:all`) added to every module version (RI-318).\n# EXP-2291 readout\n\nReadout pipeline for experiment EXP-2291 (\"related items v2\" on product pages). The plan it must follow is\n`EXPERIMENT.md`.\n\nRun it from this folder:\n\n    python -m abtest.report --data data --out output/result.json\n\nLayout:\n\n| Path | What it is |\n|---|---|\n| `abtest/load.py` | reads the four export files, parses timestamps to UTC, drops repeated assignment rows and pre-assignment pageviews |\n| `abtest/filters.py` | the population filter: applies the platform's bot screening (`bot_flags.csv.gz`) to both arms |\n| `abtest/stats.py` | statistics for the readout: the delta-method interval and the SRM test |\n| `abtest/report.py` | the command: per-user clicks and pageviews, the readout, `result.json`; a click is a pageview's `clicked` value, the module click flag |\n| `data/` | the EXP-2291 export: `assignments.csv.gz`, `bot_flags.csv.gz`, `pageviews.csv.gz`, `module_clicks.csv.gz` |\n| `docs/` | the data platform's documentation of the export (`DATA_DICTIONARY.md`, `TRACKING.md`, `BOT_SCREENING.md`) and the launch record of EXP-2291 (`LAUNCH_EXP-2291.md`) |\n| `output/result.json` | the last readout |\n| `PM_NOTE.md` | the PM's note about this readout |\n\nEvery experiment export from the data platform has the same four files and columns, so the same command is used for\nother experiments with `--data <their folder>`.\n\"\"\"EXP-2291 readout pipeline: load the experiment export, apply the population rules, compute the CTR readout.\"\"\"\n\"\"\"Population filters for the readout.\"\"\"\n\n\ndef exclude_bots(assignments, bot_flags):\n    \"\"\"Drop bot traffic from both arms, before anything is counted (EXPERIMENT.md section 3).\n\n    Bot traffic is every user the platform's bot screening flagged (bot_flags.csv.gz): crawlers (rule ua_crawler)\n    and, since SEC-219, click-fraud bots on the related-items module (rule velocity).\n    \"\"\"\n    flagged = set(bot_flags[\"user_id\"])\n    return assignments[~assignments[\"user_id\"].isin(flagged)].reset_index(drop=True)\n\"\"\"Read one experiment export: assignments, bot_flags, pageviews and module_clicks (.csv.gz) in one folder.\"\"\"\nfrom pathlib import Path\n\nimport pandas as pd\n\n\ndef _read(data_dir, name, dtype=str):\n    return pd.read_csv(Path(data_dir) / f\"{name}.csv.gz\", dtype=dtype)\n\n\ndef _instants(col):\n    # The export mixes \"Z\" and \"+hh:mm\" / \"-hh:mm\" offsets. Parse to UTC: compare instants, never strings.\n    return pd.to_datetime(col, utc=True, format=\"ISO8601\")\n\n\ndef load_assignments(data_dir):\n    \"\"\"One row per assigned user: user_id, variant (\"A\" or \"B\"), assigned_at (UTC), method.\"\"\"\n    df = _read(data_dir, \"assignments\")\n    df = df.drop_duplicates()  # the assignment logger retries; an exact repeat of a row counts once\n    df[\"assigned_at\"] = _instants(df[\"assigned_at\"])\n    return df.reset_index(drop=True)\n\n\ndef load_bot_flags(data_dir):\n    \"\"\"One row per flag of the platform's bot screening: user_id, rule, flagged_at (UTC).\"\"\"\n    df = _read(data_dir, \"bot_flags\")\n    df[\"flagged_at\"] = _instants(df[\"flagged_at\"])\n    return df\n\n\ndef load_pageviews(data_dir, assignments):\n    \"\"\"Pageviews of the given assigned users, on or after the user's assignment time, with the variant attached.\"\"\"\n    pv = _read(data_dir, \"pageviews\", dtype={\"pageview_id\": str, \"user_id\": str, \"ts\": str, \"clicked\": \"int64\"})\n    pv[\"ts\"] = _instants(pv[\"ts\"])\n    pv = pv.merge(assignments[[\"user_id\", \"variant\", \"assigned_at\"]], on=\"user_id\", how=\"inner\")\n    pv = pv[pv[\"ts\"] >= pv[\"assigned_at\"]]  # exposure before assignment is not part of the experiment\n    return pv.reset_index(drop=True)\n\n\ndef load_module_clicks(data_dir):\n    \"\"\"Events of the related-items module: pageview_id, user_id, ts (UTC), target.\"\"\"\n    df = _read(data_dir, \"module_clicks\")\n    df[\"ts\"] = _instants(df[\"ts\"])\n    return df\n\"\"\"EXP-2291 readout: python -m abtest.report --data <folder> --out <result.json>\"\"\"\nimport argparse\nimport json\nfrom pathlib import Path\n\nfrom .filters import exclude_bots\nfrom .load import load_assignments, load_bot_flags, load_pageviews\nfrom .stats import CI_METHOD, SRM_ALPHA, diff_ci, srm_pvalue\n\nARMS = (\"A\", \"B\")\n\n\ndef per_user_counts(assignments, pageviews):\n    \"\"\"One row per counted user (users with no pageview included): user_id, variant, clicks, views.\n\n    A pageview's click is its `clicked` flag (the module click flag of the export).\n    \"\"\"\n    g = pageviews.groupby(\"user_id\").agg(clicks=(\"clicked\", \"sum\"), views=(\"clicked\", \"size\"))\n    per_user = assignments[[\"user_id\", \"variant\"]].join(g, on=\"user_id\")\n    return per_user.fillna({\"clicks\": 0, \"views\": 0})\n\n\ndef decide(srm_flag, ci_low):\n    \"\"\"EXPERIMENT.md section 7, in this order.\"\"\"\n    if srm_flag:\n        return \"invalid\"\n    return \"ship\" if ci_low > 0 else \"no_ship\"\n\n\ndef build_readout(data_dir):\n    assignments = exclude_bots(load_assignments(data_dir), load_bot_flags(data_dir))\n    pageviews = load_pageviews(data_dir, assignments)\n    per_user = per_user_counts(assignments, pageviews)\n    arms = {arm: per_user[per_user[\"variant\"] == arm] for arm in ARMS}\n\n    n_users = {arm: int(len(arms[arm])) for arm in ARMS}\n    views = {arm: int(arms[arm][\"views\"].sum()) for arm in ARMS}\n    clicks = {arm: int(arms[arm][\"clicks\"].sum()) for arm in ARMS}\n    ctr = {arm: clicks[arm] / views[arm] for arm in ARMS}\n    diff, (ci_low, ci_high) = diff_ci(arms[\"A\"], arms[\"B\"])\n    srm_p = srm_pvalue(n_users[\"A\"], n_users[\"B\"])\n    srm_flag = bool(srm_p < SRM_ALPHA)\n    return {\n        \"experiment\": \"EXP-2291\",\n        \"n_users\": n_users,\n        \"pageviews\": views,\n        \"clicks\": clicks,\n        \"ctr\": ctr,\n        \"diff\": float(diff),\n        \"rel_lift\": float(diff / ctr[\"A\"]),\n        \"ci_95\": [float(ci_low), float(ci_high)],\n        \"ci_method\": CI_METHOD,\n        \"srm_p\": srm_p,\n        \"srm_flag\": srm_flag,\n        \"decision\": decide(srm_flag, ci_low),\n    }\n\n\ndef main(argv=None):\n    ap = argparse.ArgumentParser(description=\"EXP-2291 CTR readout\")\n    ap.add_argument(\"--data\", required=True,\n                    help=\"export folder: assignments, bot_flags, pageviews and module_clicks (.csv.gz)\")\n    ap.add_argument(\"--out\", required=True, help=\"path of the result.json to write\")\n    args = ap.parse_args(argv)\n    readout = build_readout(args.data)\n    out = Path(args.out)\n    out.parent.mkdir(parents=True, exist_ok=True)\n    out.write_text(json.dumps(readout, indent=2) + \"\\n\")\n    print(f\"wrote {out}: decision={readout['decision']} diff={readout['diff']:+.5f} \"\n          f\"ci=[{readout['ci_95'][0]:+.5f}, {readout['ci_95'][1]:+.5f}] srm_p={readout['srm_p']:.3g}\")\n\n\nif __name__ == \"__main__\":\n    main()\n\"\"\"Statistics for the CTR readout (EXPERIMENT.md sections 5 and 6). The unit of randomization is the user.\"\"\"\nimport math\n\nimport numpy as np\nfrom scipy.stats import chisquare, norm\n\nZ = float(norm.ppf(0.975))\nSRM_ALPHA = 0.001\nCI_METHOD = \"delta method, users as the unit\"\n\n\ndef ratio_delta(clicks, views):\n    \"\"\"CTR = sum(clicks) / sum(views) over users, and its delta-method variance.\n\n    clicks, views: one entry per counted user, users with zero pageviews included. Var = N/(N-1) * sum((c - r v)^2) /\n    (sum v)^2, the usual linearisation of a ratio of two user-level means.\n    \"\"\"\n    c = np.asarray(clicks, dtype=float)\n    v = np.asarray(views, dtype=float)\n    n = len(c)\n    r = c.sum() / v.sum()\n    var = n / (n - 1) * float(np.sum((c - r * v) ** 2)) / float(v.sum()) ** 2\n    return float(r), var\n\n\ndef diff_ci(arm_a, arm_b):\n    \"\"\"CTR_B - CTR_A and its 95% CI; arm_a, arm_b: per-user frames with columns clicks, views.\"\"\"\n    ra, va = ratio_delta(arm_a[\"clicks\"], arm_a[\"views\"])\n    rb, vb = ratio_delta(arm_b[\"clicks\"], arm_b[\"views\"])\n    diff = rb - ra\n    se = math.sqrt(va + vb)\n    return diff, (diff - Z * se, diff + Z * se)\n\n\ndef srm_pvalue(n_a, n_b):\n    \"\"\"Pearson chi-square goodness of fit of the user counts against 50/50 (1 df, no continuity correction).\"\"\"\n    return float(chisquare([n_a, n_b]).pvalue)\n{\n  \"experiment\": \"EXP-2291\",\n  \"n_users\": {\n    \"A\": 16570,\n    \"B\": 15722\n  },\n  \"pageviews\": {\n    \"A\": 165646,\n    \"B\": 158616\n  },\n  \"clicks\": {\n    \"A\": 16837,\n    \"B\": 16466\n  },\n  \"ctr\": {\n    \"A\": 0.10164447073880443,\n    \"B\": 0.1038104604831795\n  },\n  \"diff\": 0.0021659897443750686,\n  \"rel_lift\": 0.021309469453985427,\n  \"ci_95\": [\n    -0.0033131556717745413,\n    0.007645135160524679\n  ],\n  \"ci_method\": \"delta method, users as the unit\",\n  \"srm_p\": 2.3702703557471535e-06,\n  \"srm_flag\": true,\n  \"decision\": \"invalid\"\n}\n\n[stdout]\n# Bot screening\n\nData platform documentation. It applies to every experiment export of this layout.\n\nThe platform screens traffic for bots with two rules. Every flag is one row of `bot_flags.csv.gz` (`user_id`, `rule`,\n`flagged_at`). A user can be flagged by both rules.\n\n| Rule | In use since | What it looks at | When it runs | `flagged_at` |\n|---|---|---|---|---|\n| `ua_crawler` | 2024-03 | the client: a crawler user agent, or an IP address in a data-centre range | on the client's first request to the platform (any page; it need not be a product pageview of the export) | the time of that first request; one row per flagged user |\n| `velocity` | 2026-08-28 (SEC-219) | the user's `module_click` events (`docs/TRACKING.md`): 8 or more events, of any target, within 60 seconds | nightly at 02:00 UTC, over the module_click events of the previous UTC day | the time of the run (02:00:00 UTC); one row per user and day on which the rule fired |\n\n`velocity` was added against click fraud on the related-items module (scripts that click product cards in bursts).\nIts threshold was set on July 2026 related-items traffic, in which no human reached it.\n# Experiment export: data dictionary\n\nData platform documentation. It applies to every experiment export of this layout.\n\nAn export is one folder with four gzip-compressed CSV files (UTF-8, comma-separated, one header row). It holds:\n- every assignment row the assignment service logged for the experiment;\n- every flag the platform's bot screening raised on the experiment's assigned users, up to the time of the export;\n- each assigned user's product pageviews, from about three days before the user's `assigned_at` to the end of the\n  experiment (so pageviews before a user's assignment are included);\n- every module event logged on those pageviews, whatever its time (an event can come after the end of the\n  experiment when its pageview came just before it).\n\nTimestamps are ISO 8601, to the second, with a `Z` or a `+hh:mm` / `-hh:mm` offset. The offset varies from row to\nrow, so the same instant can be written in different ways; compare instants, not text.\n\n## assignments.csv.gz\nOne row per assignment, as the assignment service logged it. The logger retries, so a row can appear more than once,\nexactly repeated. A user never has two different rows.\n\n| Column | Meaning |\n|---|---|\n| `user_id` | the user (text) |\n| `variant` | `A` or `B` |\n| `assigned_at` | when the user got the variant |\n| `method` | how the variant was set: `hash` = the variant from the hash (the randomization); `override` = set by hand in the feature-flag console's allowlist (dogfood and QA accounts), without the hash |\n\n## bot_flags.csv.gz\nOne row per flag raised by the platform's bot screening (`docs/BOT_SCREENING.md`). A user can have rows of both rules,\nand more than one row of the same rule.\n\n| Column | Meaning |\n|---|---|\n| `user_id` | the flagged user |\n| `rule` | the screening rule that raised the flag: `ua_crawler` or `velocity` |\n| `flagged_at` | when the flag was raised (for each rule: `docs/BOT_SCREENING.md`) |\n\n## pageviews.csv.gz\nOne row per product pageview, logged when the page has loaded. The assignment service assigns a user when the page\nis requested, so the pageview on which a user was assigned has no row if the user left before the page loaded: an\nassigned user need not have a pageview at `assigned_at`, and can have no pageview row at all.\n\n| Column | Meaning |\n|---|---|\n| `pageview_id` | the pageview (text); unique per row |\n| `user_id` | the user |\n| `ts` | when the page loaded |\n| `clicked` | 1 if at least one module_click event was logged on this pageview, else 0 (precomputed for dashboards) |\n\n## module_clicks.csv.gz\nOne row per module_click event of the related-items module (`docs/TRACKING.md`). Times are to the second, so two\nclicks on the same element in the same second give two identical rows; each row is one event.\n\n| Column | Meaning |\n|---|---|\n| `pageview_id` | the pageview the event was logged on (`pageviews.csv.gz`); the event belongs to that pageview's user |\n| `user_id` | the user |\n| `ts` | when the click happened; at or after the pageview's `ts` |\n| `target` | the `data-target` value of the clicked element (`docs/TRACKING.md`) |\n# Launch record: EXP-2291 \"related items v2\"\n\n| Field | Value |\n|---|---|\n| Experiment | EXP-2291, related items v2 (RI-311) |\n| Owner | product pages team |\n| Unit | user |\n| Allocation | 50/50, by the assignment service's hash of the salt and the user id |\n| Salt | `exp-2291-related-items-v2` |\n| Arms | A: module v1 (control); B: module v2, the carousel (`docs/TRACKING.md`) |\n| Assignment | at the user's first eligible product pageview (`EXPERIMENT.md` section 2) |\n| Start | 2026-09-01 00:00Z |\n| End | 2026-09-15 00:00Z |\n| Analysis plan | `EXPERIMENT.md`, agreed 2026-08-25 |\n| Export | taken 2026-09-15 06:00Z, after the nightly bot screening run of 02:00Z |\n\n## Log\n- 2026-08-25: analysis plan agreed.\n- 2026-09-01 00:00Z: started; the assignment service randomizes users 50/50.\n- 2026-09-03: dogfood: the 100 accounts of the product pages team added to the allowlist of variant B in the\n  feature-flag console (RI-322), so that the team can use v2 on the live site.\n- 2026-09-15 00:00Z: ended; export taken at 06:00Z.\n# Tracking: the related-items module\n\nData platform documentation. It applies to every experiment export of this layout.\n\n## module_click events\nThe related-items module on product pages logs one `module_click` event per click on any clickable element inside the\nmodule. Each event records the pageview it happened on, the user, the time of the click and the clicked element's\n`data-target` value. Exports hold these events in `module_clicks.csv.gz`, and `pageviews.clicked` is derived from\nthem (`docs/DATA_DICTIONARY.md`).\n\n| `data-target` | Element | What a click on it does |\n|---|---|---|\n| `item:<product_id>` | a product card | opens that product's page |\n| `nav:prev`, `nav:next` | the previous and next arrows of the v2 carousel | scroll the carousel; open nothing |\n| `link:all` | the \"See all\" link, in every module version from 2026-09-08 | opens the list page of all related items |\n\n## Module versions\n| Version | What the module shows |\n|---|---|\n| v1 | the current module: a row of six product cards |\n| v2 | related items v2 (RI-311): a carousel of 12 product cards with previous and next arrows |\n\nOther experiments test other layouts or rankings of the cards; v2 is the only version with arrows. Since 2026-09-08\nevery version also shows the \"See all\" link.\n\nThe module version is set per experiment arm: from a user's assignment on, every product pageview of the user shows\nthe version of the user's arm, as the experiment's launch record sets it (EXP-2291: v1 in A, v2 in B). Before the\nassignment, every user sees v1.\n\n## Changelog\n- 2025-04-14: `module_click` events logged for every clickable element of the module.\n- 2026-09-01: v2 available to experiments, per arm (EXP-2291 shows it in arm B).\n- 2026-09-08: \"See all\" link (`link:all`) added to every module version (RI-318).\n# EXP-2291 readout\n\nReadout pipeline for experiment EXP-2291 (\"related items v2\" on product pages). The plan it must follow is\n`EXPERIMENT.md`.\n\nRun it from this folder:\n\n    python -m abtest.report --data data --out output/result.json\n\nLayout:\n\n| Path | What it is |\n|---|---|\n| `abtest/load.py` | reads the four export files, parses timestamps to UTC, drops repeated assignment rows and pre-assignment pageviews |\n| `abtest/filters.py` | the population filter: applies the platform's bot screening (`bot_flags.csv.gz`) to both arms |\n| `abtest/stats.py` | statistics for the readout: the delta-method interval and the SRM test |\n| `abtest/report.py` | the command: per-user clicks and pageviews, the readout, `result.json`; a click is a pageview's `clicked` value, the module click flag |\n| `data/` | the EXP-2291 export: `assignments.csv.gz`, `bot_flags.csv.gz`, `pageviews.csv.gz`, `module_clicks.csv.gz` |\n| `docs/` | the data platform's documentation of the export (`DATA_DICTIONARY.md`, `TRACKING.md`, `BOT_SCREENING.md`) and the launch record of EXP-2291 (`LAUNCH_EXP-2291.md`) |\n| `output/result.json` | the last readout |\n| `PM_NOTE.md` | the PM's note about this readout |\n\nEvery experiment export from the data platform has the same four files and columns, so the same command is used for\nother experiments with `--data <their folder>`.\n\"\"\"EXP-2291 readout pipeline: load the experiment export, apply the population rules, compute the CTR readout.\"\"\"\n\"\"\"Population filters for the readout.\"\"\"\n\n\ndef exclude_bots(assignments, bot_flags):\n    \"\"\"Drop bot traffic from both arms, before anything is counted (EXPERIMENT.md section 3).\n\n    Bot traffic is every user the platform's bot screening flagged (bot_flags.csv.gz): crawlers (rule ua_crawler)\n    and, since SEC-219, click-fraud bots on the related-items module (rule velocity).\n    \"\"\"\n    flagged = set(bot_flags[\"user_id\"])\n    return assignments[~assignments[\"user_id\"].isin(flagged)].reset_index(drop=True)\n\"\"\"Read one experiment export: assignments, bot_flags, pageviews and module_clicks (.csv.gz) in one folder.\"\"\"\nfrom pathlib import Path\n\nimport pandas as pd\n\n\ndef _read(data_dir, name, dtype=str):\n    return pd.read_csv(Path(data_dir) / f\"{name}.csv.gz\", dtype=dtype)\n\n\ndef _instants(col):\n    # The export mixes \"Z\" and \"+hh:mm\" / \"-hh:mm\" offsets. Parse to UTC: compare instants, never strings.\n    return pd.to_datetime(col, utc=True, format=\"ISO8601\")\n\n\ndef load_assignments(data_dir):\n    \"\"\"One row per assigned user: user_id, variant (\"A\" or \"B\"), assigned_at (UTC), method.\"\"\"\n    df = _read(data_dir, \"assignments\")\n    df = df.drop_duplicates()  # the assignment logger retries; an exact repeat of a row counts once\n    df[\"assigned_at\"] = _instants(df[\"assigned_at\"])\n    return df.reset_index(drop=True)\n\n\ndef load_bot_flags(data_dir):\n    \"\"\"One row per flag of the platform's bot screening: user_id, rule, flagged_at (UTC).\"\"\"\n    df = _read(data_dir, \"bot_flags\")\n    df[\"flagged_at\"] = _instants(df[\"flagged_at\"])\n    return df\n\n\ndef load_pageviews(data_dir, assignments):\n    \"\"\"Pageviews of the given assigned users, on or after the user's assignment time, with the variant attached.\"\"\"\n    pv = _read(data_dir, \"pageviews\", dtype={\"pageview_id\": str, \"user_id\": str, \"ts\": str, \"clicked\": \"int64\"})\n    pv[\"ts\"] = _instants(pv[\"ts\"])\n    pv = pv.merge(assignments[[\"user_id\", \"variant\", \"assigned_at\"]], on=\"user_id\", how=\"inner\")\n    pv = pv[pv[\"ts\"] >= pv[\"assigned_at\"]]  # exposure before assignment is not part of the experiment\n    return pv.reset_index(drop=True)\n\n\ndef load_module_clicks(data_dir):\n    \"\"\"Events of the related-items module: pageview_id, user_id, ts (UTC), target.\"\"\"\n    df = _read(data_dir, \"module_clicks\")\n    df[\"ts\"] = _instants(df[\"ts\"])\n    return df\n\"\"\"EXP-2291 readout: python -m abtest.report --data <folder> --out <result.json>\"\"\"\nimport argparse\nimport json\nfrom pathlib import Path\n\nfrom .filters import exclude_bots\nfrom .load import load_assignments, load_bot_flags, load_pageviews\nfrom .stats import CI_METHOD, SRM_ALPHA, diff_ci, srm_pvalue\n\nARMS = (\"A\", \"B\")\n\n\ndef per_user_counts(assignments, pageviews):\n    \"\"\"One row per counted user (users with no pageview included): user_id, variant, clicks, views.\n\n    A pageview's click is its `clicked` flag (the module click flag of the export).\n    \"\"\"\n    g = pageviews.groupby(\"user_id\").agg(clicks=(\"clicked\", \"sum\"), views=(\"clicked\", \"size\"))\n    per_user = assignments[[\"user_id\", \"variant\"]].join(g, on=\"user_id\")\n    return per_user.fillna({\"clicks\": 0, \"views\": 0})\n\n\ndef decide(srm_flag, ci_low):\n    \"\"\"EXPERIMENT.md section 7, in this order.\"\"\"\n    if srm_flag:\n        return \"invalid\"\n    return \"ship\" if ci_low > 0 else \"no_ship\"\n\n\ndef build_readout(data_dir):\n    assignments = exclude_bots(load_assignments(data_dir), load_bot_flags(data_dir))\n    pageviews = load_pageviews(data_dir, assignments)\n    per_user = per_user_counts(assignments, pageviews)\n    arms = {arm: per_user[per_user[\"variant\"] == arm] for arm in ARMS}\n\n    n_users = {arm: int(len(arms[arm])) for arm in ARMS}\n    views = {arm: int(arms[arm][\"views\"].sum()) for arm in ARMS}\n    clicks = {arm: int(arms[arm][\"clicks\"].sum()) for arm in ARMS}\n    ctr = {arm: clicks[arm] / views[arm] for arm in ARMS}\n    diff, (ci_low, ci_high) = diff_ci(arms[\"A\"], arms[\"B\"])\n    srm_p = srm_pvalue(n_users[\"A\"], n_users[\"B\"])\n    srm_flag = bool(srm_p < SRM_ALPHA)\n    return {\n        \"experiment\": \"EXP-2291\",\n        \"n_users\": n_users,\n        \"pageviews\": views,\n        \"clicks\": clicks,\n        \"ctr\": ctr,\n        \"diff\": float(diff),\n        \"rel_lift\": float(diff / ctr[\"A\"]),\n        \"ci_95\": [float(ci_low), float(ci_high)],\n        \"ci_method\": CI_METHOD,\n        \"srm_p\": srm_p,\n        \"srm_flag\": srm_flag,\n        \"decision\": decide(srm_flag, ci_low),\n    }\n\n\ndef main(argv=None):\n    ap = argparse.ArgumentParser(description=\"EXP-2291 CTR readout\")\n    ap.add_argument(\"--data\", required=True,\n                    help=\"export folder: assignments, bot_flags, pageviews and module_clicks (.csv.gz)\")\n    ap.add_argument(\"--out\", required=True, help=\"path of the result.json to write\")\n    args = ap.parse_args(argv)\n    readout = build_readout(args.data)\n    out = Path(args.out)\n    out.parent.mkdir(parents=True, exist_ok=True)\n    out.write_text(json.dumps(readout, indent=2) + \"\\n\")\n    print(f\"wrote {out}: decision={readout['decision']} diff={readout['diff']:+.5f} \"\n          f\"ci=[{readout['ci_95'][0]:+.5f}, {readout['ci_95'][1]:+.5f}] srm_p={readout['srm_p']:.3g}\")\n\n\nif __name__ == \"__main__\":\n    main()\n\"\"\"Statistics for the CTR readout (EXPERIMENT.md sections 5 and 6). The unit of randomization is the user.\"\"\"\nimport math\n\nimport numpy as np\nfrom scipy.stats import chisquare, norm\n\nZ = float(norm.ppf(0.975))\nSRM_ALPHA = 0.001\nCI_METHOD = \"delta method, users as the unit\"\n\n\ndef ratio_delta(clicks, views):\n    \"\"\"CTR = sum(clicks) / sum(views) over users, and its delta-method variance.\n\n    clicks, views: one entry per counted user, users with zero pageviews included. Var = N/(N-1) * sum((c - r v)^2) /\n    (sum v)^2, the usual linearisation of a ratio of two user-level means.\n    \"\"\"\n    c = np.asarray(clicks, dtype=float)\n    v = np.asarray(views, dtype=float)\n    n = len(c)\n    r = c.sum() / v.sum()\n    var = n / (n - 1) * float(np.sum((c - r * v) ** 2)) / float(v.sum()) ** 2\n    return float(r), var\n\n\ndef diff_ci(arm_a, arm_b):\n    \"\"\"CTR_B - CTR_A and its 95% CI; arm_a, arm_b: per-user frames with columns clicks, views.\"\"\"\n    ra, va = ratio_delta(arm_a[\"clicks\"], arm_a[\"views\"])\n    rb, vb = ratio_delta(arm_b[\"clicks\"], arm_b[\"views\"])\n    diff = rb - ra\n    se = math.sqrt(va + vb)\n    return diff, (diff - Z * se, diff + Z * se)\n\n\ndef srm_pvalue(n_a, n_b):\n    \"\"\"Pearson chi-square goodness of fit of the user counts against 50/50 (1 df, no continuity correction).\"\"\"\n    return float(chisquare([n_a, n_b]).pvalue)\n{\n  \"experiment\": \"EXP-2291\",\n  \"n_users\": {\n    \"A\": 16570,\n    \"B\": 15722\n  },\n  \"pageviews\": {\n    \"A\": 165646,\n    \"B\": 158616\n  },\n  \"clicks\": {\n    \"A\": 16837,\n    \"B\": 16466\n  },\n  \"ctr\": {\n    \"A\": 0.10164447073880443,\n    \"B\": 0.1038104604831795\n  },\n  \"diff\": 0.0021659897443750686,\n  \"rel_lift\": 0.021309469453985427,\n  \"ci_95\": [\n    -0.0033131556717745413,\n    0.007645135160524679\n  ],\n  \"ci_method\": \"delta method, users as the unit\",\n  \"srm_p\": 2.3702703557471535e-06,\n  \"srm_flag\": true,\n  \"decision\": \"invalid\"\n}\n[metadata] {\"noOutputExpected\": false}",
+            "extra": {
+              "tool_result_metadata": {
+                "tool_use_result": {
+                  "stdout": "# Bot screening\n\nData platform documentation. It applies to every experiment export of this layout.\n\nThe platform screens traffic for bots with two rules. Every flag is one row of `bot_flags.csv.gz` (`user_id`, `rule`,\n`flagged_at`). A user can be flagged by both rules.\n\n| Rule | In use since | What it looks at | When it runs | `flagged_at` |\n|---|---|---|---|---|\n| `ua_crawler` | 2024-03 | the client: a crawler user agent, or an IP address in a data-centre range | on the client's first request to the platform (any page; it need not be a product pageview of the export) | the time of that first request; one row per flagged user |\n| `velocity` | 2026-08-28 (SEC-219) | the user's `module_click` events (`docs/TRACKING.md`): 8 or more events, of any target, within 60 seconds | nightly at 02:00 UTC, over the module_click events of the previous UTC day | the time of the run (02:00:00 UTC); one row per user and day on which the rule fired |\n\n`velocity` was added against click fraud on the related-items module (scripts that click product cards in bursts).\nIts threshold was set on July 2026 related-items traffic, in which no human reached it.\n# Experiment export: data dictionary\n\nData platform documentation. It applies to every experiment export of this layout.\n\nAn export is one folder with four gzip-compressed CSV files (UTF-8, comma-separated, one header row). It holds:\n- every assignment row the assignment service logged for the experiment;\n- every flag the platform's bot screening raised on the experiment's assigned users, up to the time of the export;\n- each assigned user's product pageviews, from about three days before the user's `assigned_at` to the end of the\n  experiment (so pageviews before a user's assignment are included);\n- every module event logged on those pageviews, whatever its time (an event can come after the end of the\n  experiment when its pageview came just before it).\n\nTimestamps are ISO 8601, to the second, with a `Z` or a `+hh:mm` / `-hh:mm` offset. The offset varies from row to\nrow, so the same instant can be written in different ways; compare instants, not text.\n\n## assignments.csv.gz\nOne row per assignment, as the assignment service logged it. The logger retries, so a row can appear more than once,\nexactly repeated. A user never has two different rows.\n\n| Column | Meaning |\n|---|---|\n| `user_id` | the user (text) |\n| `variant` | `A` or `B` |\n| `assigned_at` | when the user got the variant |\n| `method` | how the variant was set: `hash` = the variant from the hash (the randomization); `override` = set by hand in the feature-flag console's allowlist (dogfood and QA accounts), without the hash |\n\n## bot_flags.csv.gz\nOne row per flag raised by the platform's bot screening (`docs/BOT_SCREENING.md`). A user can have rows of both rules,\nand more than one row of the same rule.\n\n| Column | Meaning |\n|---|---|\n| `user_id` | the flagged user |\n| `rule` | the screening rule that raised the flag: `ua_crawler` or `velocity` |\n| `flagged_at` | when the flag was raised (for each rule: `docs/BOT_SCREENING.md`) |\n\n## pageviews.csv.gz\nOne row per product pageview, logged when the page has loaded. The assignment service assigns a user when the page\nis requested, so the pageview on which a user was assigned has no row if the user left before the page loaded: an\nassigned user need not have a pageview at `assigned_at`, and can have no pageview row at all.\n\n| Column | Meaning |\n|---|---|\n| `pageview_id` | the pageview (text); unique per row |\n| `user_id` | the user |\n| `ts` | when the page loaded |\n| `clicked` | 1 if at least one module_click event was logged on this pageview, else 0 (precomputed for dashboards) |\n\n## module_clicks.csv.gz\nOne row per module_click event of the related-items module (`docs/TRACKING.md`). Times are to the second, so two\nclicks on the same element in the same second give two identical rows; each row is one event.\n\n| Column | Meaning |\n|---|---|\n| `pageview_id` | the pageview the event was logged on (`pageviews.csv.gz`); the event belongs to that pageview's user |\n| `user_id` | the user |\n| `ts` | when the click happened; at or after the pageview's `ts` |\n| `target` | the `data-target` value of the clicked element (`docs/TRACKING.md`) |\n# Launch record: EXP-2291 \"related items v2\"\n\n| Field | Value |\n|---|---|\n| Experiment | EXP-2291, related items v2 (RI-311) |\n| Owner | product pages team |\n| Unit | user |\n| Allocation | 50/50, by the assignment service's hash of the salt and the user id |\n| Salt | `exp-2291-related-items-v2` |\n| Arms | A: module v1 (control); B: module v2, the carousel (`docs/TRACKING.md`) |\n| Assignment | at the user's first eligible product pageview (`EXPERIMENT.md` section 2) |\n| Start | 2026-09-01 00:00Z |\n| End | 2026-09-15 00:00Z |\n| Analysis plan | `EXPERIMENT.md`, agreed 2026-08-25 |\n| Export | taken 2026-09-15 06:00Z, after the nightly bot screening run of 02:00Z |\n\n## Log\n- 2026-08-25: analysis plan agreed.\n- 2026-09-01 00:00Z: started; the assignment service randomizes users 50/50.\n- 2026-09-03: dogfood: the 100 accounts of the product pages team added to the allowlist of variant B in the\n  feature-flag console (RI-322), so that the team can use v2 on the live site.\n- 2026-09-15 00:00Z: ended; export taken at 06:00Z.\n# Tracking: the related-items module\n\nData platform documentation. It applies to every experiment export of this layout.\n\n## module_click events\nThe related-items module on product pages logs one `module_click` event per click on any clickable element inside the\nmodule. Each event records the pageview it happened on, the user, the time of the click and the clicked element's\n`data-target` value. Exports hold these events in `module_clicks.csv.gz`, and `pageviews.clicked` is derived from\nthem (`docs/DATA_DICTIONARY.md`).\n\n| `data-target` | Element | What a click on it does |\n|---|---|---|\n| `item:<product_id>` | a product card | opens that product's page |\n| `nav:prev`, `nav:next` | the previous and next arrows of the v2 carousel | scroll the carousel; open nothing |\n| `link:all` | the \"See all\" link, in every module version from 2026-09-08 | opens the list page of all related items |\n\n## Module versions\n| Version | What the module shows |\n|---|---|\n| v1 | the current module: a row of six product cards |\n| v2 | related items v2 (RI-311): a carousel of 12 product cards with previous and next arrows |\n\nOther experiments test other layouts or rankings of the cards; v2 is the only version with arrows. Since 2026-09-08\nevery version also shows the \"See all\" link.\n\nThe module version is set per experiment arm: from a user's assignment on, every product pageview of the user shows\nthe version of the user's arm, as the experiment's launch record sets it (EXP-2291: v1 in A, v2 in B). Before the\nassignment, every user sees v1.\n\n## Changelog\n- 2025-04-14: `module_click` events logged for every clickable element of the module.\n- 2026-09-01: v2 available to experiments, per arm (EXP-2291 shows it in arm B).\n- 2026-09-08: \"See all\" link (`link:all`) added to every module version (RI-318).\n# EXP-2291 readout\n\nReadout pipeline for experiment EXP-2291 (\"related items v2\" on product pages). The plan it must follow is\n`EXPERIMENT.md`.\n\nRun it from this folder:\n\n    python -m abtest.report --data data --out output/result.json\n\nLayout:\n\n| Path | What it is |\n|---|---|\n| `abtest/load.py` | reads the four export files, parses timestamps to UTC, drops repeated assignment rows and pre-assignment pageviews |\n| `abtest/filters.py` | the population filter: applies the platform's bot screening (`bot_flags.csv.gz`) to both arms |\n| `abtest/stats.py` | statistics for the readout: the delta-method interval and the SRM test |\n| `abtest/report.py` | the command: per-user clicks and pageviews, the readout, `result.json`; a click is a pageview's `clicked` value, the module click flag |\n| `data/` | the EXP-2291 export: `assignments.csv.gz`, `bot_flags.csv.gz`, `pageviews.csv.gz`, `module_clicks.csv.gz` |\n| `docs/` | the data platform's documentation of the export (`DATA_DICTIONARY.md`, `TRACKING.md`, `BOT_SCREENING.md`) and the launch record of EXP-2291 (`LAUNCH_EXP-2291.md`) |\n| `output/result.json` | the last readout |\n| `PM_NOTE.md` | the PM's note about this readout |\n\nEvery experiment export from the data platform has the same four files and columns, so the same command is used for\nother experiments with `--data <their folder>`.\n\"\"\"EXP-2291 readout pipeline: load the experiment export, apply the population rules, compute the CTR readout.\"\"\"\n\"\"\"Population filters for the readout.\"\"\"\n\n\ndef exclude_bots(assignments, bot_flags):\n    \"\"\"Drop bot traffic from both arms, before anything is counted (EXPERIMENT.md section 3).\n\n    Bot traffic is every user the platform's bot screening flagged (bot_flags.csv.gz): crawlers (rule ua_crawler)\n    and, since SEC-219, click-fraud bots on the related-items module (rule velocity).\n    \"\"\"\n    flagged = set(bot_flags[\"user_id\"])\n    return assignments[~assignments[\"user_id\"].isin(flagged)].reset_index(drop=True)\n\"\"\"Read one experiment export: assignments, bot_flags, pageviews and module_clicks (.csv.gz) in one folder.\"\"\"\nfrom pathlib import Path\n\nimport pandas as pd\n\n\ndef _read(data_dir, name, dtype=str):\n    return pd.read_csv(Path(data_dir) / f\"{name}.csv.gz\", dtype=dtype)\n\n\ndef _instants(col):\n    # The export mixes \"Z\" and \"+hh:mm\" / \"-hh:mm\" offsets. Parse to UTC: compare instants, never strings.\n    return pd.to_datetime(col, utc=True, format=\"ISO8601\")\n\n\ndef load_assignments(data_dir):\n    \"\"\"One row per assigned user: user_id, variant (\"A\" or \"B\"), assigned_at (UTC), method.\"\"\"\n    df = _read(data_dir, \"assignments\")\n    df = df.drop_duplicates()  # the assignment logger retries; an exact repeat of a row counts once\n    df[\"assigned_at\"] = _instants(df[\"assigned_at\"])\n    return df.reset_index(drop=True)\n\n\ndef load_bot_flags(data_dir):\n    \"\"\"One row per flag of the platform's bot screening: user_id, rule, flagged_at (UTC).\"\"\"\n    df = _read(data_dir, \"bot_flags\")\n    df[\"flagged_at\"] = _instants(df[\"flagged_at\"])\n    return df\n\n\ndef load_pageviews(data_dir, assignments):\n    \"\"\"Pageviews of the given assigned users, on or after the user's assignment time, with the variant attached.\"\"\"\n    pv = _read(data_dir, \"pageviews\", dtype={\"pageview_id\": str, \"user_id\": str, \"ts\": str, \"clicked\": \"int64\"})\n    pv[\"ts\"] = _instants(pv[\"ts\"])\n    pv = pv.merge(assignments[[\"user_id\", \"variant\", \"assigned_at\"]], on=\"user_id\", how=\"inner\")\n    pv = pv[pv[\"ts\"] >= pv[\"assigned_at\"]]  # exposure before assignment is not part of the experiment\n    return pv.reset_index(drop=True)\n\n\ndef load_module_clicks(data_dir):\n    \"\"\"Events of the related-items module: pageview_id, user_id, ts (UTC), target.\"\"\"\n    df = _read(data_dir, \"module_clicks\")\n    df[\"ts\"] = _instants(df[\"ts\"])\n    return df\n\"\"\"EXP-2291 readout: python -m abtest.report --data <folder> --out <result.json>\"\"\"\nimport argparse\nimport json\nfrom pathlib import Path\n\nfrom .filters import exclude_bots\nfrom .load import load_assignments, load_bot_flags, load_pageviews\nfrom .stats import CI_METHOD, SRM_ALPHA, diff_ci, srm_pvalue\n\nARMS = (\"A\", \"B\")\n\n\ndef per_user_counts(assignments, pageviews):\n    \"\"\"One row per counted user (users with no pageview included): user_id, variant, clicks, views.\n\n    A pageview's click is its `clicked` flag (the module click flag of the export).\n    \"\"\"\n    g = pageviews.groupby(\"user_id\").agg(clicks=(\"clicked\", \"sum\"), views=(\"clicked\", \"size\"))\n    per_user = assignments[[\"user_id\", \"variant\"]].join(g, on=\"user_id\")\n    return per_user.fillna({\"clicks\": 0, \"views\": 0})\n\n\ndef decide(srm_flag, ci_low):\n    \"\"\"EXPERIMENT.md section 7, in this order.\"\"\"\n    if srm_flag:\n        return \"invalid\"\n    return \"ship\" if ci_low > 0 else \"no_ship\"\n\n\ndef build_readout(data_dir):\n    assignments = exclude_bots(load_assignments(data_dir), load_bot_flags(data_dir))\n    pageviews = load_pageviews(data_dir, assignments)\n    per_user = per_user_counts(assignments, pageviews)\n    arms = {arm: per_user[per_user[\"variant\"] == arm] for arm in ARMS}\n\n    n_users = {arm: int(len(arms[arm])) for arm in ARMS}\n    views = {arm: int(arms[arm][\"views\"].sum()) for arm in ARMS}\n    clicks = {arm: int(arms[arm][\"clicks\"].sum()) for arm in ARMS}\n    ctr = {arm: clicks[arm] / views[arm] for arm in ARMS}\n    diff, (ci_low, ci_high) = diff_ci(arms[\"A\"], arms[\"B\"])\n    srm_p = srm_pvalue(n_users[\"A\"], n_users[\"B\"])\n    srm_flag = bool(srm_p < SRM_ALPHA)\n    return {\n        \"experiment\": \"EXP-2291\",\n        \"n_users\": n_users,\n        \"pageviews\": views,\n        \"clicks\": clicks,\n        \"ctr\": ctr,\n        \"diff\": float(diff),\n        \"rel_lift\": float(diff / ctr[\"A\"]),\n        \"ci_95\": [float(ci_low), float(ci_high)],\n        \"ci_method\": CI_METHOD,\n        \"srm_p\": srm_p,\n        \"srm_flag\": srm_flag,\n        \"decision\": decide(srm_flag, ci_low),\n    }\n\n\ndef main(argv=None):\n    ap = argparse.ArgumentParser(description=\"EXP-2291 CTR readout\")\n    ap.add_argument(\"--data\", required=True,\n                    help=\"export folder: assignments, bot_flags, pageviews and module_clicks (.csv.gz)\")\n    ap.add_argument(\"--out\", required=True, help=\"path of the result.json to write\")\n    args = ap.parse_args(argv)\n    readout = build_readout(args.data)\n    out = Path(args.out)\n    out.parent.mkdir(parents=True, exist_ok=True)\n    out.write_text(json.dumps(readout, indent=2) + \"\\n\")\n    print(f\"wrote {out}: decision={readout['decision']} diff={readout['diff']:+.5f} \"\n          f\"ci=[{readout['ci_95'][0]:+.5f}, {readout['ci_95'][1]:+.5f}] srm_p={readout['srm_p']:.3g}\")\n\n\nif __name__ == \"__main__\":\n    main()\n\"\"\"Statistics for the CTR readout (EXPERIMENT.md sections 5 and 6). The unit of randomization is the user.\"\"\"\nimport math\n\nimport numpy as np\nfrom scipy.stats import chisquare, norm\n\nZ = float(norm.ppf(0.975))\nSRM_ALPHA = 0.001\nCI_METHOD = \"delta method, users as the unit\"\n\n\ndef ratio_delta(clicks, views):\n    \"\"\"CTR = sum(clicks) / sum(views) over users, and its delta-method variance.\n\n    clicks, views: one entry per counted user, users with zero pageviews included. Var = N/(N-1) * sum((c - r v)^2) /\n    (sum v)^2, the usual linearisation of a ratio of two user-level means.\n    \"\"\"\n    c = np.asarray(clicks, dtype=float)\n    v = np.asarray(views, dtype=float)\n    n = len(c)\n    r = c.sum() / v.sum()\n    var = n / (n - 1) * float(np.sum((c - r * v) ** 2)) / float(v.sum()) ** 2\n    return float(r), var\n\n\ndef diff_ci(arm_a, arm_b):\n    \"\"\"CTR_B - CTR_A and its 95% CI; arm_a, arm_b: per-user frames with columns clicks, views.\"\"\"\n    ra, va = ratio_delta(arm_a[\"clicks\"], arm_a[\"views\"])\n    rb, vb = ratio_delta(arm_b[\"clicks\"], arm_b[\"views\"])\n    diff = rb - ra\n    se = math.sqrt(va + vb)\n    return diff, (diff - Z * se, diff + Z * se)\n\n\ndef srm_pvalue(n_a, n_b):\n    \"\"\"Pearson chi-square goodness of fit of the user counts against 50/50 (1 df, no continuity correction).\"\"\"\n    return float(chisquare([n_a, n_b]).pvalue)\n{\n  \"experiment\": \"EXP-2291\",\n  \"n_users\": {\n    \"A\": 16570,\n    \"B\": 15722\n  },\n  \"pageviews\": {\n    \"A\": 165646,\n    \"B\": 158616\n  },\n  \"clicks\": {\n    \"A\": 16837,\n    \"B\": 16466\n  },\n  \"ctr\": {\n    \"A\": 0.10164447073880443,\n    \"B\": 0.1038104604831795\n  },\n  \"diff\": 0.0021659897443750686,\n  \"rel_lift\": 0.021309469453985427,\n  \"ci_95\": [\n    -0.0033131556717745413,\n    0.007645135160524679\n  ],\n  \"ci_method\": \"delta method, users as the unit\",\n  \"srm_p\": 2.3702703557471535e-06,\n  \"srm_flag\": true,\n  \"decision\": \"invalid\"\n}",
+                  "stderr": "",
+                  "interrupted": false,
+                  "isImage": false,
+                  "noOutputExpected": false
+                },
+                "raw_tool_result": {
+                  "tool_use_id": "toolu_01KDhTB94suPoKkJHig888w1",
+                  "type": "tool_result",
+                  "content": "# Bot screening\n\nData platform documentation. It applies to every experiment export of this layout.\n\nThe platform screens traffic for bots with two rules. Every flag is one row of `bot_flags.csv.gz` (`user_id`, `rule`,\n`flagged_at`). A user can be flagged by both rules.\n\n| Rule | In use since | What it looks at | When it runs | `flagged_at` |\n|---|---|---|---|---|\n| `ua_crawler` | 2024-03 | the client: a crawler user agent, or an IP address in a data-centre range | on the client's first request to the platform (any page; it need not be a product pageview of the export) | the time of that first request; one row per flagged user |\n| `velocity` | 2026-08-28 (SEC-219) | the user's `module_click` events (`docs/TRACKING.md`): 8 or more events, of any target, within 60 seconds | nightly at 02:00 UTC, over the module_click events of the previous UTC day | the time of the run (02:00:00 UTC); one row per user and day on which the rule fired |\n\n`velocity` was added against click fraud on the related-items module (scripts that click product cards in bursts).\nIts threshold was set on July 2026 related-items traffic, in which no human reached it.\n# Experiment export: data dictionary\n\nData platform documentation. It applies to every experiment export of this layout.\n\nAn export is one folder with four gzip-compressed CSV files (UTF-8, comma-separated, one header row). It holds:\n- every assignment row the assignment service logged for the experiment;\n- every flag the platform's bot screening raised on the experiment's assigned users, up to the time of the export;\n- each assigned user's product pageviews, from about three days before the user's `assigned_at` to the end of the\n  experiment (so pageviews before a user's assignment are included);\n- every module event logged on those pageviews, whatever its time (an event can come after the end of the\n  experiment when its pageview came just before it).\n\nTimestamps are ISO 8601, to the second, with a `Z` or a `+hh:mm` / `-hh:mm` offset. The offset varies from row to\nrow, so the same instant can be written in different ways; compare instants, not text.\n\n## assignments.csv.gz\nOne row per assignment, as the assignment service logged it. The logger retries, so a row can appear more than once,\nexactly repeated. A user never has two different rows.\n\n| Column | Meaning |\n|---|---|\n| `user_id` | the user (text) |\n| `variant` | `A` or `B` |\n| `assigned_at` | when the user got the variant |\n| `method` | how the variant was set: `hash` = the variant from the hash (the randomization); `override` = set by hand in the feature-flag console's allowlist (dogfood and QA accounts), without the hash |\n\n## bot_flags.csv.gz\nOne row per flag raised by the platform's bot screening (`docs/BOT_SCREENING.md`). A user can have rows of both rules,\nand more than one row of the same rule.\n\n| Column | Meaning |\n|---|---|\n| `user_id` | the flagged user |\n| `rule` | the screening rule that raised the flag: `ua_crawler` or `velocity` |\n| `flagged_at` | when the flag was raised (for each rule: `docs/BOT_SCREENING.md`) |\n\n## pageviews.csv.gz\nOne row per product pageview, logged when the page has loaded. The assignment service assigns a user when the page\nis requested, so the pageview on which a user was assigned has no row if the user left before the page loaded: an\nassigned user need not have a pageview at `assigned_at`, and can have no pageview row at all.\n\n| Column | Meaning |\n|---|---|\n| `pageview_id` | the pageview (text); unique per row |\n| `user_id` | the user |\n| `ts` | when the page loaded |\n| `clicked` | 1 if at least one module_click event was logged on this pageview, else 0 (precomputed for dashboards) |\n\n## module_clicks.csv.gz\nOne row per module_click event of the related-items module (`docs/TRACKING.md`). Times are to the second, so two\nclicks on the same element in the same second give two identical rows; each row is one event.\n\n| Column | Meaning |\n|---|---|\n| `pageview_id` | the pageview the event was logged on (`pageviews.csv.gz`); the event belongs to that pageview's user |\n| `user_id` | the user |\n| `ts` | when the click happened; at or after the pageview's `ts` |\n| `target` | the `data-target` value of the clicked element (`docs/TRACKING.md`) |\n# Launch record: EXP-2291 \"related items v2\"\n\n| Field | Value |\n|---|---|\n| Experiment | EXP-2291, related items v2 (RI-311) |\n| Owner | product pages team |\n| Unit | user |\n| Allocation | 50/50, by the assignment service's hash of the salt and the user id |\n| Salt | `exp-2291-related-items-v2` |\n| Arms | A: module v1 (control); B: module v2, the carousel (`docs/TRACKING.md`) |\n| Assignment | at the user's first eligible product pageview (`EXPERIMENT.md` section 2) |\n| Start | 2026-09-01 00:00Z |\n| End | 2026-09-15 00:00Z |\n| Analysis plan | `EXPERIMENT.md`, agreed 2026-08-25 |\n| Export | taken 2026-09-15 06:00Z, after the nightly bot screening run of 02:00Z |\n\n## Log\n- 2026-08-25: analysis plan agreed.\n- 2026-09-01 00:00Z: started; the assignment service randomizes users 50/50.\n- 2026-09-03: dogfood: the 100 accounts of the product pages team added to the allowlist of variant B in the\n  feature-flag console (RI-322), so that the team can use v2 on the live site.\n- 2026-09-15 00:00Z: ended; export taken at 06:00Z.\n# Tracking: the related-items module\n\nData platform documentation. It applies to every experiment export of this layout.\n\n## module_click events\nThe related-items module on product pages logs one `module_click` event per click on any clickable element inside the\nmodule. Each event records the pageview it happened on, the user, the time of the click and the clicked element's\n`data-target` value. Exports hold these events in `module_clicks.csv.gz`, and `pageviews.clicked` is derived from\nthem (`docs/DATA_DICTIONARY.md`).\n\n| `data-target` | Element | What a click on it does |\n|---|---|---|\n| `item:<product_id>` | a product card | opens that product's page |\n| `nav:prev`, `nav:next` | the previous and next arrows of the v2 carousel | scroll the carousel; open nothing |\n| `link:all` | the \"See all\" link, in every module version from 2026-09-08 | opens the list page of all related items |\n\n## Module versions\n| Version | What the module shows |\n|---|---|\n| v1 | the current module: a row of six product cards |\n| v2 | related items v2 (RI-311): a carousel of 12 product cards with previous and next arrows |\n\nOther experiments test other layouts or rankings of the cards; v2 is the only version with arrows. Since 2026-09-08\nevery version also shows the \"See all\" link.\n\nThe module version is set per experiment arm: from a user's assignment on, every product pageview of the user shows\nthe version of the user's arm, as the experiment's launch record sets it (EXP-2291: v1 in A, v2 in B). Before the\nassignment, every user sees v1.\n\n## Changelog\n- 2025-04-14: `module_click` events logged for every clickable element of the module.\n- 2026-09-01: v2 available to experiments, per arm (EXP-2291 shows it in arm B).\n- 2026-09-08: \"See all\" link (`link:all`) added to every module version (RI-318).\n# EXP-2291 readout\n\nReadout pipeline for experiment EXP-2291 (\"related items v2\" on product pages). The plan it must follow is\n`EXPERIMENT.md`.\n\nRun it from this folder:\n\n    python -m abtest.report --data data --out output/result.json\n\nLayout:\n\n| Path | What it is |\n|---|---|\n| `abtest/load.py` | reads the four export files, parses timestamps to UTC, drops repeated assignment rows and pre-assignment pageviews |\n| `abtest/filters.py` | the population filter: applies the platform's bot screening (`bot_flags.csv.gz`) to both arms |\n| `abtest/stats.py` | statistics for the readout: the delta-method interval and the SRM test |\n| `abtest/report.py` | the command: per-user clicks and pageviews, the readout, `result.json`; a click is a pageview's `clicked` value, the module click flag |\n| `data/` | the EXP-2291 export: `assignments.csv.gz`, `bot_flags.csv.gz`, `pageviews.csv.gz`, `module_clicks.csv.gz` |\n| `docs/` | the data platform's documentation of the export (`DATA_DICTIONARY.md`, `TRACKING.md`, `BOT_SCREENING.md`) and the launch record of EXP-2291 (`LAUNCH_EXP-2291.md`) |\n| `output/result.json` | the last readout |\n| `PM_NOTE.md` | the PM's note about this readout |\n\nEvery experiment export from the data platform has the same four files and columns, so the same command is used for\nother experiments with `--data <their folder>`.\n\"\"\"EXP-2291 readout pipeline: load the experiment export, apply the population rules, compute the CTR readout.\"\"\"\n\"\"\"Population filters for the readout.\"\"\"\n\n\ndef exclude_bots(assignments, bot_flags):\n    \"\"\"Drop bot traffic from both arms, before anything is counted (EXPERIMENT.md section 3).\n\n    Bot traffic is every user the platform's bot screening flagged (bot_flags.csv.gz): crawlers (rule ua_crawler)\n    and, since SEC-219, click-fraud bots on the related-items module (rule velocity).\n    \"\"\"\n    flagged = set(bot_flags[\"user_id\"])\n    return assignments[~assignments[\"user_id\"].isin(flagged)].reset_index(drop=True)\n\"\"\"Read one experiment export: assignments, bot_flags, pageviews and module_clicks (.csv.gz) in one folder.\"\"\"\nfrom pathlib import Path\n\nimport pandas as pd\n\n\ndef _read(data_dir, name, dtype=str):\n    return pd.read_csv(Path(data_dir) / f\"{name}.csv.gz\", dtype=dtype)\n\n\ndef _instants(col):\n    # The export mixes \"Z\" and \"+hh:mm\" / \"-hh:mm\" offsets. Parse to UTC: compare instants, never strings.\n    return pd.to_datetime(col, utc=True, format=\"ISO8601\")\n\n\ndef load_assignments(data_dir):\n    \"\"\"One row per assigned user: user_id, variant (\"A\" or \"B\"), assigned_at (UTC), method.\"\"\"\n    df = _read(data_dir, \"assignments\")\n    df = df.drop_duplicates()  # the assignment logger retries; an exact repeat of a row counts once\n    df[\"assigned_at\"] = _instants(df[\"assigned_at\"])\n    return df.reset_index(drop=True)\n\n\ndef load_bot_flags(data_dir):\n    \"\"\"One row per flag of the platform's bot screening: user_id, rule, flagged_at (UTC).\"\"\"\n    df = _read(data_dir, \"bot_flags\")\n    df[\"flagged_at\"] = _instants(df[\"flagged_at\"])\n    return df\n\n\ndef load_pageviews(data_dir, assignments):\n    \"\"\"Pageviews of the given assigned users, on or after the user's assignment time, with the variant attached.\"\"\"\n    pv = _read(data_dir, \"pageviews\", dtype={\"pageview_id\": str, \"user_id\": str, \"ts\": str, \"clicked\": \"int64\"})\n    pv[\"ts\"] = _instants(pv[\"ts\"])\n    pv = pv.merge(assignments[[\"user_id\", \"variant\", \"assigned_at\"]], on=\"user_id\", how=\"inner\")\n    pv = pv[pv[\"ts\"] >= pv[\"assigned_at\"]]  # exposure before assignment is not part of the experiment\n    return pv.reset_index(drop=True)\n\n\ndef load_module_clicks(data_dir):\n    \"\"\"Events of the related-items module: pageview_id, user_id, ts (UTC), target.\"\"\"\n    df = _read(data_dir, \"module_clicks\")\n    df[\"ts\"] = _instants(df[\"ts\"])\n    return df\n\"\"\"EXP-2291 readout: python -m abtest.report --data <folder> --out <result.json>\"\"\"\nimport argparse\nimport json\nfrom pathlib import Path\n\nfrom .filters import exclude_bots\nfrom .load import load_assignments, load_bot_flags, load_pageviews\nfrom .stats import CI_METHOD, SRM_ALPHA, diff_ci, srm_pvalue\n\nARMS = (\"A\", \"B\")\n\n\ndef per_user_counts(assignments, pageviews):\n    \"\"\"One row per counted user (users with no pageview included): user_id, variant, clicks, views.\n\n    A pageview's click is its `clicked` flag (the module click flag of the export).\n    \"\"\"\n    g = pageviews.groupby(\"user_id\").agg(clicks=(\"clicked\", \"sum\"), views=(\"clicked\", \"size\"))\n    per_user = assignments[[\"user_id\", \"variant\"]].join(g, on=\"user_id\")\n    return per_user.fillna({\"clicks\": 0, \"views\": 0})\n\n\ndef decide(srm_flag, ci_low):\n    \"\"\"EXPERIMENT.md section 7, in this order.\"\"\"\n    if srm_flag:\n        return \"invalid\"\n    return \"ship\" if ci_low > 0 else \"no_ship\"\n\n\ndef build_readout(data_dir):\n    assignments = exclude_bots(load_assignments(data_dir), load_bot_flags(data_dir))\n    pageviews = load_pageviews(data_dir, assignments)\n    per_user = per_user_counts(assignments, pageviews)\n    arms = {arm: per_user[per_user[\"variant\"] == arm] for arm in ARMS}\n\n    n_users = {arm: int(len(arms[arm])) for arm in ARMS}\n    views = {arm: int(arms[arm][\"views\"].sum()) for arm in ARMS}\n    clicks = {arm: int(arms[arm][\"clicks\"].sum()) for arm in ARMS}\n    ctr = {arm: clicks[arm] / views[arm] for arm in ARMS}\n    diff, (ci_low, ci_high) = diff_ci(arms[\"A\"], arms[\"B\"])\n    srm_p = srm_pvalue(n_users[\"A\"], n_users[\"B\"])\n    srm_flag = bool(srm_p < SRM_ALPHA)\n    return {\n        \"experiment\": \"EXP-2291\",\n        \"n_users\": n_users,\n        \"pageviews\": views,\n        \"clicks\": clicks,\n        \"ctr\": ctr,\n        \"diff\": float(diff),\n        \"rel_lift\": float(diff / ctr[\"A\"]),\n        \"ci_95\": [float(ci_low), float(ci_high)],\n        \"ci_method\": CI_METHOD,\n        \"srm_p\": srm_p,\n        \"srm_flag\": srm_flag,\n        \"decision\": decide(srm_flag, ci_low),\n    }\n\n\ndef main(argv=None):\n    ap = argparse.ArgumentParser(description=\"EXP-2291 CTR readout\")\n    ap.add_argument(\"--data\", required=True,\n                    help=\"export folder: assignments, bot_flags, pageviews and module_clicks (.csv.gz)\")\n    ap.add_argument(\"--out\", required=True, help=\"path of the result.json to write\")\n    args = ap.parse_args(argv)\n    readout = build_readout(args.data)\n    out = Path(args.out)\n    out.parent.mkdir(parents=True, exist_ok=True)\n    out.write_text(json.dumps(readout, indent=2) + \"\\n\")\n    print(f\"wrote {out}: decision={readout['decision']} diff={readout['diff']:+.5f} \"\n          f\"ci=[{readout['ci_95'][0]:+.5f}, {readout['ci_95'][1]:+.5f}] srm_p={readout['srm_p']:.3g}\")\n\n\nif __name__ == \"__main__\":\n    main()\n\"\"\"Statistics for the CTR readout (EXPERIMENT.md sections 5 and 6). The unit of randomization is the user.\"\"\"\nimport math\n\nimport numpy as np\nfrom scipy.stats import chisquare, norm\n\nZ = float(norm.ppf(0.975))\nSRM_ALPHA = 0.001\nCI_METHOD = \"delta method, users as the unit\"\n\n\ndef ratio_delta(clicks, views):\n    \"\"\"CTR = sum(clicks) / sum(views) over users, and its delta-method variance.\n\n    clicks, views: one entry per counted user, users with zero pageviews included. Var = N/(N-1) * sum((c - r v)^2) /\n    (sum v)^2, the usual linearisation of a ratio of two user-level means.\n    \"\"\"\n    c = np.asarray(clicks, dtype=float)\n    v = np.asarray(views, dtype=float)\n    n = len(c)\n    r = c.sum() / v.sum()\n    var = n / (n - 1) * float(np.sum((c - r * v) ** 2)) / float(v.sum()) ** 2\n    return float(r), var\n\n\ndef diff_ci(arm_a, arm_b):\n    \"\"\"CTR_B - CTR_A and its 95% CI; arm_a, arm_b: per-user frames with columns clicks, views.\"\"\"\n    ra, va = ratio_delta(arm_a[\"clicks\"], arm_a[\"views\"])\n    rb, vb = ratio_delta(arm_b[\"clicks\"], arm_b[\"views\"])\n    diff = rb - ra\n    se = math.sqrt(va + vb)\n    return diff, (diff - Z * se, diff + Z * se)\n\n\ndef srm_pvalue(n_a, n_b):\n    \"\"\"Pearson chi-square goodness of fit of the user counts against 50/50 (1 df, no continuity correction).\"\"\"\n    return float(chisquare([n_a, n_b]).pvalue)\n{\n  \"experiment\": \"EXP-2291\",\n  \"n_users\": {\n    \"A\": 16570,\n    \"B\": 15722\n  },\n  \"pageviews\": {\n    \"A\": 165646,\n    \"B\": 158616\n  },\n  \"clicks\": {\n    \"A\": 16837,\n    \"B\": 16466\n  },\n  \"ctr\": {\n    \"A\": 0.10164447073880443,\n    \"B\": 0.1038104604831795\n  },\n  \"diff\": 0.0021659897443750686,\n  \"rel_lift\": 0.021309469453985427,\n  \"ci_95\": [\n    -0.0033131556717745413,\n    0.007645135160524679\n  ],\n  \"ci_method\": \"delta method, users as the unit\",\n  \"srm_p\": 2.3702703557471535e-06,\n  \"srm_flag\": true,\n  \"decision\": \"invalid\"\n}",
+                  "is_error": false
+                }
+              },
+              "tool_result_is_error": false
+            }
+          }
+        ]
+      },
+      "metrics": {
+        "prompt_tokens": 20628,
+        "completion_tokens": 80,
+        "cached_tokens": 17714,
+        "cost_usd": 0.019710800000000004,
+        "extra": {
+          "cache_creation_input_tokens": 2912,
+          "cache_read_input_tokens": 17714,
+          "output_tokens_details": {
+            "thinking_tokens": 0
+          },
+          "server_tool_use": {
+            "web_search_requests": 0,
+            "web_fetch_requests": 0
+          },
+          "service_tier": "standard",
+          "cache_creation": {
+            "ephemeral_1h_input_tokens": 0,
+            "ephemeral_5m_input_tokens": 2912
+          },
+          "inference_geo": "global",
+          "iterations": [],
+          "speed": "standard",
+          "fallback_credit": null,
+          "cost_source": "litellm_estimate"
+        }
+      },
+      "llm_call_count": 1,
+      "extra": {
+        "stop_reason": "tool_use",
+        "is_sidechain": false,
+        "cwd": "/app"
+      }
+    },
+    {
+      "step_id": 4,
+      "timestamp": "2026-10-31T09:30:38.993Z",
+      "source": "agent",
+      "model_name": "claude-opus-5-5",
+      "message": "",
+      "tool_calls": [
+        {
+          "tool_call_id": "toolu_01Qe9cZum72SKLBcN8e5cdmK",
+          "function_name": "Bash",
+          "arguments": {
+            "command": "cd /app; for f in data/*.gz; do echo == $f; zcat $f | head -4; zcat $f | wc -l; done; python -c \"\nimport pandas as pd\na=pd.read_csv('data/assignments.csv.gz',dtype=str)\nprint(a.variant.value_counts(dropna=False), a.method.value_counts(dropna=False))\nprint(len(a), len(a.drop_duplicates()), a.user_id.nunique())\nd=a.drop_duplicates(); print(d[d.user_id.duplicated(keep=False)].sort_values('user_id').head(10))\nprint(pd.crosstab(d.variant,d.method))\nb=pd.read_csv('data/bot_flags.csv.gz',dtype=str); print(b.rule.value_counts(dropna=False)); print(b.groupby('rule').user_id.nunique())\nm=pd.read_csv('data/module_clicks.csv.gz',dtype=str); print(m.target.str.split(':').str[0].value_counts(dropna=False))\np=pd.read_csv('data/pageviews.csv.gz',dtype=str); print(p.pageview_id.is_unique, p.clicked.value_counts())\nprint(m.pageview_id.isin(p.pageview_id).mean())\nmm=m.merge(p[['pageview_id','user_id']],on='pageview_id',suffixes=('','_pv')); print((mm.user_id!=mm.user_id_pv).sum())\nprint(p.user_id.isin(a.user_id).mean())\n\""
+          },
+          "extra": {
+            "raw_arguments": {
+              "command": "cd /app; for f in data/*.gz; do echo == $f; zcat $f | head -4; zcat $f | wc -l; done; python -c \"\nimport pandas as pd\na=pd.read_csv('data/assignments.csv.gz',dtype=str)\nprint(a.variant.value_counts(dropna=False), a.method.value_counts(dropna=False))\nprint(len(a), len(a.drop_duplicates()), a.user_id.nunique())\nd=a.drop_duplicates(); print(d[d.user_id.duplicated(keep=False)].sort_values('user_id').head(10))\nprint(pd.crosstab(d.variant,d.method))\nb=pd.read_csv('data/bot_flags.csv.gz',dtype=str); print(b.rule.value_counts(dropna=False)); print(b.groupby('rule').user_id.nunique())\nm=pd.read_csv('data/module_clicks.csv.gz',dtype=str); print(m.target.str.split(':').str[0].value_counts(dropna=False))\np=pd.read_csv('data/pageviews.csv.gz',dtype=str); print(p.pageview_id.is_unique, p.clicked.value_counts())\nprint(m.pageview_id.isin(p.pageview_id).mean())\nmm=m.merge(p[['pageview_id','user_id']],on='pageview_id',suffixes=('','_pv')); print((mm.user_id!=mm.user_id_pv).sum())\nprint(p.user_id.isin(a.user_id).mean())\n\""
+            },
+            "tool_use_name": "Bash"
+          }
+        }
+      ],
+      "observation": {
+        "results": [
+          {
+            "source_call_id": "toolu_01Qe9cZum72SKLBcN8e5cdmK",
+            "content": "== data/assignments.csv.gz\nuser_id,variant,assigned_at,method\nu2779791,A,2026-09-01T00:00:05Z,hash\nu7890685,A,2026-09-01T00:00:15Z,hash\nu6932668,A,2026-09-01T00:00:23Z,hash\n34437\n== data/bot_flags.csv.gz\nuser_id,rule,flagged_at\nu5243316,ua_crawler,2026-08-29T01:06:18Z\nu1933902,ua_crawler,2026-08-29T08:38:07-05:00\nu4471529,ua_crawler,2026-08-29T15:02:39Z\n1884\n== data/module_clicks.csv.gz\npageview_id,user_id,ts,target\nzjyptm,u7889185,2026-08-29T05:01:35Z,item:16374\nzjypu8,u3051451,2026-08-29T03:06:21-04:00,item:39657\nzjypuc,u3986759,2026-08-29T07:31:47Z,item:48181\n51672\n== data/pageviews.csv.gz\npageview_id,user_id,ts,clicked\nzjypt5,u5243316,2026-08-29T01:26:01Z,0\nzjypt6,u8289111,2026-08-29T01:29:35Z,0\nzjypt7,u8036784,2026-08-28T21:33:41-04:00,0\n364645\nvariant\nB    17335\nA    17101\nName: count, dtype: int64 method\nhash        34336\noverride      100\nName: count, dtype: int64\n34436 34100 34100\nEmpty DataFrame\nColumns: [user_id, variant, assigned_at, method]\nIndex: []\nmethod    hash  override\nvariant                 \nA        16935         0\nB        17065       100\nrule\nvelocity      1155\nua_crawler     728\nName: count, dtype: int64\nrule\nua_crawler     728\nvelocity      1096\nName: user_id, dtype: int64\ntarget\nitem    38088\nnav     12636\nlink      947\nName: count, dtype: int64\nTrue clicked\n0    326592\n1     38052\nName: count, dtype: int64\n1.0\n0\n1.0\n\n[stdout]\n== data/assignments.csv.gz\nuser_id,variant,assigned_at,method\nu2779791,A,2026-09-01T00:00:05Z,hash\nu7890685,A,2026-09-01T00:00:15Z,hash\nu6932668,A,2026-09-01T00:00:23Z,hash\n34437\n== data/bot_flags.csv.gz\nuser_id,rule,flagged_at\nu5243316,ua_crawler,2026-08-29T01:06:18Z\nu1933902,ua_crawler,2026-08-29T08:38:07-05:00\nu4471529,ua_crawler,2026-08-29T15:02:39Z\n1884\n== data/module_clicks.csv.gz\npageview_id,user_id,ts,target\nzjyptm,u7889185,2026-08-29T05:01:35Z,item:16374\nzjypu8,u3051451,2026-08-29T03:06:21-04:00,item:39657\nzjypuc,u3986759,2026-08-29T07:31:47Z,item:48181\n51672\n== data/pageviews.csv.gz\npageview_id,user_id,ts,clicked\nzjypt5,u5243316,2026-08-29T01:26:01Z,0\nzjypt6,u8289111,2026-08-29T01:29:35Z,0\nzjypt7,u8036784,2026-08-28T21:33:41-04:00,0\n364645\nvariant\nB    17335\nA    17101\nName: count, dtype: int64 method\nhash        34336\noverride      100\nName: count, dtype: int64\n34436 34100 34100\nEmpty DataFrame\nColumns: [user_id, variant, assigned_at, method]\nIndex: []\nmethod    hash  override\nvariant                 \nA        16935         0\nB        17065       100\nrule\nvelocity      1155\nua_crawler     728\nName: count, dtype: int64\nrule\nua_crawler     728\nvelocity      1096\nName: user_id, dtype: int64\ntarget\nitem    38088\nnav     12636\nlink      947\nName: count, dtype: int64\nTrue clicked\n0    326592\n1     38052\nName: count, dtype: int64\n1.0\n0\n1.0\n[metadata] {\"noOutputExpected\": false}",
+            "extra": {
+              "tool_result_metadata": {
+                "tool_use_result": {
+                  "stdout": "== data/assignments.csv.gz\nuser_id,variant,assigned_at,method\nu2779791,A,2026-09-01T00:00:05Z,hash\nu7890685,A,2026-09-01T00:00:15Z,hash\nu6932668,A,2026-09-01T00:00:23Z,hash\n34437\n== data/bot_flags.csv.gz\nuser_id,rule,flagged_at\nu5243316,ua_crawler,2026-08-29T01:06:18Z\nu1933902,ua_crawler,2026-08-29T08:38:07-05:00\nu4471529,ua_crawler,2026-08-29T15:02:39Z\n1884\n== data/module_clicks.csv.gz\npageview_id,user_id,ts,target\nzjyptm,u7889185,2026-08-29T05:01:35Z,item:16374\nzjypu8,u3051451,2026-08-29T03:06:21-04:00,item:39657\nzjypuc,u3986759,2026-08-29T07:31:47Z,item:48181\n51672\n== data/pageviews.csv.gz\npageview_id,user_id,ts,clicked\nzjypt5,u5243316,2026-08-29T01:26:01Z,0\nzjypt6,u8289111,2026-08-29T01:29:35Z,0\nzjypt7,u8036784,2026-08-28T21:33:41-04:00,0\n364645\nvariant\nB    17335\nA    17101\nName: count, dtype: int64 method\nhash        34336\noverride      100\nName: count, dtype: int64\n34436 34100 34100\nEmpty DataFrame\nColumns: [user_id, variant, assigned_at, method]\nIndex: []\nmethod    hash  override\nvariant                 \nA        16935         0\nB        17065       100\nrule\nvelocity      1155\nua_crawler     728\nName: count, dtype: int64\nrule\nua_crawler     728\nvelocity      1096\nName: user_id, dtype: int64\ntarget\nitem    38088\nnav     12636\nlink      947\nName: count, dtype: int64\nTrue clicked\n0    326592\n1     38052\nName: count, dtype: int64\n1.0\n0\n1.0",
+                  "stderr": "",
+                  "interrupted": false,
+                  "isImage": false,
+                  "noOutputExpected": false
+                },
+                "raw_tool_result": {
+                  "tool_use_id": "toolu_01Qe9cZum72SKLBcN8e5cdmK",
+                  "type": "tool_result",
+                  "content": "== data/assignments.csv.gz\nuser_id,variant,assigned_at,method\nu2779791,A,2026-09-01T00:00:05Z,hash\nu7890685,A,2026-09-01T00:00:15Z,hash\nu6932668,A,2026-09-01T00:00:23Z,hash\n34437\n== data/bot_flags.csv.gz\nuser_id,rule,flagged_at\nu5243316,ua_crawler,2026-08-29T01:06:18Z\nu1933902,ua_crawler,2026-08-29T08:38:07-05:00\nu4471529,ua_crawler,2026-08-29T15:02:39Z\n1884\n== data/module_clicks.csv.gz\npageview_id,user_id,ts,target\nzjyptm,u7889185,2026-08-29T05:01:35Z,item:16374\nzjypu8,u3051451,2026-08-29T03:06:21-04:00,item:39657\nzjypuc,u3986759,2026-08-29T07:31:47Z,item:48181\n51672\n== data/pageviews.csv.gz\npageview_id,user_id,ts,clicked\nzjypt5,u5243316,2026-08-29T01:26:01Z,0\nzjypt6,u8289111,2026-08-29T01:29:35Z,0\nzjypt7,u8036784,2026-08-28T21:33:41-04:00,0\n364645\nvariant\nB    17335\nA    17101\nName: count, dtype: int64 method\nhash        34336\noverride      100\nName: count, dtype: int64\n34436 34100 34100\nEmpty DataFrame\nColumns: [user_id, variant, assigned_at, method]\nIndex: []\nmethod    hash  override\nvariant                 \nA        16935         0\nB        17065       100\nrule\nvelocity      1155\nua_crawler     728\nName: count, dtype: int64\nrule\nua_crawler     728\nvelocity      1096\nName: user_id, dtype: int64\ntarget\nitem    38088\nnav     12636\nlink      947\nName: count, dtype: int64\nTrue clicked\n0    326592\n1     38052\nName: count, dtype: int64\n1.0\n0\n1.0",
+                  "is_error": false
+                }
+              },
+              "tool_result_is_error": false
+            }
+          }
+        ]
+      },
+      "metrics": {
+        "prompt_tokens": 27108,
+        "completion_tokens": 1271,
+        "cached_tokens": 20626,
+        "cost_usd": 0.0619532,
+        "extra": {
+          "cache_creation_input_tokens": 6480,
+          "cache_read_input_tokens": 20626,
+          "output_tokens_details": {
+            "thinking_tokens": 709
+          },
+          "server_tool_use": {
+            "web_search_requests": 0,
+            "web_fetch_requests": 0
+          },
+          "service_tier": "standard",
+          "cache_creation": {
+            "ephemeral_1h_input_tokens": 0,
+            "ephemeral_5m_input_tokens": 6480
+          },
+          "inference_geo": "global",
+          "iterations": [],
+          "speed": "standard",
+          "fallback_credit": null,
+          "cost_source": "litellm_estimate"
+        }
+      },
+      "llm_call_count": 1,
+      "extra": {
+        "stop_reason": "tool_use",
+        "is_sidechain": false,
+        "cwd": "/app"
+      }
+    },
+    {
+      "step_id": 5,
+      "timestamp": "2026-10-31T09:30:48.872Z",
+      "source": "agent",
+      "model_name": "claude-opus-5-5",
+      "message": "",
+      "tool_calls": [
+        {
+          "tool_call_id": "toolu_017dEQyDF3HEAjEyrU3ShbJa",
+          "function_name": "Bash",
+          "arguments": {
+            "command": "cd /app; python - <<'EOF'\nimport re\np='abtest/filters.py'\nopen(p,'w').write('''\"\"\"Population filters for the readout (EXPERIMENT.md section 3).\"\"\"\n\n# Bot screening rules that look only at who the client is (user agent, network, device): docs/BOT_SCREENING.md.\n# `velocity` looks at the user's module clicks during the experiment (behaviour, partly caused by the arm itself:\n# v2's carousel arrows are module_click events), so it must not exclude anyone.\nCLIENT_RULES = {\"ua_crawler\"}\n\n\ndef randomized_only(assignments):\n    \"\"\"Keep the users whose variant was set by the randomization (method == \"hash\"); drop allowlist overrides.\"\"\"\n    return assignments[assignments[\"method\"] == \"hash\"].reset_index(drop=True)\n\n\ndef exclude_bots(assignments, bot_flags):\n    \"\"\"Drop users flagged by a client-identity rule (whenever the flag was raised), from both arms.\"\"\"\n    flagged = set(bot_flags.loc[bot_flags[\"rule\"].isin(CLIENT_RULES), \"user_id\"])\n    return assignments[~assignments[\"user_id\"].isin(flagged)].reset_index(drop=True)\n''')\nEOF\npython - <<'EOF'\np='/app/abtest/load.py'\ns=open(p).read()\ns=s.replace('''def _read(data_dir, name, dtype=str):\n    return pd.read_csv(Path(data_dir) / f\"{name}.csv.gz\", dtype=dtype)''','''def _read(data_dir, name, dtype=str):\n    df = pd.read_csv(Path(data_dir) / f\"{name}.csv.gz\", dtype=dtype, keep_default_na=False)\n    for c in df.columns:\n        if df[c].dtype == object:\n            df[c] = df[c].str.strip()\n    return df''')\ns=s.replace('''    df = df.drop_duplicates()  # the assignment logger retries; an exact repeat of a row counts once\n    df[\"assigned_at\"] = _instants(df[\"assigned_at\"])''','''    df[\"assigned_at\"] = _instants(df[\"assigned_at\"])\n    # the assignment logger retries; an exact repeat of a row counts once (one row per user)\n    df = df.drop_duplicates().drop_duplicates(\"user_id\")''')\ns=s.replace('''    pv = _read(data_dir, \"pageviews\", dtype={\"pageview_id\": str, \"user_id\": str, \"ts\": str, \"clicked\": \"int64\"})''','''    pv = _read(data_dir, \"pageviews\", dtype=str)[[\"pageview_id\", \"user_id\", \"ts\"]]''')\ns=s.replace('''def load_module_clicks(data_dir):\n    \"\"\"Events of the related-items module: pageview_id, user_id, ts (UTC), target.\"\"\"\n    df = _read(data_dir, \"module_clicks\")\n    df[\"ts\"] = _instants(df[\"ts\"])\n    return df''','''def load_module_clicks(data_dir):\n    \"\"\"Events of the related-items module: pageview_id, user_id, target (timestamps are not needed).\"\"\"\n    return _read(data_dir, \"module_clicks\")\n\n\ndef mark_clicked(pageviews, module_clicks):\n    \"\"\"clicked = 1 if the user opened at least one related product page (target item:<id>) from this pageview.\n\n    nav:prev / nav:next (v2 carousel arrows) and link:all (\"See all\") open no product page and do not count; the\n    export's precomputed `clicked` column counts every module_click event, so it is not used.\n    \"\"\"\n    opened = module_clicks.loc[module_clicks[\"target\"].str.startswith(\"item:\"), \"pageview_id\"]\n    pv = pageviews.copy()\n    pv[\"clicked\"] = pv[\"pageview_id\"].isin(set(opened)).astype(\"int64\")\n    return pv''')\nopen(p,'w').write(s)\np='/app/abtest/report.py'\ns=open(p).read()\ns=s.replace(\"from .filters import exclude_bots\\nfrom .load import load_assignments, load_bot_flags, load_pageviews\",\n\"from .filters import exclude_bots, randomized_only\\nfrom .load import load_assignments, load_bot_flags, load_module_clicks, load_pageviews, mark_clicked\")\ns=s.replace('''    A pageview's click is its `clicked` flag (the module click flag of the export).''','''    A pageview's click is whether a related product page was opened from it (load.mark_clicked).''')\ns=s.replace('''    assignments = exclude_bots(load_assignments(data_dir), load_bot_flags(data_dir))\n    pageviews = load_pageviews(data_dir, assignments)''','''    assignments = exclude_bots(randomized_only(load_assignments(data_dir)), load_bot_flags(data_dir))\n    pageviews = mark_clicked(load_pageviews(data_dir, assignments), load_module_clicks(data_dir))''')\ns=s.replace('''    ctr = {arm: clicks[arm] / views[arm] for arm in ARMS}''','''    ctr = {arm: clicks[arm] / views[arm] if views[arm] else float(\"nan\") for arm in ARMS}''')\ns=s.replace('''        \"experiment\": \"EXP-2291\",\\n''','')\ns=s.replace('''        \"decision\": decide(srm_flag, ci_low),\n    }''','''        \"decision\": decide(srm_flag, ci_low),\n        \"notes\": NOTES,\n    }''')\ns=s.replace('''ARMS = (\"A\", \"B\")''','''ARMS = (\"A\", \"B\")\n\nNOTES = [\n    \"Population = users randomized by the hash (method == 'hash'); allowlist overrides (e.g. dogfood accounts \"\n    \"forced into B) are not part of the experiment and are dropped.\",\n    \"Bots = users flagged by ua_crawler (client identity) only. The 'velocity' rule flags on module clicks during the \"\n    \"experiment, and v2's carousel arrows are module clicks, so it removed many more B users than A users and \"\n    \"caused the earlier SRM; it is behaviour, not client identity, and excludes nobody.\",\n    \"A click = a counted pageview from which at least one related product page was opened (target item:<id>). \"\n    \"Carousel arrows (nav:*) and 'See all' (link:all) open no product page; the export's precomputed 'clicked' \"\n    \"column counts them, which inflates B's CTR on the team dashboard.\",\n    \"Only pageviews at or after the user's assignment count; CI is the delta method over per-user sums; \"\n    \"SRM is a chi-square test of user counts against 50/50.\",\n]''')\nopen(p,'w').write(s)\nEOF\ngrep -n '\"experiment\"\\|NOTES\\|json.dumps' abtest/report.py"
+          },
+          "extra": {
+            "raw_arguments": {
+              "command": "cd /app; python - <<'EOF'\nimport re\np='abtest/filters.py'\nopen(p,'w').write('''\"\"\"Population filters for the readout (EXPERIMENT.md section 3).\"\"\"\n\n# Bot screening rules that look only at who the client is (user agent, network, device): docs/BOT_SCREENING.md.\n# `velocity` looks at the user's module clicks during the experiment (behaviour, partly caused by the arm itself:\n# v2's carousel arrows are module_click events), so it must not exclude anyone.\nCLIENT_RULES = {\"ua_crawler\"}\n\n\ndef randomized_only(assignments):\n    \"\"\"Keep the users whose variant was set by the randomization (method == \"hash\"); drop allowlist overrides.\"\"\"\n    return assignments[assignments[\"method\"] == \"hash\"].reset_index(drop=True)\n\n\ndef exclude_bots(assignments, bot_flags):\n    \"\"\"Drop users flagged by a client-identity rule (whenever the flag was raised), from both arms.\"\"\"\n    flagged = set(bot_flags.loc[bot_flags[\"rule\"].isin(CLIENT_RULES), \"user_id\"])\n    return assignments[~assignments[\"user_id\"].isin(flagged)].reset_index(drop=True)\n''')\nEOF\npython - <<'EOF'\np='/app/abtest/load.py'\ns=open(p).read()\ns=s.replace('''def _read(data_dir, name, dtype=str):\n    return pd.read_csv(Path(data_dir) / f\"{name}.csv.gz\", dtype=dtype)''','''def _read(data_dir, name, dtype=str):\n    df = pd.read_csv(Path(data_dir) / f\"{name}.csv.gz\", dtype=dtype, keep_default_na=False)\n    for c in df.columns:\n        if df[c].dtype == object:\n            df[c] = df[c].str.strip()\n    return df''')\ns=s.replace('''    df = df.drop_duplicates()  # the assignment logger retries; an exact repeat of a row counts once\n    df[\"assigned_at\"] = _instants(df[\"assigned_at\"])''','''    df[\"assigned_at\"] = _instants(df[\"assigned_at\"])\n    # the assignment logger retries; an exact repeat of a row counts once (one row per user)\n    df = df.drop_duplicates().drop_duplicates(\"user_id\")''')\ns=s.replace('''    pv = _read(data_dir, \"pageviews\", dtype={\"pageview_id\": str, \"user_id\": str, \"ts\": str, \"clicked\": \"int64\"})''','''    pv = _read(data_dir, \"pageviews\", dtype=str)[[\"pageview_id\", \"user_id\", \"ts\"]]''')\ns=s.replace('''def load_module_clicks(data_dir):\n    \"\"\"Events of the related-items module: pageview_id, user_id, ts (UTC), target.\"\"\"\n    df = _read(data_dir, \"module_clicks\")\n    df[\"ts\"] = _instants(df[\"ts\"])\n    return df''','''def load_module_clicks(data_dir):\n    \"\"\"Events of the related-items module: pageview_id, user_id, target (timestamps are not needed).\"\"\"\n    return _read(data_dir, \"module_clicks\")\n\n\ndef mark_clicked(pageviews, module_clicks):\n    \"\"\"clicked = 1 if the user opened at least one related product page (target item:<id>) from this pageview.\n\n    nav:prev / nav:next (v2 carousel arrows) and link:all (\"See all\") open no product page and do not count; the\n    export's precomputed `clicked` column counts every module_click event, so it is not used.\n    \"\"\"\n    opened = module_clicks.loc[module_clicks[\"target\"].str.startswith(\"item:\"), \"pageview_id\"]\n    pv = pageviews.copy()\n    pv[\"clicked\"] = pv[\"pageview_id\"].isin(set(opened)).astype(\"int64\")\n    return pv''')\nopen(p,'w').write(s)\np='/app/abtest/report.py'\ns=open(p).read()\ns=s.replace(\"from .filters import exclude_bots\\nfrom .load import load_assignments, load_bot_flags, load_pageviews\",\n\"from .filters import exclude_bots, randomized_only\\nfrom .load import load_assignments, load_bot_flags, load_module_clicks, load_pageviews, mark_clicked\")\ns=s.replace('''    A pageview's click is its `clicked` flag (the module click flag of the export).''','''    A pageview's click is whether a related product page was opened from it (load.mark_clicked).''')\ns=s.replace('''    assignments = exclude_bots(load_assignments(data_dir), load_bot_flags(data_dir))\n    pageviews = load_pageviews(data_dir, assignments)''','''    assignments = exclude_bots(randomized_only(load_assignments(data_dir)), load_bot_flags(data_dir))\n    pageviews = mark_clicked(load_pageviews(data_dir, assignments), load_module_clicks(data_dir))''')\ns=s.replace('''    ctr = {arm: clicks[arm] / views[arm] for arm in ARMS}''','''    ctr = {arm: clicks[arm] / views[arm] if views[arm] else float(\"nan\") for arm in ARMS}''')\ns=s.replace('''        \"experiment\": \"EXP-2291\",\\n''','')\ns=s.replace('''        \"decision\": decide(srm_flag, ci_low),\n    }''','''        \"decision\": decide(srm_flag, ci_low),\n        \"notes\": NOTES,\n    }''')\ns=s.replace('''ARMS = (\"A\", \"B\")''','''ARMS = (\"A\", \"B\")\n\nNOTES = [\n    \"Population = users randomized by the hash (method == 'hash'); allowlist overrides (e.g. dogfood accounts \"\n    \"forced into B) are not part of the experiment and are dropped.\",\n    \"Bots = users flagged by ua_crawler (client identity) only. The 'velocity' rule flags on module clicks during the \"\n    \"experiment, and v2's carousel arrows are module clicks, so it removed many more B users than A users and \"\n    \"caused the earlier SRM; it is behaviour, not client identity, and excludes nobody.\",\n    \"A click = a counted pageview from which at least one related product page was opened (target item:<id>). \"\n    \"Carousel arrows (nav:*) and 'See all' (link:all) open no product page; the export's precomputed 'clicked' \"\n    \"column counts them, which inflates B's CTR on the team dashboard.\",\n    \"Only pageviews at or after the user's assignment count; CI is the delta method over per-user sums; \"\n    \"SRM is a chi-square test of user counts against 50/50.\",\n]''')\nopen(p,'w').write(s)\nEOF\ngrep -n '\"experiment\"\\|NOTES\\|json.dumps' abtest/report.py"
+            },
+            "tool_use_name": "Bash"
+          }
+        }
+      ],
+      "observation": {
+        "results": [
+          {
+            "source_call_id": "toolu_017dEQyDF3HEAjEyrU3ShbJa",
+            "content": "12:NOTES = [\n68:        \"notes\": NOTES,\n81:    out.write_text(json.dumps(readout, indent=2) + \"\\n\")\n\n[stdout]\n12:NOTES = [\n68:        \"notes\": NOTES,\n81:    out.write_text(json.dumps(readout, indent=2) + \"\\n\")\n[metadata] {\"noOutputExpected\": false}",
+            "extra": {
+              "tool_result_metadata": {
+                "tool_use_result": {
+                  "stdout": "12:NOTES = [\n68:        \"notes\": NOTES,\n81:    out.write_text(json.dumps(readout, indent=2) + \"\\n\")",
+                  "stderr": "",
+                  "interrupted": false,
+                  "isImage": false,
+                  "noOutputExpected": false
+                },
+                "raw_tool_result": {
+                  "tool_use_id": "toolu_017dEQyDF3HEAjEyrU3ShbJa",
+                  "type": "tool_result",
+                  "content": "12:NOTES = [\n68:        \"notes\": NOTES,\n81:    out.write_text(json.dumps(readout, indent=2) + \"\\n\")",
+                  "is_error": false
+                }
+              },
+              "tool_result_is_error": false
+            }
+          }
+        ]
+      },
+      "metrics": {
+        "prompt_tokens": 29127,
+        "completion_tokens": 2762,
+        "cached_tokens": 27106,
+        "cost_usd": 0.0707642,
+        "extra": {
+          "cache_creation_input_tokens": 2019,
+          "cache_read_input_tokens": 27106,
+          "output_tokens_details": {
+            "thinking_tokens": 428
+          },
+          "server_tool_use": {
+            "web_search_requests": 0,
+            "web_fetch_requests": 0
+          },
+          "service_tier": "standard",
+          "cache_creation": {
+            "ephemeral_1h_input_tokens": 0,
+            "ephemeral_5m_input_tokens": 2019
+          },
+          "inference_geo": "global",
+          "iterations": [],
+          "speed": "standard",
+          "fallback_credit": null,
+          "cost_source": "litellm_estimate"
+        }
+      },
+      "llm_call_count": 1,
+      "extra": {
+        "stop_reason": "tool_use",
+        "is_sidechain": false,
+        "cwd": "/app"
+      }
+    },
+    {
+      "step_id": 6,
+      "timestamp": "2026-10-31T09:31:08.230Z",
+      "source": "agent",
+      "model_name": "claude-opus-5-5",
+      "message": "",
+      "tool_calls": [
+        {
+          "tool_call_id": "toolu_016sHb7PnLXwTfUJk9zKZR55",
+          "function_name": "Bash",
+          "arguments": {
+            "command": "cd /app; time python -m abtest.report --data data --out output/result.json && head -40 output/result.json"
+          },
+          "extra": {
+            "raw_arguments": {
+              "command": "cd /app; time python -m abtest.report --data data --out output/result.json && head -40 output/result.json"
+            },
+            "tool_use_name": "Bash"
+          }
+        }
+      ],
+      "observation": {
+        "results": [
+          {
+            "source_call_id": "toolu_016sHb7PnLXwTfUJk9zKZR55",
+            "content": "wrote output/result.json: decision=no_ship diff=+0.00096 ci=[-0.00432, +0.00624] srm_p=0.469\n\nreal\t0m1.913s\nuser\t0m1.948s\nsys\t0m0.236s\n{\n  \"n_users\": {\n    \"A\": 16570,\n    \"B\": 16702\n  },\n  \"pageviews\": {\n    \"A\": 165646,\n    \"B\": 167279\n  },\n  \"clicks\": {\n    \"A\": 16436,\n    \"B\": 16759\n  },\n  \"ctr\": {\n    \"A\": 0.09922364560568923,\n    \"B\": 0.10018591694115818\n  },\n  \"diff\": 0.0009622713354689449,\n  \"rel_lift\": 0.00969800423674184,\n  \"ci_95\": [\n    -0.004315790679054589,\n    0.006240333349992479\n  ],\n  \"ci_method\": \"delta method, users as the unit\",\n  \"srm_p\": 0.46927458833703506,\n  \"srm_flag\": false,\n  \"decision\": \"no_ship\",\n  \"notes\": [\n    \"Population = users randomized by the hash (method == 'hash'); allowlist overrides (e.g. dogfood accounts forced into B) are not part of the experiment and are dropped.\",\n    \"Bots = users flagged by ua_crawler (client identity) only. The 'velocity' rule flags on module clicks during the experiment, and v2's carousel arrows are module clicks, so it removed many more B users than A users and caused the earlier SRM; it is behaviour, not client identity, and excludes nobody.\",\n    \"A click = a counted pageview from which at least one related product page was opened (target item:<id>). Carousel arrows (nav:*) and 'See all' (link:all) open no product page; the export's precomputed 'clicked' column counts them, which inflates B's CTR on the team dashboard.\",\n    \"Only pageviews at or after the user's assignment count; CI is the delta method over per-user sums; SRM is a chi-square test of user counts against 50/50.\"\n  ]\n}\n\n[stdout]\nwrote output/result.json: decision=no_ship diff=+0.00096 ci=[-0.00432, +0.00624] srm_p=0.469\n\nreal\t0m1.913s\nuser\t0m1.948s\nsys\t0m0.236s\n{\n  \"n_users\": {\n    \"A\": 16570,\n    \"B\": 16702\n  },\n  \"pageviews\": {\n    \"A\": 165646,\n    \"B\": 167279\n  },\n  \"clicks\": {\n    \"A\": 16436,\n    \"B\": 16759\n  },\n  \"ctr\": {\n    \"A\": 0.09922364560568923,\n    \"B\": 0.10018591694115818\n  },\n  \"diff\": 0.0009622713354689449,\n  \"rel_lift\": 0.00969800423674184,\n  \"ci_95\": [\n    -0.004315790679054589,\n    0.006240333349992479\n  ],\n  \"ci_method\": \"delta method, users as the unit\",\n  \"srm_p\": 0.46927458833703506,\n  \"srm_flag\": false,\n  \"decision\": \"no_ship\",\n  \"notes\": [\n    \"Population = users randomized by the hash (method == 'hash'); allowlist overrides (e.g. dogfood accounts forced into B) are not part of the experiment and are dropped.\",\n    \"Bots = users flagged by ua_crawler (client identity) only. The 'velocity' rule flags on module clicks during the experiment, and v2's carousel arrows are module clicks, so it removed many more B users than A users and caused the earlier SRM; it is behaviour, not client identity, and excludes nobody.\",\n    \"A click = a counted pageview from which at least one related product page was opened (target item:<id>). Carousel arrows (nav:*) and 'See all' (link:all) open no product page; the export's precomputed 'clicked' column counts them, which inflates B's CTR on the team dashboard.\",\n    \"Only pageviews at or after the user's assignment count; CI is the delta method over per-user sums; SRM is a chi-square test of user counts against 50/50.\"\n  ]\n}\n[metadata] {\"noOutputExpected\": false}",
+            "extra": {
+              "tool_result_metadata": {
+                "tool_use_result": {
+                  "stdout": "wrote output/result.json: decision=no_ship diff=+0.00096 ci=[-0.00432, +0.00624] srm_p=0.469\n\nreal\t0m1.913s\nuser\t0m1.948s\nsys\t0m0.236s\n{\n  \"n_users\": {\n    \"A\": 16570,\n    \"B\": 16702\n  },\n  \"pageviews\": {\n    \"A\": 165646,\n    \"B\": 167279\n  },\n  \"clicks\": {\n    \"A\": 16436,\n    \"B\": 16759\n  },\n  \"ctr\": {\n    \"A\": 0.09922364560568923,\n    \"B\": 0.10018591694115818\n  },\n  \"diff\": 0.0009622713354689449,\n  \"rel_lift\": 0.00969800423674184,\n  \"ci_95\": [\n    -0.004315790679054589,\n    0.006240333349992479\n  ],\n  \"ci_method\": \"delta method, users as the unit\",\n  \"srm_p\": 0.46927458833703506,\n  \"srm_flag\": false,\n  \"decision\": \"no_ship\",\n  \"notes\": [\n    \"Population = users randomized by the hash (method == 'hash'); allowlist overrides (e.g. dogfood accounts forced into B) are not part of the experiment and are dropped.\",\n    \"Bots = users flagged by ua_crawler (client identity) only. The 'velocity' rule flags on module clicks during the experiment, and v2's carousel arrows are module clicks, so it removed many more B users than A users and caused the earlier SRM; it is behaviour, not client identity, and excludes nobody.\",\n    \"A click = a counted pageview from which at least one related product page was opened (target item:<id>). Carousel arrows (nav:*) and 'See all' (link:all) open no product page; the export's precomputed 'clicked' column counts them, which inflates B's CTR on the team dashboard.\",\n    \"Only pageviews at or after the user's assignment count; CI is the delta method over per-user sums; SRM is a chi-square test of user counts against 50/50.\"\n  ]\n}",
+                  "stderr": "",
+                  "interrupted": false,
+                  "isImage": false,
+                  "noOutputExpected": false
+                },
+                "raw_tool_result": {
+                  "tool_use_id": "toolu_016sHb7PnLXwTfUJk9zKZR55",
+                  "type": "tool_result",
+                  "content": "wrote output/result.json: decision=no_ship diff=+0.00096 ci=[-0.00432, +0.00624] srm_p=0.469\n\nreal\t0m1.913s\nuser\t0m1.948s\nsys\t0m0.236s\n{\n  \"n_users\": {\n    \"A\": 16570,\n    \"B\": 16702\n  },\n  \"pageviews\": {\n    \"A\": 165646,\n    \"B\": 167279\n  },\n  \"clicks\": {\n    \"A\": 16436,\n    \"B\": 16759\n  },\n  \"ctr\": {\n    \"A\": 0.09922364560568923,\n    \"B\": 0.10018591694115818\n  },\n  \"diff\": 0.0009622713354689449,\n  \"rel_lift\": 0.00969800423674184,\n  \"ci_95\": [\n    -0.004315790679054589,\n    0.006240333349992479\n  ],\n  \"ci_method\": \"delta method, users as the unit\",\n  \"srm_p\": 0.46927458833703506,\n  \"srm_flag\": false,\n  \"decision\": \"no_ship\",\n  \"notes\": [\n    \"Population = users randomized by the hash (method == 'hash'); allowlist overrides (e.g. dogfood accounts forced into B) are not part of the experiment and are dropped.\",\n    \"Bots = users flagged by ua_crawler (client identity) only. The 'velocity' rule flags on module clicks during the experiment, and v2's carousel arrows are module clicks, so it removed many more B users than A users and caused the earlier SRM; it is behaviour, not client identity, and excludes nobody.\",\n    \"A click = a counted pageview from which at least one related product page was opened (target item:<id>). Carousel arrows (nav:*) and 'See all' (link:all) open no product page; the export's precomputed 'clicked' column counts them, which inflates B's CTR on the team dashboard.\",\n    \"Only pageviews at or after the user's assignment count; CI is the delta method over per-user sums; SRM is a chi-square test of user counts against 50/50.\"\n  ]\n}",
+                  "is_error": false
+                }
+              },
+              "tool_result_is_error": false
+            }
+          }
+        ]
+      },
+      "metrics": {
+        "prompt_tokens": 31969,
+        "completion_tokens": 202,
+        "cached_tokens": 29125,
+        "cost_usd": 0.024083,
+        "extra": {
+          "cache_creation_input_tokens": 2842,
+          "cache_read_input_tokens": 29125,
+          "output_tokens_details": {
+            "thinking_tokens": 121
+          },
+          "server_tool_use": {
+            "web_search_requests": 0,
+            "web_fetch_requests": 0
+          },
+          "service_tier": "standard",
+          "cache_creation": {
+            "ephemeral_1h_input_tokens": 0,
+            "ephemeral_5m_input_tokens": 2842
+          },
+          "inference_geo": "global",
+          "iterations": [],
+          "speed": "standard",
+          "fallback_credit": null,
+          "cost_source": "litellm_estimate"
+        }
+      },
+      "llm_call_count": 1,
+      "extra": {
+        "stop_reason": "tool_use",
+        "is_sidechain": false,
+        "cwd": "/app"
+      }
+    },
+    {
+      "step_id": 7,
+      "timestamp": "2026-10-31T09:31:14.249Z",
+      "source": "agent",
+      "model_name": "claude-opus-5-5",
+      "message": "Fixed pipeline runs. Let me cross-check the timestamp parsing and counts independently.",
+      "tool_calls": [
+        {
+          "tool_call_id": "toolu_01H6xio5FcQNhyLL6Vq2TLCk",
+          "function_name": "Bash",
+          "arguments": {
+            "command": "cd /app; python - <<'EOF'\nimport pandas as pd, datetime as dt\nfrom abtest.load import _instants\np=pd.read_csv('data/pageviews.csv.gz',dtype=str)\ns=p.ts.sample(20000,random_state=1)\nref=s.map(lambda x: dt.datetime.fromisoformat(x.replace('Z','+00:00')).timestamp())\nprint((_instants(s).astype('int64')//10**9 - ref.astype('int64')).abs().max())\nprint(p.ts.str[-6:].str.match(r'[+-]\\d\\d:\\d\\d|.*Z$').mean())\nEOF"
+          },
+          "extra": {
+            "raw_arguments": {
+              "command": "cd /app; python - <<'EOF'\nimport pandas as pd, datetime as dt\nfrom abtest.load import _instants\np=pd.read_csv('data/pageviews.csv.gz',dtype=str)\ns=p.ts.sample(20000,random_state=1)\nref=s.map(lambda x: dt.datetime.fromisoformat(x.replace('Z','+00:00')).timestamp())\nprint((_instants(s).astype('int64')//10**9 - ref.astype('int64')).abs().max())\nprint(p.ts.str[-6:].str.match(r'[+-]\\d\\d:\\d\\d|.*Z$').mean())\nEOF"
+            },
+            "tool_use_name": "Bash"
+          }
+        }
+      ],
+      "observation": {
+        "results": [
+          {
+            "source_call_id": "toolu_01H6xio5FcQNhyLL6Vq2TLCk",
+            "content": "1787640969\n1.0\n\n[stdout]\n1787640969\n1.0\n[metadata] {\"noOutputExpected\": false}",
+            "extra": {
+              "tool_result_metadata": {
+                "tool_use_result": {
+                  "stdout": "1787640969\n1.0",
+                  "stderr": "",
+                  "interrupted": false,
+                  "isImage": false,
+                  "noOutputExpected": false
+                },
+                "raw_tool_result": {
+                  "tool_use_id": "toolu_01H6xio5FcQNhyLL6Vq2TLCk",
+                  "type": "tool_result",
+                  "content": "1787640969\n1.0",
+                  "is_error": false
+                }
+              },
+              "tool_result_is_error": false
+            }
+          }
+        ]
+      },
+      "metrics": {
+        "prompt_tokens": 32910,
+        "completion_tokens": 470,
+        "cached_tokens": 31967,
+        "cost_usd": 0.0205064,
+        "extra": {
+          "cache_creation_input_tokens": 941,
+          "cache_read_input_tokens": 31967,
+          "output_tokens_details": {
+            "thinking_tokens": 172
+          },
+          "server_tool_use": {
+            "web_search_requests": 0,
+            "web_fetch_requests": 0
+          },
+          "service_tier": "standard",
+          "cache_creation": {
+            "ephemeral_1h_input_tokens": 0,
+            "ephemeral_5m_input_tokens": 941
+          },
+          "inference_geo": "global",
+          "iterations": [],
+          "speed": "standard",
+          "fallback_credit": null,
+          "cost_source": "litellm_estimate"
+        }
+      },
+      "llm_call_count": 1,
+      "extra": {
+        "stop_reason": "tool_use",
+        "is_sidechain": false,
+        "cwd": "/app"
+      }
+    },
+    {
+      "step_id": 8,
+      "timestamp": "2026-10-31T09:31:18.488Z",
+      "source": "agent",
+      "model_name": "claude-opus-5-5",
+      "message": "",
+      "tool_calls": [
+        {
+          "tool_call_id": "toolu_013beycmKRDzajsaReALtx7Z",
+          "function_name": "Bash",
+          "arguments": {
+            "command": "cd /app; python - <<'EOF'\nimport pandas as pd, datetime as dt\nfrom abtest.load import _instants\np=pd.read_csv('data/pageviews.csv.gz',dtype=str)\ns=p.ts\nt=_instants(s); print(t.dtype)\nref=s.map(lambda x: dt.datetime.fromisoformat(x.replace('Z','+00:00')))\nref=pd.to_datetime(ref.map(lambda d:d.astimezone(dt.timezone.utc).replace(tzinfo=None))).dt.tz_localize('UTC')\nprint((t!=ref).sum())\nEOF"
+          },
+          "extra": {
+            "raw_arguments": {
+              "command": "cd /app; python - <<'EOF'\nimport pandas as pd, datetime as dt\nfrom abtest.load import _instants\np=pd.read_csv('data/pageviews.csv.gz',dtype=str)\ns=p.ts\nt=_instants(s); print(t.dtype)\nref=s.map(lambda x: dt.datetime.fromisoformat(x.replace('Z','+00:00')))\nref=pd.to_datetime(ref.map(lambda d:d.astimezone(dt.timezone.utc).replace(tzinfo=None))).dt.tz_localize('UTC')\nprint((t!=ref).sum())\nEOF"
+            },
+            "tool_use_name": "Bash"
+          }
+        }
+      ],
+      "observation": {
+        "results": [
+          {
+            "source_call_id": "toolu_013beycmKRDzajsaReALtx7Z",
+            "content": "datetime64[us, UTC]\n0\n\n[stdout]\ndatetime64[us, UTC]\n0\n[metadata] {\"noOutputExpected\": false}",
+            "extra": {
+              "tool_result_metadata": {
+                "tool_use_result": {
+                  "stdout": "datetime64[us, UTC]\n0",
+                  "stderr": "",
+                  "interrupted": false,
+                  "isImage": false,
+                  "noOutputExpected": false
+                },
+                "raw_tool_result": {
+                  "tool_use_id": "toolu_013beycmKRDzajsaReALtx7Z",
+                  "type": "tool_result",
+                  "content": "datetime64[us, UTC]\n0",
+                  "is_error": false
+                }
+              },
+              "tool_result_is_error": false
+            }
+          }
+        ]
+      },
+      "metrics": {
+        "prompt_tokens": 33420,
+        "completion_tokens": 305,
+        "cached_tokens": 32908,
+        "cost_usd": 0.015239600000000002,
+        "extra": {
+          "cache_creation_input_tokens": 510,
+          "cache_read_input_tokens": 32908,
+          "output_tokens_details": {
+            "thinking_tokens": 42
+          },
+          "server_tool_use": {
+            "web_search_requests": 0,
+            "web_fetch_requests": 0
+          },
+          "service_tier": "standard",
+          "cache_creation": {
+            "ephemeral_1h_input_tokens": 0,
+            "ephemeral_5m_input_tokens": 510
+          },
+          "inference_geo": "global",
+          "iterations": [],
+          "speed": "standard",
+          "fallback_credit": null,
+          "cost_source": "litellm_estimate"
+        }
+      },
+      "llm_call_count": 1,
+      "extra": {
+        "stop_reason": "tool_use",
+        "is_sidechain": false,
+        "cwd": "/app"
+      }
+    },
+    {
+      "step_id": 9,
+      "timestamp": "2026-10-31T09:31:23.593Z",
+      "source": "agent",
+      "model_name": "claude-opus-5-5",
+      "message": "Parsing matches. Now a quick robustness test on a degenerate export (empty bot flags / clicks):",
+      "tool_calls": [
+        {
+          "tool_call_id": "toolu_01Xw9rwNbkXCCeTTtBKWNggP",
+          "function_name": "Bash",
+          "arguments": {
+            "command": "mkdir -p /tmp/t1 && cd /tmp/t1 && python - <<'EOF'\nimport gzip\ndef w(n,s): gzip.open(n+'.csv.gz','wt').write(s)\nw('assignments','user_id,variant,assigned_at,method\\nu1,A,2026-09-01T00:00:00Z,hash\\nu1,A,2026-09-01T00:00:00Z,hash\\nu2,B,2026-09-01T01:00:00+01:00,hash\\nu3,A,2026-09-01T00:00:00Z,hash\\nu4,B,2026-09-01T00:00:00Z,hash\\n')\nw('bot_flags','user_id,rule,flagged_at\\n')\nw('pageviews','pageview_id,user_id,ts,clicked\\np1,u1,2026-09-01T00:00:00Z,1\\np2,u2,2026-09-01T00:00:00Z,1\\np3,u2,2026-08-31T23:59:59Z,1\\np4,u4,2026-09-02T00:00:00Z,0\\n')\nw('module_clicks','pageview_id,user_id,ts,target\\n')\nEOF\ncd /app && python -m abtest.report --data /tmp/t1 --out /tmp/t1/r.json && python -c \"import json;d=json.load(open('/tmp/t1/r.json'));d.pop('notes');print(d)\""
+          },
+          "extra": {
+            "raw_arguments": {
+              "command": "mkdir -p /tmp/t1 && cd /tmp/t1 && python - <<'EOF'\nimport gzip\ndef w(n,s): gzip.open(n+'.csv.gz','wt').write(s)\nw('assignments','user_id,variant,assigned_at,method\\nu1,A,2026-09-01T00:00:00Z,hash\\nu1,A,2026-09-01T00:00:00Z,hash\\nu2,B,2026-09-01T01:00:00+01:00,hash\\nu3,A,2026-09-01T00:00:00Z,hash\\nu4,B,2026-09-01T00:00:00Z,hash\\n')\nw('bot_flags','user_id,rule,flagged_at\\n')\nw('pageviews','pageview_id,user_id,ts,clicked\\np1,u1,2026-09-01T00:00:00Z,1\\np2,u2,2026-09-01T00:00:00Z,1\\np3,u2,2026-08-31T23:59:59Z,1\\np4,u4,2026-09-02T00:00:00Z,0\\n')\nw('module_clicks','pageview_id,user_id,ts,target\\n')\nEOF\ncd /app && python -m abtest.report --data /tmp/t1 --out /tmp/t1/r.json && python -c \"import json;d=json.load(open('/tmp/t1/r.json'));d.pop('notes');print(d)\""
+            },
+            "tool_use_name": "Bash"
+          }
+        }
+      ],
+      "observation": {
+        "results": [
+          {
+            "source_call_id": "toolu_01Xw9rwNbkXCCeTTtBKWNggP",
+            "content": "Exit code 1\nTraceback (most recent call last):\n  File \"<frozen runpy>\", line 198, in _run_module_as_main\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"/app/abtest/report.py\", line 87, in <module>\n    main()\n  File \"/app/abtest/report.py\", line 78, in main\n    readout = build_readout(args.data)\n              ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/abtest/report.py\", line 62, in build_readout\n    \"rel_lift\": float(diff / ctr[\"A\"]),\n                      ~~~~~^~~~~~~~~~\nZeroDivisionError: float division by zero\n\n[error] tool reported failure",
+            "extra": {
+              "tool_result_metadata": {
+                "is_error": true,
+                "raw_tool_result": {
+                  "type": "tool_result",
+                  "content": "Exit code 1\nTraceback (most recent call last):\n  File \"<frozen runpy>\", line 198, in _run_module_as_main\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"/app/abtest/report.py\", line 87, in <module>\n    main()\n  File \"/app/abtest/report.py\", line 78, in main\n    readout = build_readout(args.data)\n              ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/abtest/report.py\", line 62, in build_readout\n    \"rel_lift\": float(diff / ctr[\"A\"]),\n                      ~~~~~^~~~~~~~~~\nZeroDivisionError: float division by zero",
+                  "is_error": true,
+                  "tool_use_id": "toolu_01Xw9rwNbkXCCeTTtBKWNggP"
+                }
+              },
+              "tool_result_is_error": true
+            }
+          }
+        ]
+      },
+      "metrics": {
+        "prompt_tokens": 33768,
+        "completion_tokens": 693,
+        "cached_tokens": 33418,
+        "cost_usd": 0.0222916,
+        "extra": {
+          "cache_creation_input_tokens": 348,
+          "cache_read_input_tokens": 33418,
+          "output_tokens_details": {
+            "thinking_tokens": 142
+          },
+          "server_tool_use": {
+            "web_search_requests": 0,
+            "web_fetch_requests": 0
+          },
+          "service_tier": "standard",
+          "cache_creation": {
+            "ephemeral_1h_input_tokens": 0,
+            "ephemeral_5m_input_tokens": 348
+          },
+          "inference_geo": "global",
+          "iterations": [],
+          "speed": "standard",
+          "fallback_credit": null,
+          "cost_source": "litellm_estimate"
+        }
+      },
+      "llm_call_count": 1,
+      "extra": {
+        "stop_reason": "tool_use",
+        "is_sidechain": false,
+        "cwd": "/app"
+      }
+    },
+    {
+      "step_id": 10,
+      "timestamp": "2026-10-31T09:31:30.036Z",
+      "source": "agent",
+      "model_name": "claude-opus-5-5",
+      "message": "Degenerate case crashes on `rel_lift`; hardening stats and the output against zero denominators.",
+      "tool_calls": [
+        {
+          "tool_call_id": "toolu_01J6Svg6pZTomS9cLijdrbJG",
+          "function_name": "Bash",
+          "arguments": {
+            "command": "cd /app; python - <<'EOF'\np='/app/abtest/report.py'\ns=open(p).read()\ns=s.replace('''        \"rel_lift\": float(diff / ctr[\"A\"]),''','''        \"rel_lift\": float(diff / ctr[\"A\"]) if ctr[\"A\"] else float(\"nan\"),''')\ns=s.replace('''    out.write_text(json.dumps(readout, indent=2) + \"\\\\n\")''','''    out.write_text(json.dumps(_finite(readout), indent=2) + \"\\\\n\")''')\ns=s.replace('''def main(argv=None):''','''def _finite(x):\n    \"\"\"NaN/inf (degenerate exports: an arm without pageviews) become null, so the file is valid JSON.\"\"\"\n    if isinstance(x, dict):\n        return {k: _finite(v) for k, v in x.items()}\n    if isinstance(x, list):\n        return [_finite(v) for v in x]\n    if isinstance(x, float) and not math.isfinite(x):\n        return None\n    return x\n\n\ndef main(argv=None):''')\ns=s.replace(\"import json\\n\",\"import json\\nimport math\\n\")\ns=s.replace('''          f\"ci=[{readout['ci_95'][0]:+.5f}, {readout['ci_95'][1]:+.5f}] srm_p={readout['srm_p']:.3g}\")''','''          f\"ci=[{readout['ci_95'][0]:+.5f}, {readout['ci_95'][1]:+.5f}] srm_p={readout['srm_p']}\")''')\nopen(p,'w').write(s)\np='/app/abtest/stats.py'\ns=open(p).read()\ns=s.replace('''    n = len(c)\n    r = c.sum() / v.sum()''','''    n = len(c)\n    if n < 2 or v.sum() == 0:\n        return (float(c.sum() / v.sum()) if v.sum() else float(\"nan\")), float(\"nan\")\n    r = c.sum() / v.sum()''')\ns=s.replace('''    return float(chisquare([n_a, n_b]).pvalue)''','''    if n_a + n_b == 0:\n        return 1.0\n    return float(chisquare([n_a, n_b]).pvalue)''')\nopen(p,'w').write(s)\nEOF\npython -m abtest.report --data /tmp/t1 --out /tmp/t1/r.json && python -c \"import json;d=json.load(open('/tmp/t1/r.json'));d.pop('notes');print(d)\"\npython -m abtest.report --data data --out output/result.json; rm -rf abtest/__pycache__"
+          },
+          "extra": {
+            "raw_arguments": {
+              "command": "cd /app; python - <<'EOF'\np='/app/abtest/report.py'\ns=open(p).read()\ns=s.replace('''        \"rel_lift\": float(diff / ctr[\"A\"]),''','''        \"rel_lift\": float(diff / ctr[\"A\"]) if ctr[\"A\"] else float(\"nan\"),''')\ns=s.replace('''    out.write_text(json.dumps(readout, indent=2) + \"\\\\n\")''','''    out.write_text(json.dumps(_finite(readout), indent=2) + \"\\\\n\")''')\ns=s.replace('''def main(argv=None):''','''def _finite(x):\n    \"\"\"NaN/inf (degenerate exports: an arm without pageviews) become null, so the file is valid JSON.\"\"\"\n    if isinstance(x, dict):\n        return {k: _finite(v) for k, v in x.items()}\n    if isinstance(x, list):\n        return [_finite(v) for v in x]\n    if isinstance(x, float) and not math.isfinite(x):\n        return None\n    return x\n\n\ndef main(argv=None):''')\ns=s.replace(\"import json\\n\",\"import json\\nimport math\\n\")\ns=s.replace('''          f\"ci=[{readout['ci_95'][0]:+.5f}, {readout['ci_95'][1]:+.5f}] srm_p={readout['srm_p']:.3g}\")''','''          f\"ci=[{readout['ci_95'][0]:+.5f}, {readout['ci_95'][1]:+.5f}] srm_p={readout['srm_p']}\")''')\nopen(p,'w').write(s)\np='/app/abtest/stats.py'\ns=open(p).read()\ns=s.replace('''    n = len(c)\n    r = c.sum() / v.sum()''','''    n = len(c)\n    if n < 2 or v.sum() == 0:\n        return (float(c.sum() / v.sum()) if v.sum() else float(\"nan\")), float(\"nan\")\n    r = c.sum() / v.sum()''')\ns=s.replace('''    return float(chisquare([n_a, n_b]).pvalue)''','''    if n_a + n_b == 0:\n        return 1.0\n    return float(chisquare([n_a, n_b]).pvalue)''')\nopen(p,'w').write(s)\nEOF\npython -m abtest.report --data /tmp/t1 --out /tmp/t1/r.json && python -c \"import json;d=json.load(open('/tmp/t1/r.json'));d.pop('notes');print(d)\"\npython -m abtest.report --data data --out output/result.json; rm -rf abtest/__pycache__"
+            },
+            "tool_use_name": "Bash"
+          }
+        }
+      ],
+      "observation": {
+        "results": [
+          {
+            "source_call_id": "toolu_01J6Svg6pZTomS9cLijdrbJG",
+            "content": "wrote /tmp/t1/r.json: decision=no_ship diff=+0.00000 ci=[+0.00000, +0.00000] srm_p=1.0\n{'n_users': {'A': 2, 'B': 2}, 'pageviews': {'A': 1, 'B': 2}, 'clicks': {'A': 0, 'B': 0}, 'ctr': {'A': 0.0, 'B': 0.0}, 'diff': 0.0, 'rel_lift': None, 'ci_95': [0.0, 0.0], 'ci_method': 'delta method, users as the unit', 'srm_p': 1.0, 'srm_flag': False, 'decision': 'no_ship'}\nwrote output/result.json: decision=no_ship diff=+0.00096 ci=[-0.00432, +0.00624] srm_p=0.46927458833703506\n\n[stdout]\nwrote /tmp/t1/r.json: decision=no_ship diff=+0.00000 ci=[+0.00000, +0.00000] srm_p=1.0\n{'n_users': {'A': 2, 'B': 2}, 'pageviews': {'A': 1, 'B': 2}, 'clicks': {'A': 0, 'B': 0}, 'ctr': {'A': 0.0, 'B': 0.0}, 'diff': 0.0, 'rel_lift': None, 'ci_95': [0.0, 0.0], 'ci_method': 'delta method, users as the unit', 'srm_p': 1.0, 'srm_flag': False, 'decision': 'no_ship'}\nwrote output/result.json: decision=no_ship diff=+0.00096 ci=[-0.00432, +0.00624] srm_p=0.46927458833703506\n[metadata] {\"noOutputExpected\": false}",
+            "extra": {
+              "tool_result_metadata": {
+                "tool_use_result": {
+                  "stdout": "wrote /tmp/t1/r.json: decision=no_ship diff=+0.00000 ci=[+0.00000, +0.00000] srm_p=1.0\n{'n_users': {'A': 2, 'B': 2}, 'pageviews': {'A': 1, 'B': 2}, 'clicks': {'A': 0, 'B': 0}, 'ctr': {'A': 0.0, 'B': 0.0}, 'diff': 0.0, 'rel_lift': None, 'ci_95': [0.0, 0.0], 'ci_method': 'delta method, users as the unit', 'srm_p': 1.0, 'srm_flag': False, 'decision': 'no_ship'}\nwrote output/result.json: decision=no_ship diff=+0.00096 ci=[-0.00432, +0.00624] srm_p=0.46927458833703506",
+                  "stderr": "",
+                  "interrupted": false,
+                  "isImage": false,
+                  "noOutputExpected": false
+                },
+                "raw_tool_result": {
+                  "tool_use_id": "toolu_01J6Svg6pZTomS9cLijdrbJG",
+                  "type": "tool_result",
+                  "content": "wrote /tmp/t1/r.json: decision=no_ship diff=+0.00000 ci=[+0.00000, +0.00000] srm_p=1.0\n{'n_users': {'A': 2, 'B': 2}, 'pageviews': {'A': 1, 'B': 2}, 'clicks': {'A': 0, 'B': 0}, 'ctr': {'A': 0.0, 'B': 0.0}, 'diff': 0.0, 'rel_lift': None, 'ci_95': [0.0, 0.0], 'ci_method': 'delta method, users as the unit', 'srm_p': 1.0, 'srm_flag': False, 'decision': 'no_ship'}\nwrote output/result.json: decision=no_ship diff=+0.00096 ci=[-0.00432, +0.00624] srm_p=0.46927458833703506",
+                  "is_error": false
+                }
+              },
+              "tool_result_is_error": false
+            }
+          }
+        ]
+      },
+      "metrics": {
+        "prompt_tokens": 34735,
+        "completion_tokens": 994,
+        "cached_tokens": 33766,
+        "cost_usd": 0.0314762,
+        "extra": {
+          "cache_creation_input_tokens": 967,
+          "cache_read_input_tokens": 33766,
+          "output_tokens_details": {
+            "thinking_tokens": 49
+          },
+          "server_tool_use": {
+            "web_search_requests": 0,
+            "web_fetch_requests": 0
+          },
+          "service_tier": "standard",
+          "cache_creation": {
+            "ephemeral_1h_input_tokens": 0,
+            "ephemeral_5m_input_tokens": 967
+          },
+          "inference_geo": "global",
+          "iterations": [],
+          "speed": "standard",
+          "fallback_credit": null,
+          "cost_source": "litellm_estimate"
+        }
+      },
+      "llm_call_count": 1,
+      "extra": {
+        "stop_reason": "tool_use",
+        "is_sidechain": false,
+        "cwd": "/app"
+      }
+    },
+    {
+      "step_id": 11,
+      "timestamp": "2026-10-31T09:31:41.116Z",
+      "source": "agent",
+      "model_name": "claude-opus-5-5",
+      "message": "",
+      "tool_calls": [
+        {
+          "tool_call_id": "toolu_01RHsFzFXcBQ66knSftnQGxf",
+          "function_name": "Bash",
+          "arguments": {
+            "command": "cd /app; python - <<'EOF'\np='/app/README.md'\ns=open(p).read()\ns=s.replace(\"drops repeated assignment rows and pre-assignment pageviews\",\"drops repeated assignment rows and pre-assignment pageviews; marks a pageview clicked only if a related product page (`item:<id>`) was opened from it\")\ns=s.replace(\"the population filter: applies the platform's bot screening (`bot_flags.csv.gz`) to both arms\",\"the population filter: keeps hash-randomized users only (drops `override`), and excludes users flagged by the client-identity rule `ua_crawler` (not the behavioural `velocity` rule)\")\ns=s.replace(\"; a click is a pageview's `clicked` value, the module click flag\",\"\")\nopen(p,'w').write(s)\nEOF"
+          },
+          "extra": {
+            "raw_arguments": {
+              "command": "cd /app; python - <<'EOF'\np='/app/README.md'\ns=open(p).read()\ns=s.replace(\"drops repeated assignment rows and pre-assignment pageviews\",\"drops repeated assignment rows and pre-assignment pageviews; marks a pageview clicked only if a related product page (`item:<id>`) was opened from it\")\ns=s.replace(\"the population filter: applies the platform's bot screening (`bot_flags.csv.gz`) to both arms\",\"the population filter: keeps hash-randomized users only (drops `override`), and excludes users flagged by the client-identity rule `ua_crawler` (not the behavioural `velocity` rule)\")\ns=s.replace(\"; a click is a pageview's `clicked` value, the module click flag\",\"\")\nopen(p,'w').write(s)\nEOF"
+            },
+            "tool_use_name": "Bash"
+          }
+        }
+      ],
+      "observation": {
+        "results": [
+          {
+            "source_call_id": "toolu_01RHsFzFXcBQ66knSftnQGxf",
+            "content": "(Bash completed with no output)\n\n[metadata] {\"noOutputExpected\": false}",
+            "extra": {
+              "tool_result_metadata": {
+                "tool_use_result": {
+                  "stdout": "",
+                  "stderr": "",
+                  "interrupted": false,
+                  "isImage": false,
+                  "noOutputExpected": false
+                },
+                "raw_tool_result": {
+                  "tool_use_id": "toolu_01RHsFzFXcBQ66knSftnQGxf",
+                  "type": "tool_result",
+                  "content": "(Bash completed with no output)",
+                  "is_error": false
+                }
+              },
+              "tool_result_is_error": false
+            }
+          }
+        ]
+      },
+      "metrics": {
+        "prompt_tokens": 36052,
+        "completion_tokens": 428,
+        "cached_tokens": 34733,
+        "cost_usd": 0.0220996,
+        "extra": {
+          "cache_creation_input_tokens": 1317,
+          "cache_read_input_tokens": 34733,
+          "output_tokens_details": {
+            "thinking_tokens": 113
+          },
+          "server_tool_use": {
+            "web_search_requests": 0,
+            "web_fetch_requests": 0
+          },
+          "service_tier": "standard",
+          "cache_creation": {
+            "ephemeral_1h_input_tokens": 0,
+            "ephemeral_5m_input_tokens": 1317
+          },
+          "inference_geo": "global",
+          "iterations": [],
+          "speed": "standard",
+          "fallback_credit": null,
+          "cost_source": "litellm_estimate"
+        }
+      },
+      "llm_call_count": 1,
+      "extra": {
+        "stop_reason": "tool_use",
+        "is_sidechain": false,
+        "cwd": "/app"
+      }
+    },
+    {
+      "step_id": 12,
+      "timestamp": "2026-10-31T09:31:50.535Z",
+      "source": "agent",
+      "model_name": "claude-opus-5-5",
+      "message": "B is not a win. The experiment is valid, but B's click-through is not higher than A's by any amount we can detect, so the decision is **`no_ship`**. I fixed the pipeline and regenerated `/app/output/result.json` from `/app/data`.\n\n| | A | B |\n|---|---|---|\n| Users | 16,570 | 16,702 |\n| Pageviews | 165,646 | 167,279 |\n| Clicks | 16,436 | 16,759 |\n| Click-through | 9.92% | 10.02% |\n\nThe difference is +0.10 percentage points, with a 95% interval of [−0.43, +0.62] points. The sample ratio check passes (p = 0.47).\n\n**Why the old readout said \"invalid\", and why the dashboard said +12.3%.** Each problem breaks a rule in the plan or the platform docs:\n\n1. **Hand-picked users were counted.** On 09-03, 100 accounts from the product pages team were put into B by hand so they could use v2 on the live site. Their variant wasn't set by the randomization, so they aren't in the experiment. Including them is why the assignment dashboard showed 17,165 in B instead of 17,065.\n2. **The wrong bot rule removed users.** The pipeline dropped everyone flagged by any bot rule, including the `velocity` rule. That rule flags users who make 8 or more module clicks within 60 seconds. B's carousel arrows each count as a module click, so real B users who scrolled through the carousel got flagged. That removed far more users from B than from A and caused the failed sample ratio check. The plan only allows exclusions based on who the client is, so only the crawler rule (`ua_crawler`) is applied now.\n3. **Clicks that open nothing were counted.** The export's ready-made `clicked` column counts every click inside the module, including the carousel arrows and the \"See all\" link. The plan counts a click only when the user opens a related product's page. Arrow clicks exist only in B, which is most of the dashboard's 12.3% lift. On top of that, the dashboard has no filters, so it also includes bots, the dogfood accounts and pageviews from before each user's assignment.\n\nThe statistics in the pipeline were already correct and are unchanged: the interval treats the user as the unit, and the sample ratio test is a standard 50/50 check. Duplicate assignment rows and pageviews before a user's assignment are dropped. Timestamps are compared as moments in time, and I checked the parsing against Python's own parser on every row with no mismatches.\n\n**Changes in `abtest/`:**\n- **`filters.py`:** keeps only randomized users and excludes only crawler-flagged users.\n- **`load.py`:** a pageview counts as clicked only if a product page was opened from it.\n- **`report.py` and `stats.py`:** an export where an arm has no pageviews or very few users no longer crashes, and impossible values are written as `null` so the file stays valid JSON.\n\nI also added `notes` for the PM to the readout and corrected the README.\n\nThe full run on `/app/data` takes about 2 seconds. I also ran it on a small made-up export that covers duplicate rows, mixed time offsets, a pageview at exactly the assignment time, and empty bot-flag and click files; it gave the counts I expected. I haven't run it on any other real export.",
+      "metrics": {
+        "prompt_tokens": 36522,
+        "completion_tokens": 1099,
+        "cached_tokens": 36050,
+        "cost_usd": 0.03154800000000001,
+        "extra": {
+          "cache_creation_input_tokens": 470,
+          "cache_read_input_tokens": 36050,
+          "output_tokens_details": {
+            "thinking_tokens": 10
+          },
+          "server_tool_use": {
+            "web_search_requests": 0,
+            "web_fetch_requests": 0
+          },
+          "service_tier": "standard",
+          "cache_creation": {
+            "ephemeral_1h_input_tokens": 0,
+            "ephemeral_5m_input_tokens": 470
+          },
+          "inference_geo": "global",
+          "iterations": [],
+          "speed": "standard",
+          "fallback_credit": null,
+          "cost_source": "litellm_estimate"
+        }
+      },
+      "llm_call_count": 1,
+      "extra": {
+        "stop_reason": "end_turn",
+        "is_sidechain": false,
+        "cwd": "/app"
+      }
+    }
+  ],
+  "final_metrics": {
+    "total_prompt_tokens": 333955,
+    "total_completion_tokens": 8419,
+    "total_cached_tokens": 315127,
+    "total_cost_usd": 0.3255234,
+    "total_steps": 12,
+    "extra": {
+      "service_tiers": [
+        "standard"
+      ],
+      "total_cache_creation_input_tokens": 18806,
+      "total_cache_read_input_tokens": 315127
+    }
+  }
+}

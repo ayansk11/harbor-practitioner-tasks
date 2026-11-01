@@ -1,0 +1,13 @@
+{
+    "task": {
+        "path": "<submission>/jobs/feature-leakage-churn/package-rev1/feature-leakage-churn"
+    },
+    "trial_name": "feature-leakage-churn__c8WZS8Y",
+    "trials_dir": "<submission>/jobs/feature-leakage-churn/feature-leakage-churn-force-build-rev1",
+    "environment_build_timeout_multiplier": 3.0,
+    "environment": {
+        "type": "daytona",
+        "force_build": true
+    },
+    "job_id": "30cab619-0198-4341-8eab-29e67c19a92c"
+}

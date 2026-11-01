@@ -1,24 +1,24 @@
 {
     "schema_version": 3,
-    "created_at": "2026-10-29T10:50:37.268213Z",
+    "created_at": "2026-10-31T08:51:20.712711Z",
     "harbor": {
         "version": "0.25.0",
         "is_editable": false
     },
-    "n_concurrent_trials": 2,
+    "n_concurrent_trials": 1,
     "retry": {
         "max_retries": 0,
         "exclude_exceptions": [
-            "RewardFileEmptyError",
-            "VerifierOutputParseError",
-            "UnsupportedModelParametersError",
-            "AgentTimeoutError",
-            "VerifierTimeoutError",
             "RewardFileNotFoundError",
-            "AgentSafetyRefusalError",
-            "ModelNotFoundError",
             "AgentAuthenticationError",
-            "ApiUsageLimitError"
+            "ApiUsageLimitError",
+            "ModelNotFoundError",
+            "RewardFileEmptyError",
+            "VerifierTimeoutError",
+            "UnsupportedModelParametersError",
+            "VerifierOutputParseError",
+            "AgentTimeoutError",
+            "AgentSafetyRefusalError"
         ],
         "wait_multiplier": 1.0,
         "min_wait_sec": 1.0,
@@ -30,11 +30,12 @@
             "task": {
                 "name": "ab-test-reanalysis",
                 "type": "local",
-                "digest": "sha256:3ae509d7115cd0c2b660ce90c87fc5f8c60274b74fc0e1bf0939105eb2f8110d",
-                "path": "<submission>/tasks/ab-test-reanalysis"
+                "digest": "sha256:0fc5d05c8334f99bb7ef36ca1929d1f9330f0d74799be756ad8c8ff2ae59837c",
+                "path": "<submission>/jobs/ab-test-reanalysis/package-rev1/ab-test-reanalysis"
             },
             "install_only": false,
             "timeout_multiplier": 1.0,
+            "environment_build_timeout_multiplier": 3.0,
             "agent": {
                 "name": "oracle",
                 "skip_model_parsing": false,

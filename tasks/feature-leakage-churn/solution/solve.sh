@@ -1,8 +1,14 @@
 #!/bin/bash
-# Reference solutions for feature-leakage-churn.
-#   SOLUTION unset or canonical : fix the four leaks in place (windows.py, encoding.py, status.py, impute.py)
-#   SOLUTION=alt                : replace the CLI with a per-row implementation (bisect + sqlite3, no pandas)
-#   SOLUTION=<attempt>          : one of the wrong or shortcut attempts in attempts/ (each must score 0)
+# Reference solutions for feature-leakage-churn (the oracle runs the default, canonical).
+#   SOLUTION unset or canonical : copy solution/canonical/churn/*.py over /app/churn (pandas and numpy, on top of the
+#                                 v3 pipeline): every feature from the rows the warehouse held at as_of (_loaded_at,
+#                                 for orders not before the cutover's commit; for orders below the last legacy
+#                                 watermark, the commit of the legacy_orders transaction whose range holds them, from
+#                                 _ops/), the plan rebuilt from plan_changes, days_since_last_login left out
+#   SOLUTION=alt                : copy solution/alt/churn/*.py over /app/churn (an event replay in pure Python, no
+#                                 pandas)
+#   SOLUTION=<attempt>          : run solution/attempts/<attempt>.py on /app (a realistic wrong or shortcut answer;
+#                                 each must score 0)
 # APP_DIR (default /app) lets the authoring harness apply a solution to a copy of /app.
 set -euo pipefail
 APP="${APP_DIR:-/app}"
@@ -16,5 +22,5 @@ case "${SOLUTION:-canonical}" in
     exit 0 ;;
 esac
 # Smoke test for the two valid solutions: rebuild the visible feature table (not graded; /app/output is kept in the
-# artifact, about 1.3 MB).
+# artifact, about 1.5 MB for the canonical).
 cd "$APP" && python3 -m churn.build_features --data "$APP/data" --out "$APP/output/features.parquet"

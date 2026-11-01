@@ -1,0 +1,944 @@
+[?2004hroot@2882c453-506f-4266-b67f-004547220069:/app# asciinema rec --stdin /logs/agent/recording.cast
+[?2004l[0;32masciinema: recording asciicast to /logs/agent/recording.cast[0m
+[0;32masciinema: press <ctrl-d> or type "exit" when you're done[0m
+[?2004hroot@2882c453-506f-4266-b67f-004547220069:/app# clear
+[?2004l[H[J[3J[?2004hroot@2882c453-506f-4266-b67f-004547220069:/app# ls -R
+[?2004l.:
+README.md  SECURITY_REPORT.md  data  docs  docshare  tests
+
+./data:
+docshare.db
+
+./docs:
+API.md	DEV_USERS.md  PERMISSIONS.md
+
+./docshare:
+__init__.py  app.py  auth.py  db.py  routes  seed.py  serve.py
+
+./docshare/routes:
+__init__.py  admin.py  export.py  files.py  folders.py	share.py  thumbs.py
+
+./tests:
+test_api.py
+[?2004hroot@2882c453-506f-4266-b67f-004547220069:/app# cat docs/PERMISSIONS.md
+[?2004l# docshare access policy
+
+Owner: platform security. This is the policy every docshare endpoint must follow. Endpoint details are in `API.md`.
+
+## 1. Who is asking
+- Every `/api/...` request must carry `Authorization: Bearer <token>` (the token is `users.token`). A request with no
+  token or an unknown token gets `401`. Two endpoints need no login: `GET /api/health` and share links `GET /s/<token>`.
+- A user belongs to one or more organisations (rows in `memberships`) and has one role in each: `member` or
+  `org_admin`.
+- Support staff are users with `users.is_support = 1`. They belong to no organisation and have no home organisation.
+
+## 2. The active organisation
+- Every request acts in one organisation, the *active organisation*: the organisation named in the `X-Org-Id` header,
+  or, when the header is absent, the user's home organisation (`users.home_org_id`).
+- A member or org_admin may only make active an organisation they belong to. If `X-Org-Id` names any other
+  organisation, or one that does not exist, the whole request is refused.
+- The caller's role is their role in the active organisation. Someone who is `member` in one organisation and
+  `org_admin` in another is an org_admin only while that second organisation is active.
+- Members and org_admins act only on folders and files of the active organisation. A file or folder of another
+  organisation is refused, even if the caller also belongs to that organisation: they switch first by sending that
+  organisation's id in `X-Org-Id`.
+- Support may name any existing organisation in `X-Org-Id`; no membership is needed. For support this only chooses
+  what the list endpoints show. If support names an organisation that does not exist, the whole request is refused.
+  Without `X-Org-Id`, support's list endpoints answer `400`.
+
+## 3. What each role may do
+| Action | Endpoints | member | org_admin | support |
+|---|---|---|---|---|
+| read | `GET /api/files/<id>` | yes | yes | yes, any organisation |
+| download | `GET /api/files/<id>/download` | yes | yes | yes, any organisation |
+| thumb | `GET /api/files/<id>/thumb` | yes | yes | yes, any organisation |
+| list | `GET /api/files`, `GET /api/folders`, `GET /api/folders/<id>/files` | yes | yes | yes, the organisation it names |
+| export | `POST /api/export` | yes | yes | yes, any organisation |
+| rename | `PATCH /api/files/<id>` | yes | yes | no |
+| share | `POST /api/files/<id>/shares`, `DELETE /api/shares/<token>` | yes | yes | no |
+| delete | `DELETE /api/files/<id>` | no | yes | no |
+| support console | `GET /api/admin/orgs` | no | no | yes |
+| who am I | `GET /api/me` | yes | yes | yes |
+
+- For member and org_admin, "yes" means: on files and folders of the active organisation only (section 2).
+- For support, "any organisation" means: any file of any organisation, whatever the active organisation is.
+- A list shows exactly the folders or files of the active organisation, and nothing of any other organisation.
+
+## 4. Export
+`POST /api/export` returns several files in one response. It is allowed only if the caller may `read` every requested
+id under the rules above. If even one id is not readable (a file of another organisation, a deleted file, an unknown
+id), the whole request is refused and the response holds no file at all.
+
+## 5. Share links
+- Creating a link (`POST /api/files/<id>/shares`) and revoking it (`DELETE /api/shares/<token>`) are the `share`
+  action on the link's file.
+- Anyone who has the link can download the file with `GET /s/<token>`, without logging in, until the link is revoked
+  or the file is deleted. After that, or for an unknown token, the link answers `404`.
+
+## 6. Refusals
+- A refused request gets `403` or `404`; either is fine (404 avoids confirming that an id exists). The only other
+  refusal codes are `401` (section 1) and `400` (support listing without `X-Org-Id`, section 2).
+- A refusal holds no file data: no file contents and no name of a file the caller may not read. An error message may
+  repeat the id it was sent.
+- A refused request changes nothing: no file is renamed or deleted, no link is created or revoked.
+[?2004hroot@2882c453-506f-4266-b67f-004547220069:/app# pytest -q
+[?2004l
+============================================================================ ERRORS ============================================================================
+[31m[1m______________________________________________________________ ERROR collecting tests/test_api.py ______________________________________________________________[0m
+[31mImportError while importing test module '/app/tests/test_api.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_api.py:6: in <module>
+    from docshare import seed
+E   ModuleNotFoundError: No module named 'docshare'[0m
+[36m[1m=================================================================== short test summary info ====================================================================[0m
+[31mERROR[0m tests/test_api.py
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[31m[31m[1m1 error[0m[31m in 0.07s[0m[0m
+[?2004hroot@2882c453-506f-4266-b67f-004547220069:/app# PYTHONPATH=. python -m pytest -q
+[?2004l[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m                                                                                                                                                [100%][0m
+[32m[32m[1m9 passed[0m[32m in 0.28s[0m[0m
+[?2004hroot@2882c453-506f-4266-b67f-004547220069:/app# sed -n '1,200p' docshare/routes/files.py
+[?2004l"""File endpoints: list, metadata, download, rename, delete."""
+from flask import Blueprint, Response, abort, g, jsonify, request
+
+from .. import db
+from ..auth import login_required, require_active_org
+
+bp = Blueprint("files", __name__)
+
+
+def get_file_or_404(file_id):
+    row = db.query_one(f"SELECT {db.FILE_COLUMNS}, content FROM files WHERE id = ?", (file_id,))
+    if row is None:
+        abort(404)
+    return row
+
+
+@bp.get("/api/files")
+@login_required
+def list_files():
+    org_id = require_active_org()
+    rows = db.query_all(f"SELECT {db.FILE_COLUMNS} FROM files WHERE org_id = ? ORDER BY name", (org_id,))
+    return jsonify(files=[db.file_json(r) for r in rows])
+
+
+@bp.get("/api/files/<file_id>")
+@login_required
+def get_file(file_id):
+    return jsonify(db.file_json(get_file_or_404(file_id)))
+
+
+@bp.get("/api/files/<file_id>/download")
+@login_required
+def download(file_id):
+    row = get_file_or_404(file_id)
+    return file_response(row)
+
+
+def file_response(row):
+    resp = Response(bytes(row["content"]), mimetype=row["mime_type"])
+    resp.headers["Content-Disposition"] = f'attachment; filename="{row["name"]}"'
+    return resp
+
+
+@bp.patch("/api/files/<file_id>")
+@login_required
+def rename(file_id):
+    if g.identity.role not in ("member", "org_admin"):
+        abort(403)
+    row = get_file_or_404(file_id)
+    body = request.get_json(silent=True) or {}
+    name = body.get("name")
+    if not isinstance(name, str) or not (1 <= len(name) <= 200) or "/" in name:
+        abort(400, description="bad_name")
+    db.execute("UPDATE files SET name = ? WHERE id = ?", (name, row["id"]))
+    return jsonify(db.file_json(get_file_or_404(row["id"])))
+
+
+@bp.delete("/api/files/<file_id>")
+@login_required
+def delete(file_id):
+    row = get_file_or_404(file_id)
+    conn = db.get_db()
+    conn.execute("DELETE FROM shares WHERE file_id = ?", (row["id"],))
+    conn.execute("DELETE FROM files WHERE id = ?", (row["id"],))
+    conn.commit()
+    return "", 204
+[?2004hroot@2882c453-506f-4266-b67f-004547220069:/app# sed -n '1,200p' docshare/routes/folders.py
+[?2004l"""Folder endpoints: the folders of the active organisation and their files."""
+from flask import Blueprint, abort, jsonify
+
+from .. import db
+from ..auth import login_required, require_active_org
+
+bp = Blueprint("folders", __name__)
+
+
+@bp.get("/api/folders")
+@login_required
+def list_folders():
+    org_id = require_active_org()
+    rows = db.query_all("SELECT id, org_id, name FROM folders WHERE org_id = ? ORDER BY name", (org_id,))
+    return jsonify(folders=[db.folder_json(r) for r in rows])
+
+
+@bp.get("/api/folders/<folder_id>/files")
+@login_required
+def folder_files(folder_id):
+    org_id = require_active_org()
+    folder = db.query_one("SELECT id, org_id, name FROM folders WHERE id = ? AND org_id = ?", (folder_id, org_id))
+    if folder is None:
+        abort(404)
+    rows = db.query_all(f"SELECT {db.FILE_COLUMNS} FROM files WHERE folder_id = ? AND org_id = ? ORDER BY name",
+                        (folder_id, org_id))
+    return jsonify(folder=db.folder_json(folder), files=[db.file_json(r) for r in rows])
+[?2004hroot@2882c453-506f-4266-b67f-004547220069:/app# sed -n '1,200p' docshare/routes/share.py
+[?2004l"""Share links: create, revoke, and the public download behind /s/<token>."""
+import secrets
+from datetime import datetime, timezone
+
+from flask import Blueprint, abort, g, jsonify
+
+from .. import db
+from ..auth import login_required
+from .files import file_response
+
+bp = Blueprint("share", __name__)
+
+
+def now_iso():
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+@bp.post("/api/files/<file_id>/shares")
+@login_required
+def create_share(file_id):
+    if g.identity.role not in ("member", "org_admin"):
+        abort(403)
+    row = db.query_one("SELECT id FROM files WHERE id = ?", (file_id,))
+    if row is None:
+        abort(404)
+    token = secrets.token_urlsafe(18)
+    created = now_iso()
+    db.execute("INSERT INTO shares (token, file_id, created_by, created_at) VALUES (?, ?, ?, ?)",
+               (token, row["id"], g.identity.user_id, created))
+    return jsonify(token=token, url=f"/s/{token}", file_id=row["id"], created_at=created), 201
+
+
+@bp.delete("/api/shares/<token>")
+@login_required
+def revoke_share(token):
+    row = db.query_one("SELECT s.token, f.org_id FROM shares s JOIN files f ON f.id = s.file_id WHERE s.token = ?",
+                       (token,))
+    if row is None or row["org_id"] != g.identity.org_id or g.identity.role not in ("member", "org_admin"):
+        abort(404)
+    db.execute("UPDATE shares SET revoked_at = ? WHERE token = ? AND revoked_at IS NULL", (now_iso(), token))
+    return "", 204
+
+
+@bp.get("/s/<token>")
+def public_download(token):
+    row = db.query_one("SELECT f.id, f.name, f.mime_type, f.content FROM shares s JOIN files f ON f.id = s.file_id "
+                       "WHERE s.token = ? AND s.revoked_at IS NULL", (token,))
+    if row is None:
+        abort(404)
+    return file_response(row)
+[?2004hroot@2882c453-506f-4266-b67f-004547220069:/app# sed -n '1,200p' docshare/routes/export.py
+[?2004l"""Bulk export: several files in one JSON response (used by the "Download selected" button)."""
+import base64
+
+from flask import Blueprint, abort, g, jsonify, request
+
+from .. import db
+from ..auth import login_required
+
+bp = Blueprint("export", __name__)
+
+MAX_IDS = 50
+
+
+@bp.post("/api/export")
+@login_required
+def export():
+    body = request.get_json(silent=True) or {}
+    ids = body.get("file_ids")
+    if not isinstance(ids, list) or not (1 <= len(ids) <= MAX_IDS) or not all(isinstance(i, str) for i in ids):
+        abort(400, description="bad_file_ids")
+    # A selection always comes from one folder view, so the first file tells us whose files these are.
+    first = db.query_one("SELECT org_id FROM files WHERE id = ?", (ids[0],))
+    if first is None:
+        abort(404)
+    if not g.identity.is_support and first["org_id"] != g.identity.org_id:
+        abort(404)
+    out = []
+    for file_id in ids:
+        row = db.query_one("SELECT id, name, mime_type, size, content FROM files WHERE id = ?", (file_id,))
+        if row is None:
+            abort(404)
+        out.append({"id": row["id"], "name": row["name"], "mime_type": row["mime_type"], "size": row["size"],
+                    "content_b64": base64.b64encode(bytes(row["content"])).decode("ascii")})
+    return jsonify(files=out)
+[?2004hroot@2882c453-506f-4266-b67f-004547220069:/app# sed -n '1,200p' docshare/routes/admin.py
+[?2004l"""Support console: an overview of every organisation (support staff only)."""
+from flask import Blueprint, abort, g, jsonify
+
+from .. import db
+from ..auth import login_required
+
+bp = Blueprint("admin", __name__)
+
+
+@bp.get("/api/admin/orgs")
+@login_required
+def orgs():
+    if not g.identity.is_support:
+        abort(403)
+    rows = db.query_all("SELECT o.id, o.name, (SELECT COUNT(*) FROM files f WHERE f.org_id = o.id) AS file_count "
+                        "FROM orgs o ORDER BY o.name")
+    return jsonify(orgs=[{"id": r["id"], "name": r["name"], "file_count": r["file_count"]} for r in rows])
+[?2004hroot@2882c453-506f-4266-b67f-004547220069:/app# sed -n '1,200p' docshare/routes/thumbs.py
+[?2004l"""SVG previews for the file grid."""
+import html
+
+from flask import Blueprint, Response, abort
+
+from .. import db
+from ..auth import login_required
+
+bp = Blueprint("thumbs", __name__)
+
+TEXT_TYPES = ("text/", "application/json")
+
+
+def render_thumb(name, mime_type, content):
+    lines = []
+    if mime_type.startswith(TEXT_TYPES):
+        text = bytes(content).decode("utf-8", "replace")
+        lines = [ln.strip() for ln in text.splitlines() if ln.strip()][:5]
+    parts = ['<svg xmlns="http://www.w3.org/2000/svg" width="160" height="200" viewBox="0 0 160 200">',
+             f"<title>{html.escape(name)}</title>",
+             '<rect x="0.5" y="0.5" width="159" height="199" fill="#ffffff" stroke="#c8ccd2"/>',
+             f'<text x="8" y="18" font-size="9" font-weight="bold">{html.escape(name[:30])}</text>']
+    for i, ln in enumerate(lines):
+        parts.append(f'<text x="8" y="{40 + 14 * i}" font-size="8">{html.escape(ln[:34])}</text>')
+    parts.append("</svg>")
+    return "\n".join(parts)
+
+
+@bp.get("/api/files/<file_id>/thumb")
+@login_required
+def thumb(file_id):
+    row = db.query_one("SELECT name, mime_type, content FROM files WHERE id = ?", (file_id,))
+    if row is None:
+        abort(404)
+    svg = render_thumb(row["name"], row["mime_type"], row["content"])
+    return Response(svg, mimetype="image/svg+xml")
+[?2004hroot@2882c453-506f-4266-b67f-004547220069:/app# apply_patch <<'PATCH'
+[?2004l[?2004h> *** Begin Patch
+[?2004l[?2004h> *** Update File: docshare/routes/thumbs.py
+[?2004l[?2004h> @@
+[?2004l[?2004h> -from ..auth import login_required
+[?2004l[?2004h> +from ..auth import login_required, require_active_org
+[?2004l[?2004h> @@
+[?2004l[?2004h>  @bp.get("/api/files/<file_id>/thumb")
+[?2004l[?2004h>  @login_required
+[?2004l[?2004h>  def thumb(file_id):
+[?2004l[?2004h> -    row = db.query_one("SELECT name, mime_type, content FROM files WHERE id = ?", (file_id,))
+[?2004l[?2004h> +    # Enforce the active‑organisation rule for read‑only access.
+[?2004l[?2004h> +    active_org_id = require_active_org()
+[?2004l[?2004h> +    row = db.query_one("SELECT org_id, name, mime_type, content FROM files WHERE id = ?", (file_id,))
+[?2004l[?2004h>      if row is None:
+[?2004l[?2004h>          abort(404)
+[?2004l[?2004h> +    if not g.identity.is_support and row["org_id"] != active_org_id:
+[?2004l[?2004h> +        abort(404)
+[?2004l[?2004h>      svg = render_thumb(row["name"], row["mime_type"], row["content"])
+[?2004l[?2004h>      return Response(svg, mimetype="image/svg+xml")
+[?2004l[?2004h> *** End Patch
+[?2004l[?2004h> PATCH
+[?2004lbash: apply_patch: command not found
+[?2004hroot@2882c453-506f-4266-b67f-004547220069:/app# apply_patch <<'PATCH'
+[?2004l[?2004h> *** Begin Patch
+[?2004l[?2004h> *** Update File: docshare/routes/share.py
+[?2004l[?2004h> @@
+[?2004l[?2004h> -from ..auth import login_required
+[?2004l[?2004h> +from ..auth import login_required, require_active_org
+[?2004l[?2004h> @@
+[?2004l[?2004h>  @bp.post("/api/files/<file_id>/shares")
+[?2004l[?2004h>  @login_required
+[?2004l[?2004h>  def create_share(file_id):
+[?2004l[?2004h>      if g.identity.role not in ("member", "org_admin"):
+[?2004l[?2004h>          abort(403)
+[?2004l[?2004h> -    row = db.query_one("SELECT id FROM files WHERE id = ?", (file_id,))
+[?2004l[?2004h> +    # Verify the file belongs to the active organisation (support cannot create shares).
+[?2004l[?2004h> +    active_org_id = require_active_org()
+[?2004l[?2004h> +    row = db.query_one("SELECT id, org_id FROM files WHERE id = ?", (file_id,))
+[?2004l[?2004h>      if row is None:
+[?2004l[?2004h>          abort(404)
+[?2004l[?2004h> +    if row["org_id"] != active_org_id:
+[?2004l[?2004h> +        abort(404)
+[?2004l[?2004h>      token = secrets.token_urlsafe(18)
+[?2004l[?2004h> *** End Patch
+[?2004l[?2004h> PATCH
+[?2004lbash: apply_patch: command not found
+[?2004hroot@2882c453-506f-4266-b67f-004547220069:/app# apply_patch <<'PATCH'
+[?2004l[?2004h> *** Begin Patch
+[?2004l[?2004h> *** Update File: docshare/routes/export.py
+[?2004l[?2004h> @@
+[?2004l[?2004h> -from ..auth import login_required
+[?2004l[?2004h> +from ..auth import login_required, require_active_org
+[?2004l[?2004h> @@
+[?2004l[?2004h>  @bp.post("/api/export")
+[?2004l[?2004h>  @login_required
+[?2004l[?2004h>  def export():
+[?2004l[?2004h>      body = request.get_json(silent=True) or {}
+[?2004l[?2004h> @@
+[?2004l[?2004h> -    # A selection always comes from one folder view, so the first file tells us whose files these are.
+[?2004l[?2004h> -    first = db.query_one("SELECT org_id FROM files WHERE id = ?", (ids[0],))
+[?2004l[?2004h> -    if first is None:
+[?2004l[?2004h> -        abort(404)
+[?2004l[?2004h> -    if not g.identity.is_support and first["org_id"] != g.identity.org_id:
+[?2004l[?2004h> -        abort(404)
+[?2004l[?2004h> +    # Determine the active organisation for the request.
+[?2004l[?2004h> +    active_org_id = require_active_org()
+[?2004l[?2004h> +    # A selection always comes from one folder view, so the first file tells us whose files these are.
+[?2004l[?2004h> +    first = db.query_one("SELECT org_id FROM files WHERE id = ?", (ids[0],))
+[?2004l[?2004h> +    if first is None:
+[?2004l[?2004h> +        abort(404)
+[?2004l[?2004h> +    if not g.identity.is_support and first["org_id"] != active_org_id:
+[?2004l[?2004h> +        abort(404)
+[?2004l[?2004h> @@
+[?2004l[?2004h> -    for file_id in ids:
+[?2004l[?2004h> -        row = db.query_one("SELECT id, name, mime_type, size, content FROM files WHERE id = ?", (file_id,))
+[?2004l[?2004h> -        if row is None:
+[?2004l[?2004h> -            abort(404)
+[?2004l[?2004h> -        out.append({"id": row["id"], "name": row["name"], "mime_type": row["mime_type"], "size": row["size"],
+[?2004l[?2004h> -                    "content_b64": base64.b64encode(bytes(row["content"])) .decode("ascii")})
+[?2004l[?2004h> +    for file_id in ids:
+[?2004l[?2004h> +        row = db.query_one("SELECT id, org_id, name, mime_type, size, content FROM files WHERE id = ?", (file_id,))
+[?2004l[?2004h> +        if row is None:
+[?2004l[?2004h> +            abort(404)
+[?2004l[?2004h> +        # Enforce per‑file organisation check for non‑support users.
+[?2004l[?2004h> +        if not g.identity.is_support and row["org_id"] != active_org_id:
+[?2004l[?2004h> +            abort(404)
+[?2004l[?2004h> +        out.append({
+[?2004l[?2004h> +            "id": row["id"],
+[?2004l[?2004h> +            "name": row["name"],
+[?2004l[?2004h> +            "mime_type": row["mime_type"],
+[?2004l[?2004h> +            "size": row["size"],
+[?2004l[?2004h> +            "content_b64": base64.b64encode(bytes(row["content"])).decode("ascii"),
+[?2004l[?2004h> +        })
+[?2004l[?2004h> *** End Patch
+[?2004l[?2004h> PATCH
+[?2004lbash: apply_patch: command not found
+[?2004hroot@2882c453-506f-4266-b67f-004547220069:/app# apply_patch <<'PATCH'
+[?2004l[?2004h> *** Begin Patch
+[?2004l[?2004h> *** Update File: docshare/routes/share.py
+[?2004l[?2004h> @@
+[?2004l[?2004h> -from ..auth import login_required, require_active_org
+[?2004l[?2004h> +from ..auth import login_required, require_active_org
+[?2004l[?2004h> *** End Patch
+[?2004l[?2004h> PATCH
+[?2004lbash: apply_patch: command not found
+[?2004hroot@2882c453-506f-4266-b67f-004547220069:/app# sed -i "s/from \.\.auth import login_required/from ..auth import login_required, require_active_org/" docshare/routes/thumbs.py
+[?2004l[?2004hroot@2882c453-506f-4266-b67f-004547220069:/app# sed -i "/def thumb(file_id):/a \
+[?2004l[?2004h>     # Enforce the active‑organisation rule for read‑only access.\n    active_org_id = require_active_org()" docshare/routes/thumbs.py
+[?2004l[?2004hroot@2882c453-506f-4266-b67f-004547220069:/app# sed -i "/row = db.query_one(\"SELECT name, mime_type, content FROM files/,/return Response/ s/SELECT name, mime_type, content FROM files/SELECT org_id, name, mime_type, content FROM files/" docshare/routes/thumbs.py
+[?2004l[?2004hroot@2882c453-506f-4266-b67f-004547220069:/app# sed -i "/if row is None:/a \
+[?2004l[?2004h>     if not g.identity.is_support and row[\"org_id\"] != active_org_id:\\n        abort(404)" docshare/routes/thumbs.py
+[?2004l[?2004hroot@2882c453-506f-4266-b67f-004547220069:/app# sed -i "s/from \.\.auth import login_required/from ..auth import login_required, require_active_org/" docshare/routes/share.py
+[?2004l[?2004hroot@2882c453-506f-4266-b67f-004547220069:/app# sed -i "/def create_share(file_id):/a \
+[?2004l[?2004h>     # Verify the file belongs to the active organisation (support cannot create shares).\n    active_org_id = require_active_org()" docshare/routes/share.py
+[?2004l[?2004hroot@2882c453-506f-4266-b67f-004547220069:/app# sed -i "s/SELECT id FROM files/SELECT id, org_id FROM files/" docshare/routes/share.py
+[?2004l[?2004hroot@2882c453-506f-4266-b67f-004547220069:/app# sed -i "/if row is None:/a \
+[?2004l[?2004h>     if row[\"org_id\"] != active_org_id:\\n        abort(404)" docshare/routes/share.py
+[?2004l[?2004hroot@2882c453-506f-4266-b67f-004547220069:/app# sed -i "s/from \.\.auth import login_required/from ..auth import login_required, require_active_org/" docshare/routes/export.py
+[?2004l[?2004hroot@2882c453-506f-4266-b67f-004547220069:/app# sed -i "/def export():/a \
+[?2004l[?2004h>     # Determine the active organisation for the request.\n    active_org_id = require_active_org()" docshare/routes/export.py
+[?2004l[?2004hroot@2882c453-506f-4266-b67f-004547220069:/app# sed -i "/first = db.query_one(\"SELECT org_id FROM files/,/if not g.identity.is_support/ s/g.identity.org_id/active_org_id/" docshare/routes/export.py
+[?2004l[?2004hroot@2882c453-506f-4266-b67f-004547220069:/app# sed -i "/for file_id in ids:/a \
+[?2004l[?2004h>         # Enforce per‑file organisation check for non‑support users.\n        if not g.identity.is_support and row[\"org_id\"] != active_org_id:\\n            abort(404)" docshare/routes/export.py
+[?2004l[?2004hroot@2882c453-506f-4266-b67f-004547220069:/app# sed -i "s/SELECT id, name, mime_type, size, content FROM files/SELECT id, org_id, name, mime_type, size, content FROM files/" docshare/routes/export.py
+[?2004l[?2004hroot@2882c453-506f-4266-b67f-004547220069:/app# PYTHONPATH=. python -m pytest -q
+[?2004l
+============================================================================ ERRORS ============================================================================
+[31m[1m______________________________________________________________ ERROR collecting tests/test_api.py ______________________________________________________________[0m
+[31m/usr/local/lib/python3.12/site-packages/_pytest/python.py:528: in importtestmodule
+    mod = import_path(
+/usr/local/lib/python3.12/site-packages/_pytest/pathlib.py:640: in import_path
+    importlib.import_module(module_name)
+/usr/local/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+/usr/local/lib/python3.12/site-packages/_pytest/assertion/rewrite.py:185: in exec_module
+    exec(co, module.__dict__)
+tests/test_api.py:7: in <module>
+    from docshare.app import create_app
+docshare/app.py:7: in <module>
+    from .routes import admin, export, files, folders, share, thumbs
+E     File "/app/docshare/routes/share.py", line 27
+E       if row["org_id"] != active_org_id:
+E   IndentationError: expected an indented block after 'if' statement on line 26[0m
+[36m[1m=================================================================== short test summary info ====================================================================[0m
+[31mERROR[0m tests/test_api.py
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[31m[31m[1m1 error[0m[31m in 0.20s[0m[0m
+[?2004hroot@2882c453-506f-4266-b67f-004547220069:/app# nl -ba docshare/routes/share.py | sed -n '1,80p'
+[?2004l     1	"""Share links: create, revoke, and the public download behind /s/<token>."""
+     2	import secrets
+     3	from datetime import datetime, timezone
+     4	
+     5	from flask import Blueprint, abort, g, jsonify
+     6	
+     7	from .. import db
+     8	from ..auth import login_required, require_active_org
+     9	from .files import file_response
+    10	
+    11	bp = Blueprint("share", __name__)
+    12	
+    13	
+    14	def now_iso():
+    15	    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    16	
+    17	
+    18	@bp.post("/api/files/<file_id>/shares")
+    19	@login_required
+    20	def create_share(file_id):
+    21	# Verify the file belongs to the active organisation (support cannot create shares).
+    22	    active_org_id = require_active_org()
+    23	    if g.identity.role not in ("member", "org_admin"):
+    24	        abort(403)
+    25	    row = db.query_one("SELECT id, org_id FROM files WHERE id = ?", (file_id,))
+    26	    if row is None:
+    27	if row["org_id"] != active_org_id:
+    28	        abort(404)
+    29	        abort(404)
+    30	    token = secrets.token_urlsafe(18)
+    31	    created = now_iso()
+    32	    db.execute("INSERT INTO shares (token, file_id, created_by, created_at) VALUES (?, ?, ?, ?)",
+    33	               (token, row["id"], g.identity.user_id, created))
+    34	    return jsonify(token=token, url=f"/s/{token}", file_id=row["id"], created_at=created), 201
+    35	
+    36	
+    37	@bp.delete("/api/shares/<token>")
+    38	@login_required
+    39	def revoke_share(token):
+    40	    row = db.query_one("SELECT s.token, f.org_id FROM shares s JOIN files f ON f.id = s.file_id WHERE s.token = ?",
+    41	                       (token,))
+    42	    if row is None or row["org_id"] != g.identity.org_id or g.identity.role not in ("member", "org_admin"):
+    43	        abort(404)
+    44	    db.execute("UPDATE shares SET revoked_at = ? WHERE token = ? AND revoked_at IS NULL", (now_iso(), token))
+    45	    return "", 204
+    46	
+    47	
+    48	@bp.get("/s/<token>")
+    49	def public_download(token):
+    50	    row = db.query_one("SELECT f.id, f.name, f.mime_type, f.content FROM shares s JOIN files f ON f.id = s.file_id "
+    51	                       "WHERE s.token = ? AND s.revoked_at IS NULL", (token,))
+    52	    if row is None:
+    53	if row["org_id"] != active_org_id:
+    54	        abort(404)
+    55	        abort(404)
+    56	    return file_response(row)
+[?2004hroot@2882c453-506f-4266-b67f-004547220069:/app# cat > docshare/routes/share.py <<'PY'
+[?2004l[?2004h> """Share links: create, revoke, and the public download behind /s/<token>."""
+[?2004l[?2004h> import secrets
+[?2004l[?2004h> from datetime import datetime, timezone
+[?2004l[?2004h> 
+[?2004l[?2004h> from flask import Blueprint, abort, g, jsonify
+[?2004l[?2004h> 
+[?2004l[?2004h> from .. import db
+[?2004l[?2004h> from ..auth import login_required, require_active_org
+[?2004l[?2004h> from .files import file_response
+[?2004l[?2004h> 
+[?2004l[?2004h> bp = Blueprint("share", __name__)
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def now_iso():
+[?2004l[?2004h>     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> @bp.post("/api/files/<file_id>/shares")
+[?2004l[?2004h> @login_required
+[?2004l[?2004h> def create_share(file_id):
+[?2004l[?2004h>     # Only members and org_admins can create shares.
+[?2004l[?2004h>     if g.identity.role not in ("member", "org_admin"):
+[?2004l[?2004h>         abort(403)
+[?2004l[?2004h>     # Determine the active organisation for the request.
+[?2004l[?2004h>     active_org_id = require_active_org()
+[?2004l[?2004h>     # Fetch the file and verify it belongs to the active organisation.
+[?2004l[?2004h>     row = db.query_one("SELECT id, org_id FROM files WHERE id = ?", (file_id,))
+[?2004l[?2004h>     if row is None:
+[?2004l[?2004h>         abort(404)
+[?2004l[?2004h>     if row["org_id"] != active_org_id:
+[?2004l[?2004h>         abort(404)
+[?2004l[?2004h>     token = secrets.token_urlsafe(18)
+[?2004l[?2004h>     created = now_iso()
+[?2004l[?2004h>     db.execute(
+[?2004l[?2004h>         "INSERT INTO shares (token, file_id, created_by, created_at) VALUES (?, ?, ?, ?)",
+[?2004l[?2004h>         (token, row["id"], g.identity.user_id, created),
+[?2004l[?2004h>     )
+[?2004l[?2004h>     return (
+[?2004l[?2004h>         jsonify(
+[?2004l[?2004h>             token=token,
+[?2004l[?2004h>             url=f"/s/{token}",
+[?2004l[?2004h>             file_id=row["id"],
+[?2004l[?2004h>             created_at=created,
+[?2004l[?2004h>         ),
+[?2004l[?2004h>         201,
+[?2004l[?2004h>     )
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> @bp.delete("/api/shares/<token>")
+[?2004l[?2004h> @login_required
+[?2004l[?2004h> def revoke_share(token):
+[?2004l[?2004h>     row = db.query_one(
+[?2004l[?2004h>         "SELECT s.token, f.org_id FROM shares s JOIN files f ON f.id = s.file_id WHERE s.token = ?",
+[?2004l[?2004h>         (token,),
+[?2004l[?2004h>     )
+[?2004l[?2004h>     if (
+[?2004l[?2004h>         row is None
+[?2004l[?2004h>         or row["org_id"] != g.identity.org_id
+[?2004l[?2004h>         or g.identity.role not in ("member", "org_admin")
+[?2004l[?2004h>     ):
+[?2004l[?2004h>         abort(404)
+[?2004l[?2004h>     db.execute(
+[?2004l[?2004h>         "UPDATE shares SET revoked_at = ? WHERE token = ? AND revoked_at IS NULL",
+[?2004l[?2004h>         (now_iso(), token),
+[?2004l[?2004h>     )
+[?2004l[?2004h>     return "", 204
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> @bp.get("/s/<token>")
+[?2004l[?2004h> def public_download(token):
+[?2004l[?2004h>     row = db.query_one(
+[?2004l[?2004h>         "SELECT f.id, f.name, f.mime_type, f.content FROM shares s JOIN files f ON f.id = s.file_id "
+[?2004l[?2004h>         "WHERE s.token = ? AND s.revoked_at IS NULL",
+[?2004l[?2004h>         (token,),
+[?2004l[?2004h>     )
+[?2004l[?2004h>     if row is None:
+[?2004l[?2004h>         abort(404)
+[?2004l[?2004h>     return file_response(row)
+[?2004l[?2004h> PY
+[?2004l[?2004hroot@2882c453-506f-4266-b67f-004547220069:/app# PYTHONPATH=. python -m pytest -q
+[?2004l
+============================================================================ ERRORS ============================================================================
+[31m[1m______________________________________________________________ ERROR collecting tests/test_api.py ______________________________________________________________[0m
+[31m/usr/local/lib/python3.12/site-packages/_pytest/python.py:528: in importtestmodule
+    mod = import_path(
+/usr/local/lib/python3.12/site-packages/_pytest/pathlib.py:640: in import_path
+    importlib.import_module(module_name)
+/usr/local/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+/usr/local/lib/python3.12/site-packages/_pytest/assertion/rewrite.py:185: in exec_module
+    exec(co, module.__dict__)
+tests/test_api.py:7: in <module>
+    from docshare.app import create_app
+docshare/app.py:7: in <module>
+    from .routes import admin, export, files, folders, share, thumbs
+E     File "/app/docshare/routes/thumbs.py", line 36
+E       if not g.identity.is_support and row["org_id"] != active_org_id:
+E   IndentationError: expected an indented block after 'if' statement on line 35[0m
+[36m[1m=================================================================== short test summary info ====================================================================[0m
+[31mERROR[0m tests/test_api.py
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[31m[31m[1m1 error[0m[31m in 0.23s[0m[0m
+[?2004hroot@2882c453-506f-4266-b67f-004547220069:/app# cat > docshare/routes/thumbs.py <<'PY'
+[?2004l[?2004h> """SVG previews for the file grid."""
+[?2004l[?2004h> import html
+[?2004l[?2004h> 
+[?2004l[?2004h> from flask import Blueprint, Response, abort, g
+[?2004l[?2004h> 
+[?2004l[?2004h> from .. import db
+[?2004l[?2004h> from ..auth import login_required, require_active_org
+[?2004l[?2004h> from .files import file_response
+[?2004l[?2004h> 
+[?2004l[?2004h> bp = Blueprint("thumbs", __name__)
+[?2004l[?2004h> 
+[?2004l[?2004h> TEXT_TYPES = ("text/", "application/json")
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def render_thumb(name, mime_type, content):
+[?2004l[?2004h>     lines = []
+[?2004l[?2004h>     if mime_type.startswith(TEXT_TYPES):
+[?2004l[?2004h>         text = bytes(content).decode("utf-8", "replace")
+[?2004l[?2004h>         lines = [ln.strip() for ln in text.splitlines() if ln.strip()][:5]
+[?2004l[?2004h>     parts = [
+[?2004l[?2004h>         '<svg xmlns="http://www.w3.org/2000/svg" width="160" height="200" viewBox="0 0 160 200">',
+[?2004l[?2004h>         f"<title>{html.escape(name)}</title>",
+[?2004l[?2004h>         '<rect x="0.5" y="0.5" width="159" height="199" fill="#ffffff" stroke="#c8ccd2"/>',
+[?2004l[?2004h>         f'<text x="8" y="18" font-size="9" font-weight="bold">{html.escape(name[:30])}</text>',
+[?2004l[?2004h>     ]
+[?2004l[?2004h>     for i, ln in enumerate(lines):
+[?2004l[?2004h>         parts.append(f'<text x="8" y="{40 + 14 * i}" font-size="8">{html.escape(ln[:34])}</text>')
+[?2004l[?2004h>     parts.append("</svg>")
+[?2004l[?2004h>     return "\n".join(parts)
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> @bp.get("/api/files/<file_id>/thumb")
+[?2004l[?2004h> @login_required
+[?2004l[?2004h> def thumb(file_id):
+[?2004l[?2004h>     # Enforce the active‑organisation rule for read‑only access.
+[?2004l[?2004h>     active_org_id = require_active_org()
+[?2004l[?2004h>     row = db.query_one("SELECT org_id, name, mime_type, content FROM files WHERE id = ?", (file_id,))
+[?2004l[?2004h>     if row is None:
+[?2004l[?2004h>         abort(404)
+[?2004l[?2004h>     if not g.identity.is_support and row["org_id"] != active_org_id:
+[?2004l[?2004h>         abort(404)
+[?2004l[?2004h>     svg = render_thumb(row["name"], row["mime_type"], row["content"])
+[?2004l[?2004h>     return Response(svg, mimetype="image/svg+xml")
+[?2004l[?2004h> PY
+[?2004l[?2004hroot@2882c453-506f-4266-b67f-004547220069:/app# PYTHONPATH=. python -m pytest -q
+[?2004l[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31mF[0m[31m                                                                                                                                                [100%][0m
+=========================================================================== FAILURES ===========================================================================
+[31m[1m_________________________________________________________________________ test_export __________________________________________________________________________[0m
+
+env = (<FlaskClient <Flask 'docshare.app'>>, {'orgs': [{'id': '21bade02-6a6a-4768-b2ed-66ffdcc99396', 'name': 'Halden & Pric...6ffdcc99396', 'folder_id': '98d48663-6dd9-4e7b-8e1a-0cc7bcc3b287', 'name': 'payroll-summary-0a97.md', ...}, ...], ...})
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mtest_export[39;49;00m(env):[90m[39;49;00m
+        client, s = env[90m[39;49;00m
+        ben = user(s, [33m"[39;49;00m[33mben@haldenprice.example[39;49;00m[33m"[39;49;00m)[90m[39;49;00m
+        fs = org_files(s, ben[[33m"[39;49;00m[33mhome_org_id[39;49;00m[33m"[39;49;00m])[:[94m3[39;49;00m][90m[39;49;00m
+>       r = client.post([33m"[39;49;00m[33m/api/export[39;49;00m[33m"[39;49;00m, json={[33m"[39;49;00m[33mfile_ids[39;49;00m[33m"[39;49;00m: [f[[33m"[39;49;00m[33mid[39;49;00m[33m"[39;49;00m] [94mfor[39;49;00m f [95min[39;49;00m fs]}, headers=h(ben))[90m[39;49;00m
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+
+[1m[31mtests/test_api.py[0m:115: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+[1m[31m/usr/local/lib/python3.12/site-packages/werkzeug/test.py[0m:1171: in post
+    [0m[94mreturn[39;49;00m [96mself[39;49;00m.open(*args, **kw)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.12/site-packages/flask/testing.py[0m:235: in open
+    [0mresponse = [96msuper[39;49;00m().open([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.12/site-packages/werkzeug/test.py[0m:1120: in open
+    [0mresponse_parts = [96mself[39;49;00m.run_wsgi_app(request.environ, buffered=buffered)[90m[39;49;00m
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.12/site-packages/werkzeug/test.py[0m:992: in run_wsgi_app
+    [0mrv = run_wsgi_app([96mself[39;49;00m.application, environ, buffered=buffered)[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.12/site-packages/werkzeug/test.py[0m:1268: in run_wsgi_app
+    [0mapp_rv = app(environ, start_response)[90m[39;49;00m
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.12/site-packages/flask/app.py[0m:1536: in __call__
+    [0m[94mreturn[39;49;00m [96mself[39;49;00m.wsgi_app(environ, start_response)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.12/site-packages/flask/app.py[0m:1514: in wsgi_app
+    [0mresponse = [96mself[39;49;00m.handle_exception(e)[90m[39;49;00m
+               ^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.12/site-packages/flask/app.py[0m:1511: in wsgi_app
+    [0mresponse = [96mself[39;49;00m.full_dispatch_request()[90m[39;49;00m
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.12/site-packages/flask/app.py[0m:919: in full_dispatch_request
+    [0mrv = [96mself[39;49;00m.handle_user_exception(e)[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.12/site-packages/flask/app.py[0m:917: in full_dispatch_request
+    [0mrv = [96mself[39;49;00m.dispatch_request()[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.12/site-packages/flask/app.py[0m:902: in dispatch_request
+    [0m[94mreturn[39;49;00m [96mself[39;49;00m.ensure_sync([96mself[39;49;00m.view_functions[rule.endpoint])(**view_args)  [90m# type: ignore[no-any-return][39;49;00m[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mdocshare/auth.py[0m:54: in wrapper
+    [0m[94mreturn[39;49;00m view(*args, **kwargs)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    [0m[37m@bp[39;49;00m.post([33m"[39;49;00m[33m/api/export[39;49;00m[33m"[39;49;00m)[90m[39;49;00m
+    [37m@login_required[39;49;00m[90m[39;49;00m
+    [94mdef[39;49;00m[90m [39;49;00m[92mexport[39;49;00m():[90m[39;49;00m
+    [90m# Determine the active organisation for the request.[39;49;00m[90m[39;49;00m
+        active_org_id = require_active_org()[90m[39;49;00m
+        body = request.get_json(silent=[94mTrue[39;49;00m) [95mor[39;49;00m {}[90m[39;49;00m
+        ids = body.get([33m"[39;49;00m[33mfile_ids[39;49;00m[33m"[39;49;00m)[90m[39;49;00m
+        [94mif[39;49;00m [95mnot[39;49;00m [96misinstance[39;49;00m(ids, [96mlist[39;49;00m) [95mor[39;49;00m [95mnot[39;49;00m ([94m1[39;49;00m <= [96mlen[39;49;00m(ids) <= MAX_IDS) [95mor[39;49;00m [95mnot[39;49;00m [96mall[39;49;00m([96misinstance[39;49;00m(i, [96mstr[39;49;00m) [94mfor[39;49;00m i [95min[39;49;00m ids):[90m[39;49;00m
+            abort([94m400[39;49;00m, description=[33m"[39;49;00m[33mbad_file_ids[39;49;00m[33m"[39;49;00m)[90m[39;49;00m
+        [90m# A selection always comes from one folder view, so the first file tells us whose files these are.[39;49;00m[90m[39;49;00m
+        first = db.query_one([33m"[39;49;00m[33mSELECT org_id FROM files WHERE id = ?[39;49;00m[33m"[39;49;00m, (ids[[94m0[39;49;00m],))[90m[39;49;00m
+        [94mif[39;49;00m first [95mis[39;49;00m [94mNone[39;49;00m:[90m[39;49;00m
+            abort([94m404[39;49;00m)[90m[39;49;00m
+        [94mif[39;49;00m [95mnot[39;49;00m g.identity.is_support [95mand[39;49;00m first[[33m"[39;49;00m[33morg_id[39;49;00m[33m"[39;49;00m] != active_org_id:[90m[39;49;00m
+            abort([94m404[39;49;00m)[90m[39;49;00m
+        out = [][90m[39;49;00m
+        [94mfor[39;49;00m file_id [95min[39;49;00m ids:[90m[39;49;00m
+    [90m# Enforce per‑file organisation check for non‑support users.[39;49;00m[90m[39;49;00m
+>           [94mif[39;49;00m [95mnot[39;49;00m g.identity.is_support [95mand[39;49;00m row[[33m"[39;49;00m[33morg_id[39;49;00m[33m"[39;49;00m] != active_org_id:[90m[39;49;00m
+                                             ^^^[90m[39;49;00m
+[1m[31mE           UnboundLocalError: cannot access local variable 'row' where it is not associated with a value[0m
+
+[1m[31mdocshare/routes/export.py[0m:32: UnboundLocalError
+[36m[1m=================================================================== short test summary info ====================================================================[0m
+[31mFAILED[0m tests/test_api.py::[1mtest_export[0m - UnboundLocalError: cannot access local variable 'row' where it is not associated with a value
+[31m[31m[1m1 failed[0m, [32m8 passed[0m[31m in 0.34s[0m[0m
+[?2004hroot@2882c453-506f-4266-b67f-004547220069:/app# ed -s docshare/routes/export.py <<'ED'
+[?2004l[?2004h> /for file_id in ids:/
+[?2004l[?2004h> .,+10c
+[?2004l[?2004h> for file_id in ids:
+[?2004l[?2004h>     row = db.query_one("SELECT id, org_id, name, mime_type, size, content FROM files WHERE id = ?", (file_id,))
+[?2004l[?2004h>     if row is None:
+[?2004l[?2004h>         abort(404)
+[?2004l[?2004h>     if not g.identity.is_support and row["org_id"] != active_org_id:
+[?2004l[?2004h>         abort(404)
+[?2004l[?2004h>     out.append({
+[?2004l[?2004h>         "id": row["id"],
+[?2004l[?2004h>         "name": row["name"],
+[?2004l[?2004h>         "mime_type": row["mime_type"],
+[?2004l[?2004h>         "size": row["size"],
+[?2004l[?2004h>         "content_b64": base64.b64encode(bytes(row["content"])).decode("ascii"),
+[?2004l[?2004h>     })
+[?2004l[?2004h> .
+[?2004l[?2004h> w
+[?2004l[?2004h> q
+[?2004l[?2004h> ED
+[?2004lbash: ed: command not found
+[?2004hroot@2882c453-506f-4266-b67f-004547220069:/app# PYTHONPATH=. python -m pytest -q
+[?2004l[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31mF[0m[31m                                                                                                                                                [100%][0m
+=========================================================================== FAILURES ===========================================================================
+[31m[1m_________________________________________________________________________ test_export __________________________________________________________________________[0m
+
+env = (<FlaskClient <Flask 'docshare.app'>>, {'orgs': [{'id': '21bade02-6a6a-4768-b2ed-66ffdcc99396', 'name': 'Halden & Pric...6ffdcc99396', 'folder_id': '98d48663-6dd9-4e7b-8e1a-0cc7bcc3b287', 'name': 'payroll-summary-0a97.md', ...}, ...], ...})
+
+    [0m[94mdef[39;49;00m[90m [39;49;00m[92mtest_export[39;49;00m(env):[90m[39;49;00m
+        client, s = env[90m[39;49;00m
+        ben = user(s, [33m"[39;49;00m[33mben@haldenprice.example[39;49;00m[33m"[39;49;00m)[90m[39;49;00m
+        fs = org_files(s, ben[[33m"[39;49;00m[33mhome_org_id[39;49;00m[33m"[39;49;00m])[:[94m3[39;49;00m][90m[39;49;00m
+>       r = client.post([33m"[39;49;00m[33m/api/export[39;49;00m[33m"[39;49;00m, json={[33m"[39;49;00m[33mfile_ids[39;49;00m[33m"[39;49;00m: [f[[33m"[39;49;00m[33mid[39;49;00m[33m"[39;49;00m] [94mfor[39;49;00m f [95min[39;49;00m fs]}, headers=h(ben))[90m[39;49;00m
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+
+[1m[31mtests/test_api.py[0m:115: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+[1m[31m/usr/local/lib/python3.12/site-packages/werkzeug/test.py[0m:1171: in post
+    [0m[94mreturn[39;49;00m [96mself[39;49;00m.open(*args, **kw)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.12/site-packages/flask/testing.py[0m:235: in open
+    [0mresponse = [96msuper[39;49;00m().open([90m[39;49;00m
+[1m[31m/usr/local/lib/python3.12/site-packages/werkzeug/test.py[0m:1120: in open
+    [0mresponse_parts = [96mself[39;49;00m.run_wsgi_app(request.environ, buffered=buffered)[90m[39;49;00m
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.12/site-packages/werkzeug/test.py[0m:992: in run_wsgi_app
+    [0mrv = run_wsgi_app([96mself[39;49;00m.application, environ, buffered=buffered)[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.12/site-packages/werkzeug/test.py[0m:1268: in run_wsgi_app
+    [0mapp_rv = app(environ, start_response)[90m[39;49;00m
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.12/site-packages/flask/app.py[0m:1536: in __call__
+    [0m[94mreturn[39;49;00m [96mself[39;49;00m.wsgi_app(environ, start_response)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.12/site-packages/flask/app.py[0m:1514: in wsgi_app
+    [0mresponse = [96mself[39;49;00m.handle_exception(e)[90m[39;49;00m
+               ^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.12/site-packages/flask/app.py[0m:1511: in wsgi_app
+    [0mresponse = [96mself[39;49;00m.full_dispatch_request()[90m[39;49;00m
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.12/site-packages/flask/app.py[0m:919: in full_dispatch_request
+    [0mrv = [96mself[39;49;00m.handle_user_exception(e)[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.12/site-packages/flask/app.py[0m:917: in full_dispatch_request
+    [0mrv = [96mself[39;49;00m.dispatch_request()[90m[39;49;00m
+         ^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31m/usr/local/lib/python3.12/site-packages/flask/app.py[0m:902: in dispatch_request
+    [0m[94mreturn[39;49;00m [96mself[39;49;00m.ensure_sync([96mself[39;49;00m.view_functions[rule.endpoint])(**view_args)  [90m# type: ignore[no-any-return][39;49;00m[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+[1m[31mdocshare/auth.py[0m:54: in wrapper
+    [0m[94mreturn[39;49;00m view(*args, **kwargs)[90m[39;49;00m
+           ^^^^^^^^^^^^^^^^^^^^^[90m[39;49;00m
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    [0m[37m@bp[39;49;00m.post([33m"[39;49;00m[33m/api/export[39;49;00m[33m"[39;49;00m)[90m[39;49;00m
+    [37m@login_required[39;49;00m[90m[39;49;00m
+    [94mdef[39;49;00m[90m [39;49;00m[92mexport[39;49;00m():[90m[39;49;00m
+    [90m# Determine the active organisation for the request.[39;49;00m[90m[39;49;00m
+        active_org_id = require_active_org()[90m[39;49;00m
+        body = request.get_json(silent=[94mTrue[39;49;00m) [95mor[39;49;00m {}[90m[39;49;00m
+        ids = body.get([33m"[39;49;00m[33mfile_ids[39;49;00m[33m"[39;49;00m)[90m[39;49;00m
+        [94mif[39;49;00m [95mnot[39;49;00m [96misinstance[39;49;00m(ids, [96mlist[39;49;00m) [95mor[39;49;00m [95mnot[39;49;00m ([94m1[39;49;00m <= [96mlen[39;49;00m(ids) <= MAX_IDS) [95mor[39;49;00m [95mnot[39;49;00m [96mall[39;49;00m([96misinstance[39;49;00m(i, [96mstr[39;49;00m) [94mfor[39;49;00m i [95min[39;49;00m ids):[90m[39;49;00m
+            abort([94m400[39;49;00m, description=[33m"[39;49;00m[33mbad_file_ids[39;49;00m[33m"[39;49;00m)[90m[39;49;00m
+        [90m# A selection always comes from one folder view, so the first file tells us whose files these are.[39;49;00m[90m[39;49;00m
+        first = db.query_one([33m"[39;49;00m[33mSELECT org_id FROM files WHERE id = ?[39;49;00m[33m"[39;49;00m, (ids[[94m0[39;49;00m],))[90m[39;49;00m
+        [94mif[39;49;00m first [95mis[39;49;00m [94mNone[39;49;00m:[90m[39;49;00m
+            abort([94m404[39;49;00m)[90m[39;49;00m
+        [94mif[39;49;00m [95mnot[39;49;00m g.identity.is_support [95mand[39;49;00m first[[33m"[39;49;00m[33morg_id[39;49;00m[33m"[39;49;00m] != active_org_id:[90m[39;49;00m
+            abort([94m404[39;49;00m)[90m[39;49;00m
+        out = [][90m[39;49;00m
+        [94mfor[39;49;00m file_id [95min[39;49;00m ids:[90m[39;49;00m
+    [90m# Enforce per‑file organisation check for non‑support users.[39;49;00m[90m[39;49;00m
+>           [94mif[39;49;00m [95mnot[39;49;00m g.identity.is_support [95mand[39;49;00m row[[33m"[39;49;00m[33morg_id[39;49;00m[33m"[39;49;00m] != active_org_id:[90m[39;49;00m
+                                             ^^^[90m[39;49;00m
+[1m[31mE           UnboundLocalError: cannot access local variable 'row' where it is not associated with a value[0m
+
+[1m[31mdocshare/routes/export.py[0m:32: UnboundLocalError
+[36m[1m=================================================================== short test summary info ====================================================================[0m
+[31mFAILED[0m tests/test_api.py::[1mtest_export[0m - UnboundLocalError: cannot access local variable 'row' where it is not associated with a value
+[31m[31m[1m1 failed[0m, [32m8 passed[0m[31m in 0.35s[0m[0m
+[?2004hroot@2882c453-506f-4266-b67f-004547220069:/app# cat > docshare/routes/export.py <<'PY'
+[?2004l[?2004h> """Bulk export: several files in one JSON response (used by the "Download selected" button)."""
+[?2004l[?2004h> import base64
+[?2004l[?2004h> 
+[?2004l[?2004h> from flask import Blueprint, abort, g, jsonify, request
+[?2004l[?2004h> 
+[?2004l[?2004h> from .. import db
+[?2004l[?2004h> from ..auth import login_required, require_active_org
+[?2004l[?2004h> 
+[?2004l[?2004h> bp = Blueprint("export", __name__)
+[?2004l[?2004h> 
+[?2004l[?2004h> MAX_IDS = 50
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> @bp.post("/api/export")
+[?2004l[?2004h> @login_required
+[?2004l[?2004h> def export():
+[?2004l[?2004h>     # Determine the active organisation for the request.
+[?2004l[?2004h>     active_org_id = require_active_org()
+[?2004l[?2004h>     body = request.get_json(silent=True) or {}
+[?2004l[?2004h>     ids = body.get("file_ids")
+[?2004l[?2004h>     if not isinstance(ids, list) or not (1 <= len(ids) <= MAX_IDS) or not all(isinstance(i, str) for i in ids):
+[?2004l[?2004h>         abort(400, description="bad_file_ids")
+[?2004l[?2004h>     # The first file determines the organisation of the selection.
+[?2004l[?2004h>     first = db.query_one("SELECT org_id FROM files WHERE id = ?", (ids[0],))
+[?2004l[?2004h>     if first is None:
+[?2004l[?2004h>         abort(404)
+[?2004l[?2004h>     if not g.identity.is_support and first["org_id"] != active_org_id:
+[?2004l[?2004h>         abort(404)
+[?2004l[?2004h>     out = []
+[?2004l[?2004h>     for file_id in ids:
+[?2004l[?2004h>         row = db.query_one(
+[?2004l[?2004h>             "SELECT id, org_id, name, mime_type, size, content FROM files WHERE id = ?",
+[?2004l[?2004h>             (file_id,),
+[?2004l[?2004h>         )
+[?2004l[?2004h>         if row is None:
+[?2004l[?2004h>             abort(404)
+[?2004l[?2004h>         if not g.identity.is_support and row["org_id"] != active_org_id:
+[?2004l[?2004h>             abort(404)
+[?2004l[?2004h>         out.append(
+[?2004l[?2004h>             {
+[?2004l[?2004h>                 "id": row["id"],
+[?2004l[?2004h>                 "name": row["name"],
+[?2004l[?2004h>                 "mime_type": row["mime_type"],
+[?2004l[?2004h>                 "size": row["size"],
+[?2004l[?2004h>                 "content_b64": base64.b64encode(bytes(row["content"]))
+[?2004l[?2004h>                 .decode("ascii"),
+[?2004l[?2004h>             }
+[?2004l[?2004h>         )
+[?2004l[?2004h>     return jsonify(files=out)
+[?2004l[?2004h> PY
+[?2004l[?2004hroot@2882c453-506f-4266-b67f-004547220069:/app# PYTHONPATH=. python -m pytest -q
+[?2004l[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m                                                                                                                                                [100%][0m
+[32m[32m[1m9 passed[0m[32m in 0.23s[0m[0m
+[?2004hroot@2882c453-506f-4266-b67f-004547220069:/app# 

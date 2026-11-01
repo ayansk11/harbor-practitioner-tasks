@@ -1,3 +1,8 @@
+> Pre-revision record (status line added 2026-10-31): made for the first version of this task (commit 495c9f5 or
+> earlier); it describes the first data of the first version. The section numbers it cites are those of that
+> version's design record (git show 495c9f5:docs/ab-test-reanalysis/DESIGN.md). Kept as history; the revision's
+> records are calibration_study.out.md, generation_report.out.md and local_check.out.md.
+
 > Status: superseded. First calibration run (2026-10-28) on the first version of the data (h_pos design effect 3.12). It failed the fix_bots_only check, so the data was changed (DESIGN.md section 5). The current run is calibration_study.out.md.
 
 # calibration_study.out.md (calibration_study.py)

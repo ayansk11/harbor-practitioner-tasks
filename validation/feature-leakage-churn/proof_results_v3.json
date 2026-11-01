@@ -1,0 +1,389 @@
+{
+ "slug": "feature-leakage-churn",
+ "tag": "v3",
+ "package": "jobs/feature-leakage-churn/package-v3/feature-leakage-churn, a copy of tasks/feature-leakage-churn without its [agent] network_mode line",
+ "rows": [
+  {
+   "variant": "canonical",
+   "args": "-a oracle -k 5",
+   "expected": 1,
+   "rewards": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "exceptions": [],
+   "trials": 5,
+   "pass": true,
+   "job": "jobs/feature-leakage-churn/feature-leakage-churn-canonical-v3",
+   "started": "2026-10-31 19:12:31",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "alt",
+   "args": "-a oracle --ae SOLUTION=alt",
+   "expected": 1,
+   "rewards": [
+    1.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/feature-leakage-churn/feature-leakage-churn-alt-v3",
+   "started": "2026-10-31 19:16:24",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "nop",
+   "args": "-a nop",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/feature-leakage-churn/feature-leakage-churn-nop-v3",
+   "started": "2026-10-31 19:17:06",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "backfill_event_time",
+   "args": "-a oracle --ae SOLUTION=backfill_event_time",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/feature-leakage-churn/feature-leakage-churn-backfill_event_time-v3",
+   "started": "2026-10-31 19:17:38",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "cache_in_work",
+   "args": "-a oracle --ae SOLUTION=cache_in_work",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/feature-leakage-churn/feature-leakage-churn-cache_in_work-v3",
+   "started": "2026-10-31 19:18:15",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "cache_visible",
+   "args": "-a oracle --ae SOLUTION=cache_visible",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/feature-leakage-churn/feature-leakage-churn-cache_visible-v3",
+   "started": "2026-10-31 19:18:50",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "clip_last_login",
+   "args": "-a oracle --ae SOLUTION=clip_last_login",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/feature-leakage-churn/feature-leakage-churn-clip_last_login-v3",
+   "started": "2026-10-31 19:19:27",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "current_plan",
+   "args": "-a oracle --ae SOLUTION=current_plan",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/feature-leakage-churn/feature-leakage-churn-current_plan-v3",
+   "started": "2026-10-31 19:20:04",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "drop_plan",
+   "args": "-a oracle --ae SOLUTION=drop_plan",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/feature-leakage-churn/feature-leakage-churn-drop_plan-v3",
+   "started": "2026-10-31 19:20:39",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "hourly_schedule",
+   "args": "-a oracle --ae SOLUTION=hourly_schedule",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/feature-leakage-churn/feature-leakage-churn-hourly_schedule-v3",
+   "started": "2026-10-31 19:21:05",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "labels_matured",
+   "args": "-a oracle --ae SOLUTION=labels_matured",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/feature-leakage-churn/feature-leakage-churn-labels_matured-v3",
+   "started": "2026-10-31 19:21:43",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "last_login_where_known",
+   "args": "-a oracle --ae SOLUTION=last_login_where_known",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/feature-leakage-churn/feature-leakage-churn-last_login_where_known-v3",
+   "started": "2026-10-31 19:22:17",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "legacy_schedule",
+   "args": "-a oracle --ae SOLUTION=legacy_schedule",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/feature-leakage-churn/feature-leakage-churn-legacy_schedule-v3",
+   "started": "2026-10-31 19:22:52",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "loaded_at_everywhere",
+   "args": "-a oracle --ae SOLUTION=loaded_at_everywhere",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/feature-leakage-churn/feature-leakage-churn-loaded_at_everywhere-v3",
+   "started": "2026-10-31 19:23:27",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "log_lookup",
+   "args": "-a oracle --ae SOLUTION=log_lookup",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/feature-leakage-churn/feature-leakage-churn-log_lookup-v3",
+   "started": "2026-10-31 19:24:00",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "min_commit",
+   "args": "-a oracle --ae SOLUTION=min_commit",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/feature-leakage-churn/feature-leakage-churn-min_commit-v3",
+   "started": "2026-10-31 19:24:35",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "plan_changed_at",
+   "args": "-a oracle --ae SOLUTION=plan_changed_at",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/feature-leakage-churn/feature-leakage-churn-plan_changed_at-v3",
+   "started": "2026-10-31 19:25:10",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "rollback_as_commit",
+   "args": "-a oracle --ae SOLUTION=rollback_as_commit",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/feature-leakage-churn/feature-leakage-churn-rollback_as_commit-v3",
+   "started": "2026-10-31 19:25:44",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "scheduler_end",
+   "args": "-a oracle --ae SOLUTION=scheduler_end",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/feature-leakage-churn/feature-leakage-churn-scheduler_end-v3",
+   "started": "2026-10-31 19:26:18",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "scheduler_start",
+   "args": "-a oracle --ae SOLUTION=scheduler_start",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/feature-leakage-churn/feature-leakage-churn-scheduler_start-v3",
+   "started": "2026-10-31 19:26:52",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "status_event_date",
+   "args": "-a oracle --ae SOLUTION=status_event_date",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/feature-leakage-churn/feature-leakage-churn-status_event_date-v3",
+   "started": "2026-10-31 19:27:27",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "status_latest_loaded",
+   "args": "-a oracle --ae SOLUTION=status_latest_loaded",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/feature-leakage-churn/feature-leakage-churn-status_latest_loaded-v3",
+   "started": "2026-10-31 19:28:04",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "tune_model",
+   "args": "-a oracle --ae SOLUTION=tune_model",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/feature-leakage-churn/feature-leakage-churn-tune_model-v3",
+   "started": "2026-10-31 19:28:37",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "v2_rule",
+   "args": "-a oracle --ae SOLUTION=v2_rule",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/feature-leakage-churn/feature-leakage-churn-v2_rule-v3",
+   "started": "2026-10-31 19:29:11",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "window_on_loaded_at",
+   "args": "-a oracle --ae SOLUTION=window_on_loaded_at",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/feature-leakage-churn/feature-leakage-churn-window_on_loaded_at-v3",
+   "started": "2026-10-31 19:29:48",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "zero_features",
+   "args": "-a oracle --ae SOLUTION=zero_features",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/feature-leakage-churn/feature-leakage-churn-zero_features-v3",
+   "started": "2026-10-31 19:30:21",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "force-build",
+   "args": "-a oracle --force-build",
+   "expected": 1,
+   "rewards": [
+    1.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/feature-leakage-churn/feature-leakage-churn-force-build-v3",
+   "started": "2026-10-31 19:30:55",
+   "harbor_rc": 0
+  }
+ ]
+}

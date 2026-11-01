@@ -1,3 +1,8 @@
+> Pre-revision record (status line added 2026-10-31): made for the first version of this task (commit 495c9f5 or
+> earlier); it describes the first version's data with four hidden sets. The section numbers it cites are those of
+> that version's design record (git show 495c9f5:docs/ab-test-reanalysis/DESIGN.md). Kept as history; the
+> revision's records are calibration_study.out.md, generation_report.out.md and local_check.out.md.
+
 > Status (2026-10-28, DESIGN.md section 13): superseded. This is the calibration of the four-hidden-set data, copied here before
 > the fifth set (h_lowicc) was added and `calibration_study.py` was re-run; the current record is
 > `calibration_study.out.md`. Numbers below are unchanged.

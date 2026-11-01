@@ -1,9 +1,10 @@
 {
     "task": {
-        "path": "<submission>/tasks/ab-test-reanalysis"
+        "path": "<submission>/jobs/ab-test-reanalysis/package-rev1/ab-test-reanalysis"
     },
-    "trial_name": "ab-test-reanalysis__3EUBTMa",
-    "trials_dir": "<submission>/jobs/ab-test-reanalysis/ab-test-reanalysis-hardcode_no_ship-full2",
+    "trial_name": "ab-test-reanalysis__CStDb4c",
+    "trials_dir": "<submission>/jobs/ab-test-reanalysis/ab-test-reanalysis-hardcode_no_ship-rev1",
+    "environment_build_timeout_multiplier": 3.0,
     "agent": {
         "name": "oracle",
         "env": {
@@ -13,5 +14,5 @@
     "environment": {
         "type": "daytona"
     },
-    "job_id": "e539a3ca-9689-48ff-95bc-e495c84c50d2"
+    "job_id": "ce2a0fda-f6a2-468b-88c5-9c001f305cd5"
 }

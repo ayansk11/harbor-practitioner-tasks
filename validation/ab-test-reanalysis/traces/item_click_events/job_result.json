@@ -1,0 +1,429 @@
+{
+    "id": "cc2c0458-87fe-44e1-974f-ac14ee162f24",
+    "started_at": "2026-10-31T01:47:04.736976",
+    "updated_at": "2026-10-31T01:47:43.004348",
+    "finished_at": "2026-10-31T01:47:43.004348",
+    "n_total_trials": 1,
+    "stats": {
+        "n_completed_trials": 1,
+        "n_errored_trials": 0,
+        "n_running_trials": 0,
+        "n_pending_trials": 0,
+        "n_cancelled_trials": 0,
+        "n_retries": 0,
+        "evals": {
+            "oracle__adhoc": {
+                "n_trials": 1,
+                "n_errors": 0,
+                "metrics": [
+                    {
+                        "band_hw": 0.25,
+                        "h_neg_ci_hi_err_hw": 0.024026842165417568,
+                        "h_neg_ci_lo_err_hw": 0.09168280216442787,
+                        "h_neg_ctr_max_err": 0.0049316496240888325,
+                        "h_neg_diff_err": 0.00018679401388553563,
+                        "h_neg_ok": 0.0,
+                        "h_neg_problems": 5.0,
+                        "h_neg_run_rc": 0.0,
+                        "h_neg_run_seconds": 1.772,
+                        "h_neg_run_timed_out": 0.0,
+                        "h_neg_srm_p_rel_err": 0.0,
+                        "h_null_ci_hi_err_hw": 0.0024077010690728897,
+                        "h_null_ci_lo_err_hw": 0.10255061067912895,
+                        "h_null_ctr_max_err": 0.005735307371508638,
+                        "h_null_diff_err": 0.0005621817187961842,
+                        "h_null_ok": 0.0,
+                        "h_null_problems": 5.0,
+                        "h_null_run_rc": 0.0,
+                        "h_null_run_seconds": 1.521,
+                        "h_null_run_timed_out": 0.0,
+                        "h_null_srm_p_rel_err": 1.7121107297375723e-16,
+                        "h_plain_ci_hi_err_hw": 0.19757571066744598,
+                        "h_plain_ci_lo_err_hw": 0.09164821074275034,
+                        "h_plain_ctr_max_err": 0.005118597271276684,
+                        "h_plain_diff_err": 0.000884851829668562,
+                        "h_plain_ok": 0.0,
+                        "h_plain_problems": 5.0,
+                        "h_plain_run_rc": 0.0,
+                        "h_plain_run_seconds": 1.572,
+                        "h_plain_run_timed_out": 0.0,
+                        "h_plain_srm_p_rel_err": 0.0,
+                        "h_pos_ci_hi_err_hw": 0.17376027444920233,
+                        "h_pos_ci_lo_err_hw": 0.054625978110264296,
+                        "h_pos_ctr_max_err": 0.007010077802725695,
+                        "h_pos_diff_err": 0.0007359839888528286,
+                        "h_pos_ok": 0.0,
+                        "h_pos_problems": 5.0,
+                        "h_pos_run_rc": 0.0,
+                        "h_pos_run_seconds": 1.724,
+                        "h_pos_run_timed_out": 0.0,
+                        "h_pos_srm_p_rel_err": 0.0,
+                        "h_srm_ci_hi_err_hw": 0.10093472109194108,
+                        "h_srm_ci_lo_err_hw": 0.008855944955322593,
+                        "h_srm_ctr_max_err": 0.005421609899221844,
+                        "h_srm_diff_err": 0.0002621352275520572,
+                        "h_srm_ok": 0.0,
+                        "h_srm_problems": 5.0,
+                        "h_srm_run_rc": 0.0,
+                        "h_srm_run_seconds": 1.774,
+                        "h_srm_run_timed_out": 0.0,
+                        "h_srm_srm_p_rel_err": 0.0,
+                        "res_cgroup_cpus": 1.0,
+                        "res_cgroup_mem_mib": 2048.0,
+                        "res_cpu_affinity": 48.0,
+                        "res_host_memtotal_mib": 386466.5390625,
+                        "res_os_cpu_count": 48.0,
+                        "reward": 0.0,
+                        "run_cap_sec": 120.0,
+                        "sets_passed": 0.0,
+                        "visible_ci_hi_err_hw": 0.07515838887663893,
+                        "visible_ci_lo_err_hw": 0.03573529930578147,
+                        "visible_ctr_max_err": 0.005368276950483933,
+                        "visible_diff_err": 0.0001040387557795508,
+                        "visible_ok": 0.0,
+                        "visible_problems": 5.0,
+                        "visible_srm_p_rel_err": 1.1829140680293875e-16
+                    }
+                ],
+                "pass_at_k": {},
+                "reward_stats": {
+                    "reward": {
+                        "0.0": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "band_hw": {
+                        "0.25": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "run_cap_sec": {
+                        "120": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "res_os_cpu_count": {
+                        "48": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "res_cpu_affinity": {
+                        "48": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "res_cgroup_cpus": {
+                        "1.0": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "res_cgroup_mem_mib": {
+                        "2048.0": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "res_host_memtotal_mib": {
+                        "386466.5390625": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "visible_ok": {
+                        "0": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "visible_problems": {
+                        "5": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "visible_ctr_max_err": {
+                        "0.005368276950483933": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "visible_diff_err": {
+                        "0.0001040387557795508": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "visible_srm_p_rel_err": {
+                        "1.1829140680293875e-16": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "visible_ci_lo_err_hw": {
+                        "0.03573529930578147": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "visible_ci_hi_err_hw": {
+                        "0.07515838887663893": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_null_run_rc": {
+                        "0": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_null_run_timed_out": {
+                        "0": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_null_run_seconds": {
+                        "1.521": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_null_ok": {
+                        "0": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_null_problems": {
+                        "5": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_null_ctr_max_err": {
+                        "0.005735307371508638": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_null_diff_err": {
+                        "0.0005621817187961842": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_null_srm_p_rel_err": {
+                        "1.7121107297375723e-16": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_null_ci_lo_err_hw": {
+                        "0.10255061067912895": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_null_ci_hi_err_hw": {
+                        "0.0024077010690728897": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_pos_run_rc": {
+                        "0": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_pos_run_timed_out": {
+                        "0": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_pos_run_seconds": {
+                        "1.724": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_pos_ok": {
+                        "0": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_pos_problems": {
+                        "5": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_pos_ctr_max_err": {
+                        "0.007010077802725695": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_pos_diff_err": {
+                        "0.0007359839888528286": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_pos_srm_p_rel_err": {
+                        "0.0": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_pos_ci_lo_err_hw": {
+                        "0.054625978110264296": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_pos_ci_hi_err_hw": {
+                        "0.17376027444920233": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_srm_run_rc": {
+                        "0": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_srm_run_timed_out": {
+                        "0": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_srm_run_seconds": {
+                        "1.774": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_srm_ok": {
+                        "0": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_srm_problems": {
+                        "5": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_srm_ctr_max_err": {
+                        "0.005421609899221844": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_srm_diff_err": {
+                        "0.0002621352275520572": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_srm_srm_p_rel_err": {
+                        "0.0": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_srm_ci_lo_err_hw": {
+                        "0.008855944955322593": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_srm_ci_hi_err_hw": {
+                        "0.10093472109194108": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_plain_run_rc": {
+                        "0": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_plain_run_timed_out": {
+                        "0": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_plain_run_seconds": {
+                        "1.572": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_plain_ok": {
+                        "0": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_plain_problems": {
+                        "5": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_plain_ctr_max_err": {
+                        "0.005118597271276684": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_plain_diff_err": {
+                        "0.000884851829668562": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_plain_srm_p_rel_err": {
+                        "0.0": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_plain_ci_lo_err_hw": {
+                        "0.09164821074275034": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_plain_ci_hi_err_hw": {
+                        "0.19757571066744598": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_neg_run_rc": {
+                        "0": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_neg_run_timed_out": {
+                        "0": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_neg_run_seconds": {
+                        "1.772": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_neg_ok": {
+                        "0": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_neg_problems": {
+                        "5": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_neg_ctr_max_err": {
+                        "0.0049316496240888325": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_neg_diff_err": {
+                        "0.00018679401388553563": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_neg_srm_p_rel_err": {
+                        "0.0": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_neg_ci_lo_err_hw": {
+                        "0.09168280216442787": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "h_neg_ci_hi_err_hw": {
+                        "0.024026842165417568": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    },
+                    "sets_passed": {
+                        "0": [
+                            "ab-test-reanalysis__V284eFD"
+                        ]
+                    }
+                },
+                "exception_stats": {}
+            }
+        },
+        "n_input_tokens": null,
+        "n_cache_tokens": null,
+        "n_output_tokens": null,
+        "cost_usd": null
+    }
+}

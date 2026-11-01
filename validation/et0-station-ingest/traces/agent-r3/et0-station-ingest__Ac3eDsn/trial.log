@@ -1,0 +1,20 @@
+# Redacted 2026-10-31: machine-specific paths replaced (<submission> x2). <submission> = the submission folder on the authoring Mac, <home> = the author's home folder, <local-scratch> = the session scratch folder, <model-endpoint> = the URL of the model service the agent called. Nothing else changed: no reward, count or timing.
+Selected strategy: _DaytonaDirect
+Building environment from <submission>/tasks/et0-station-ingest/environment/Dockerfile
+Parser warnings: - Extra text detected after JSON object
+Trajectory dumped to jobs/agent-trials/et0-station-ingest-terminus2-gptoss-r3/et0-station-ingest__Ac3eDsn/agent/trajectory.json
+Parser warnings: - Extra text detected after JSON object
+Trajectory dumped to jobs/agent-trials/et0-station-ingest-terminus2-gptoss-r3/et0-station-ingest__Ac3eDsn/agent/trajectory.json
+Trajectory dumped to jobs/agent-trials/et0-station-ingest-terminus2-gptoss-r3/et0-station-ingest__Ac3eDsn/agent/trajectory.json
+Trajectory dumped to jobs/agent-trials/et0-station-ingest-terminus2-gptoss-r3/et0-station-ingest__Ac3eDsn/agent/trajectory.json
+Trajectory dumped to jobs/agent-trials/et0-station-ingest-terminus2-gptoss-r3/et0-station-ingest__Ac3eDsn/agent/trajectory.json
+Trajectory dumped to jobs/agent-trials/et0-station-ingest-terminus2-gptoss-r3/et0-station-ingest__Ac3eDsn/agent/trajectory.json
+Trajectory dumped to jobs/agent-trials/et0-station-ingest-terminus2-gptoss-r3/et0-station-ingest__Ac3eDsn/agent/trajectory.json
+Parser warnings: - Extra text detected before JSON object
+Trajectory dumped to jobs/agent-trials/et0-station-ingest-terminus2-gptoss-r3/et0-station-ingest__Ac3eDsn/agent/trajectory.json
+Trajectory dumped to jobs/agent-trials/et0-station-ingest-terminus2-gptoss-r3/et0-station-ingest__Ac3eDsn/agent/trajectory.json
+Trajectory dumped to jobs/agent-trials/et0-station-ingest-terminus2-gptoss-r3/et0-station-ingest__Ac3eDsn/agent/trajectory.json
+Trajectory dumped to jobs/agent-trials/et0-station-ingest-terminus2-gptoss-r3/et0-station-ingest__Ac3eDsn/agent/trajectory.json
+Collecting main service artifacts
+Selected strategy: _DaytonaDirect
+Building environment from <submission>/tasks/et0-station-ingest/tests/Dockerfile

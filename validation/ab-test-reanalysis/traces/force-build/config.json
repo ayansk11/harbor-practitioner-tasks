@@ -1,12 +1,13 @@
 {
     "task": {
-        "path": "<submission>/tasks/ab-test-reanalysis"
+        "path": "<submission>/jobs/ab-test-reanalysis/package-rev1/ab-test-reanalysis"
     },
-    "trial_name": "ab-test-reanalysis__ywxtGS2",
-    "trials_dir": "<submission>/jobs/ab-test-reanalysis/ab-test-reanalysis-force-build-full2",
+    "trial_name": "ab-test-reanalysis__JEHP63t",
+    "trials_dir": "<submission>/jobs/ab-test-reanalysis/ab-test-reanalysis-force-build-rev1",
+    "environment_build_timeout_multiplier": 3.0,
     "environment": {
         "type": "daytona",
         "force_build": true
     },
-    "job_id": "3a6af6a3-b2e0-42de-90e7-8723b79bd949"
+    "job_id": "607fc249-5162-406b-9fef-9adee1dcc9bc"
 }

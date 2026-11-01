@@ -1,14 +1,15 @@
 {
     "task": {
-        "path": "<submission>/tasks/ab-test-reanalysis"
+        "path": "<submission>/jobs/ab-test-reanalysis/package-rev1/ab-test-reanalysis"
     },
-    "trial_name": "ab-test-reanalysis__uDDEjGt",
-    "trials_dir": "<submission>/jobs/ab-test-reanalysis/ab-test-reanalysis-nop-full2",
+    "trial_name": "ab-test-reanalysis__cVyb3mz",
+    "trials_dir": "<submission>/jobs/ab-test-reanalysis/ab-test-reanalysis-nop-rev1",
+    "environment_build_timeout_multiplier": 3.0,
     "agent": {
         "name": "nop"
     },
     "environment": {
         "type": "daytona"
     },
-    "job_id": "278cc6b4-08e6-42c4-b2d1-2a77fa36c9ed"
+    "job_id": "ffe85c30-c3b7-41f1-ae7f-2ecbbe0a0a38"
 }

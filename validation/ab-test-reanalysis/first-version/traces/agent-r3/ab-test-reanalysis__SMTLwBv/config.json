@@ -1,0 +1,19 @@
+{
+    "task": {
+        "path": "tasks/ab-test-reanalysis"
+    },
+    "trial_name": "ab-test-reanalysis__SMTLwBv",
+    "trials_dir": "jobs/agent-trials/ab-test-reanalysis-terminus2-gptoss-r3",
+    "environment_build_timeout_multiplier": 3.0,
+    "agent": {
+        "name": "terminus-2",
+        "model_name": "openai/gpt-oss-120b",
+        "kwargs": {
+            "api_base": "<model-endpoint>"
+        }
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "dd01fedc-6eef-432f-bba5-7a29900af646"
+}

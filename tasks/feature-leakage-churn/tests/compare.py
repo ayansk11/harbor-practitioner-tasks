@@ -1,9 +1,11 @@
 """Normalise a feature table and compare two of them (used by grade.py; no agent code is imported here).
 
-Accepted output shapes (instruction.md): parquet with the keys and nine feature columns, any row and column order,
-extra columns ignored. customer_id: any integer dtype (or whole-number floats or digit strings). as_of: a timestamp
-(time-zone aware, or naive meaning UTC) or an ISO 8601 string, whole seconds. Counts: whole numbers in any numeric
-dtype. Nulls: parquet nulls, None or NaN alike.
+Accepted output shapes (instruction.md): parquet with the keys and the ten kept features of live/features.py, any row
+and column order, extra columns ignored. customer_id: any integer dtype (or whole-number floats or digit strings).
+as_of: a timestamp (time-zone aware, or naive meaning UTC) or an ISO 8601 string, whole seconds. Counts: whole
+numbers in any numeric dtype. Strings (status, plan) exactly. Nulls: parquet nulls, None or NaN alike.
+The left-out feature: a column named days_since_last_login may be present only if every value in it is null;
+normalise() counts its non-null values and every check fails on a count above 0.
 """
 import json
 import math
@@ -14,8 +16,10 @@ import pandas as pd
 KEYS = ["customer_id", "as_of"]
 INT_FEATS = ["orders_7d", "orders_30d", "spend_30d_cents", "tickets_30d"]
 FLOAT_FEATS = ["days_since_last_order", "tenure_days", "app_minutes_7d", "te_district"]
-STR_FEATS = ["status"]
-FEATURES = INT_FEATS + FLOAT_FEATS + STR_FEATS
+STR_FEATS = ["status", "plan"]
+FEATURES = INT_FEATS + FLOAT_FEATS + STR_FEATS      # the ten kept features
+DROPPED = "days_since_last_login"                   # the feature the extract cannot determine for every row
+DROPPED_KEY = "_dropped_nonnull"                    # convert.py's count of its non-null values
 ABS_TOL, REL_TOL = 1e-6, 1e-9
 EPOCH = pd.Timestamp("1970-01-01", tz="UTC")
 
@@ -59,12 +63,19 @@ def _customer(col):
 
 
 def _null(v):
-    return v is None or v is pd.NA or (isinstance(v, float) and np.isnan(v))
+    return v is None or v is pd.NA or v is pd.NaT or (isinstance(v, float) and np.isnan(v))
 
 
 def _nullable_str(col):
     """Strings with every null form mapped to None (compare() re-checks nulls, since pandas may store them as NaN)."""
     return [None if _null(v) else str(v) for v in col.astype(object).tolist()]
+
+
+def dropped_nonnull(df):
+    """Non-null values in a column named after the left-out feature (0 if the column is absent)."""
+    if DROPPED not in df.columns:
+        return 0
+    return sum(1 for v in df[DROPPED].astype(object).tolist() if not _null(v))
 
 
 def normalise(df):
@@ -77,7 +88,8 @@ def normalise(df):
             out[c] = pd.to_numeric(df[c].astype(object).where(df[c].notna(), np.nan)).astype("float64").to_numpy()
         except Exception:
             raise BadOutput(f"{c} is not numeric (dtype {df[c].dtype})")
-    out["status"] = _nullable_str(df["status"])
+    for c in STR_FEATS:
+        out[c] = _nullable_str(df[c])
     return out
 
 
@@ -106,23 +118,26 @@ def compare(got, exp):
         bad = int((~close).sum())
         det[f"mismatch_{c}"] = bad
         bad_total += bad
-    g, e = both["status_got"].astype(object).tolist(), both["status_exp"].astype(object).tolist()
-    bad = sum(1 for a, b in zip(g, e) if not ((_null(a) and _null(b)) or (not _null(a) and not _null(b) and a == b)))
-    det["mismatch_status"] = bad
-    bad_total += bad
+    for c in STR_FEATS:
+        g, e = both[c + "_got"].astype(object).tolist(), both[c + "_exp"].astype(object).tolist()
+        bad = sum(1 for a, b in zip(g, e)
+                  if not ((_null(a) and _null(b)) or (not _null(a) and not _null(b) and a == b)))
+        det[f"mismatch_{c}"] = bad
+        bad_total += bad
     det["mismatched_cells"] = bad_total
     ok = dup == 0 and det["missing_rows"] == 0 and det["extra_rows"] == 0 and bad_total == 0
     return ok, det
 
 
 def load_expected(path):
-    """The committed reference output: customer_id int64, as_of int64 epoch seconds, the nine features."""
+    """The committed reference output: customer_id int64, as_of int64 epoch seconds, the ten kept features."""
     e = pd.read_parquet(path)
     out = pd.DataFrame({"customer_id": e["customer_id"].astype("int64").to_numpy(),
                         "as_of": e["as_of"].astype("int64").to_numpy()})
     for c in INT_FEATS + FLOAT_FEATS:
         out[c] = e[c].astype("float64").to_numpy()
-    out["status"] = _nullable_str(e["status"])
+    for c in STR_FEATS:
+        out[c] = _nullable_str(e[c])
     return out
 
 
@@ -138,10 +153,14 @@ def key_check(got, keys):
 
 
 def from_json(raw):
-    """Root side: rebuild a normalised frame from convert.py's JSON (bytes written by a uid-1001 process)."""
+    """Root side: rebuild a normalised frame from convert.py's JSON (bytes written by a uid-1001 process).
+    Returns (frame, non-null count of the left-out feature's column)."""
     d = json.loads(raw)
-    if not isinstance(d, dict) or set(d) != set(KEYS + FEATURES):
+    if not isinstance(d, dict) or set(d) != set(KEYS + FEATURES + [DROPPED_KEY]):
         raise BadOutput("converted output has the wrong columns")
+    nn = d.pop(DROPPED_KEY)
+    if type(nn) is not int or nn < 0:
+        raise BadOutput("converted output has a bad count for the left-out feature")
     n = len(d["customer_id"])
     if any(not isinstance(v, list) or len(v) != n for v in d.values()):
         raise BadOutput("converted output has ragged columns")
@@ -153,7 +172,8 @@ def from_json(raw):
         if not all(v is None or (type(v) in (int, float) and math.isfinite(v)) for v in d[c]):
             raise BadOutput(f"converted {c} is not numeric")
         out[c] = np.array([np.nan if v is None else float(v) for v in d[c]], dtype="float64")
-    if not all(v is None or type(v) is str for v in d["status"]):
-        raise BadOutput("converted status is not text")
-    out["status"] = d["status"]
-    return out
+    for c in STR_FEATS:
+        if not all(v is None or type(v) is str for v in d[c]):
+            raise BadOutput(f"converted {c} is not text")
+        out[c] = d[c]
+    return out, nn

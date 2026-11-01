@@ -1,11 +1,17 @@
-"""Shortcut: compute correct features for the visible extract once and return them for any input."""
-import os, subprocess, sys, tempfile, shutil
-from _common import APP, SOL, edit
+"""Shortcut: compute the right features for the visible extract once, with the canonical solution, and return that
+table for any input."""
+import os
+import shutil
+import sys
+import tempfile
+
+from _common import APP, CHURN, edit, use_canonical
+
 with tempfile.TemporaryDirectory() as tmp:
-    shutil.copytree(os.path.join(APP, "churn"), os.path.join(tmp, "churn"))
-    for n in ("windows.py", "encoding.py", "status.py", "impute.py"):
-        shutil.copy(os.path.join(SOL, "canonical", "churn", n), os.path.join(tmp, "churn", n))
-    subprocess.run([sys.executable, "-m", "churn.build_features", "--data", os.path.join(APP, "data"),
-                    "--out", os.path.join(APP, "churn", "cache_features.parquet")], cwd=tmp, check=True)
+    shutil.copytree(CHURN, os.path.join(tmp, "churn"))
+    use_canonical(dest=os.path.join(tmp, "churn"))
+    sys.path.insert(0, tmp)
+    from churn.build_features import build
+    build(os.path.join(APP, "data")).to_parquet(os.path.join(CHURN, "cache_features.parquet"), index=False)
 edit("build_features.py", '''    feats = build(a.data)''', '''    import pandas as pd
-    feats = pd.read_parquet(os.path.join(os.path.dirname(__file__), "cache_features.parquet"))''')
+    feats = pd.read_parquet(os.path.join(os.path.dirname(os.path.abspath(__file__)), "cache_features.parquet"))''')

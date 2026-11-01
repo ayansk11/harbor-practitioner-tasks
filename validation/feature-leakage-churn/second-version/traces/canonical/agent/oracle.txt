@@ -1,0 +1,1 @@
+wrote 57909 rows x 12 columns to /app/output/features.parquet

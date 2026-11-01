@@ -1,0 +1,1638 @@
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# asciinema rec --stdin /logs/agent/recording.cast
+[?2004l[0;32masciinema: recording asciicast to /logs/agent/recording.cast[0m
+[0;32masciinema: press <ctrl-d> or type "exit" when you're done[0m
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# clear
+[?2004l[H[J[3J[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# ls -R .
+[?2004l.:
+README.md  config  data  docs  et0  output  reference
+
+./config:
+stations.yaml
+
+./data:
+raw
+
+./data/raw:
+ARN.csv  CDB.csv  HLT.csv  LGN.csv  MRS.csv  PAL.csv  RSD.csv  VNT.csv
+
+./docs:
+METHOD.md
+
+./et0:
+__init__.py  fao56.py  ingest.py  meta.py  pipeline.py	selfcheck.py
+
+./output:
+et0.csv
+
+./reference:
+metservice_et0_2025.csv
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# sed -n '1,200p' docs/METHOD.md
+[?2004l# How we compute daily ET0
+
+This is the method the `et0` package must follow. It is the daily FAO-56 Penman-Monteith procedure: FAO Irrigation
+and Drainage Paper No. 56, *Crop evapotranspiration* (Allen, Pereira, Raes and Smith, 1998), chapters 3 and 4.
+Equation numbers below are the book's, so you can look any step up there. You do not need the book: everything the
+pipeline needs is on this page.
+
+ET0 is the water a well-watered reference grass surface would lose in one day, in mm/day. We publish one value per
+station per day.
+
+## 1. Inputs, after conversion to standard form
+
+| Symbol | Meaning | Unit |
+|---|---|---|
+| Tmax, Tmin | daily maximum and minimum air temperature | deg C |
+| u2 | mean daily wind speed **at 2 m above ground** | m/s |
+| Rs | incoming solar radiation, daily total | MJ m-2 day-1 |
+| ea | actual vapour pressure | kPa |
+| J | day of the year: 1 on 1 January, up to 365 (366 in a leap year) | - |
+| latitude | decimal degrees, **north positive, south negative** | deg |
+| z | station elevation above sea level | m |
+
+Station records do not always arrive in this form. Section 3 lists every form our station register and raw files use
+and how each one is converted. The FAO-56 equations themselves (section 2) only ever see the standard form.
+
+## 2. The daily procedure
+
+Constants: solar constant Gsc = 0.0820 MJ m-2 min-1; Stefan-Boltzmann constant sigma = 4.903e-9 MJ K-4 m-2 day-1;
+albedo of the reference grass 0.23; absolute temperature in Eq. 39 is T + 273.16.
+
+1. Mean temperature (Eq. 9): Tmean = (Tmax + Tmin) / 2.
+2. Air pressure from elevation (Eq. 7): P = 101.3 * ((293 - 0.0065 z) / 293) ^ 5.26, in kPa.
+3. Psychrometric constant (Eq. 8): gamma = 0.665e-3 * P, in kPa/degC.
+4. Saturation vapour pressure at temperature T (Eq. 11): e0(T) = 0.6108 * exp(17.27 T / (T + 237.3)), in kPa.
+5. Mean saturation vapour pressure (Eq. 12): es = (e0(Tmax) + e0(Tmin)) / 2. Do not use e0(Tmean) here.
+6. Slope of the saturation curve at Tmean (Eq. 13): Delta = 4098 * e0(Tmean) / (Tmean + 237.3)^2, in kPa/degC.
+7. Actual vapour pressure ea, from whichever humidity the station reports (section 3.5):
+   - from daily maximum and minimum relative humidity (Eq. 17): ea = [e0(Tmin) RHmax/100 + e0(Tmax) RHmin/100] / 2;
+   - from the daily mean dewpoint temperature (Eq. 14): ea = e0(Tdew).
+8. Extraterrestrial radiation Ra (Eqs. 21 to 25), with phi = latitude in radians (Eq. 22, negative in the south):
+   - inverse relative Earth-Sun distance (Eq. 23): dr = 1 + 0.033 cos(2 pi J / 365);
+   - solar declination (Eq. 24): delta = 0.409 sin(2 pi J / 365 - 1.39), in radians;
+   - sunset hour angle (Eq. 25): ws = arccos(-tan(phi) tan(delta)), in radians;
+   - Ra = (24 * 60 / pi) * Gsc * dr * [ws sin(phi) sin(delta) + cos(phi) cos(delta) sin(ws)] (Eq. 21), MJ m-2 day-1.
+   The divisor is 365 in every year, leap years included; J itself runs to 366 in a leap year.
+9. Clear-sky radiation (Eq. 37): Rso = (0.75 + 2e-5 z) * Ra.
+10. Net shortwave radiation (Eq. 38): Rns = (1 - 0.23) * Rs.
+11. Net longwave radiation (Eq. 39):
+    Rnl = sigma * [(Tmax + 273.16)^4 + (Tmin + 273.16)^4] / 2 * (0.34 - 0.14 sqrt(ea)) * (1.35 Rs/Rso - 0.35),
+    where the ratio Rs/Rso is limited to at most 1.0 before it is used.
+12. Net radiation (Eq. 40): Rn = Rns - Rnl.
+13. Soil heat flux for a daily step (Eq. 42): G = 0.
+14. Reference evapotranspiration (Eq. 6):
+    ET0 = [0.408 Delta (Rn - G) + gamma * 900 / (Tmean + 273) * u2 * (es - ea)] / [Delta + gamma (1 + 0.34 u2)],
+    in mm/day. The factor 0.408 turns MJ m-2 day-1 into mm/day of evaporated water (Eq. 20).
+
+`et0/fao56.py` implements steps 1 to 14, and `python -m et0.selfcheck` checks it against the daily worked example in
+chapter 4 of the book (Example 18, ET0 = 3.88 mm/day).
+
+## 3. Station register and raw files
+
+### 3.1 The register (`config/stations.yaml`)
+A YAML file with a list `stations`. Every station has every key below; there are no other forms than the ones listed.
+
+| Key | What it holds |
+|---|---|
+| `id` | station code; the raw file is `<data folder>/<id>.csv` |
+| `name`, `network` | free text, not used in the calculation |
+| `latitude` | see 3.2 |
+| `longitude` | decimal degrees, east positive; not used by the daily method |
+| `elevation_m` | elevation above sea level in metres (z in Eqs. 7 and 37) |
+| `wind_height_m` | height of the anemometer above ground in metres; see 3.3 |
+| `radiation_units` | unit of the `solar_rad` column; see 3.4 |
+| `humidity` | which humidity columns the raw file has; see 3.5 |
+
+### 3.2 Latitude
+Two forms are used:
+- a number: signed decimal degrees, north positive, south negative (`38.42`, `-31.85`);
+- text: unsigned decimal degrees followed directly by the hemisphere letter `N` or `S` (`"36.95N"`, `"34.92S"`).
+  `"34.92S"` is the same place as `-34.92`.
+
+### 3.3 Wind sensor height
+`wind_ms` is the mean daily wind speed at the anemometer, which may be at any height (any positive value of
+`wind_height_m` between 1 m and 20 m; 2, 3 and 10 m are the most common). The equations need u2, the speed at 2 m.
+Convert with the logarithmic wind profile (Eq. 47), for every station:
+
+    u2 = uz * 4.87 / ln(67.8 z_w - 5.42)
+
+where uz is the measured speed and z_w the anemometer height in metres. At 10 m the factor is about 0.748; at 2 m it is
+1.000 (to three decimals).
+
+### 3.4 Radiation units
+- `MJ/m2/day`: daily total incoming solar radiation, already Rs.
+- `W/m2`: daily mean solar irradiance. Multiply by 0.0864 to get Rs in MJ m-2 day-1 (1 W m-2 sustained for a day is
+  86 400 J m-2 = 0.0864 MJ m-2).
+
+### 3.5 Humidity
+- `rh_minmax`: columns `rh_max_pct` and `rh_min_pct` (daily maximum and minimum relative humidity, %); use Eq. 17.
+- `dewpoint`: column `tdew_c` (daily mean dewpoint temperature, deg C); use Eq. 14.
+
+### 3.6 Raw daily files (`<data folder>/<id>.csv`)
+One row per day, no gaps and no missing values. Columns: `date` (YYYY-MM-DD), `tmax_c`, `tmin_c`, the humidity
+column(s) of 3.5, `wind_ms` (m/s at the anemometer height), `solar_rad` (in the station's `radiation_units`).
+
+## 4. Output
+CSV with a header row and the columns `station_id`, `date` (YYYY-MM-DD) and `et0_mm_day`: one row for every station
+and every day in the input. The pipeline writes three decimals.
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# sed -n '1,200p' et0/fao56.py
+[?2004l"""FAO-56 Penman-Monteith reference evapotranspiration, daily time step.
+
+Implements the daily procedure of FAO Irrigation and Drainage Paper 56 (Allen et al., 1998), chapters 3 and 4, as
+written up in /app/docs/METHOD.md. Every function works on numpy arrays (one element per day).
+
+Inputs expected by et0_daily (already in standard form):
+    tmax, tmin   daily maximum and minimum air temperature [deg C]
+    u2           mean daily wind speed at 2 m above ground [m/s]
+    rs           incoming solar radiation [MJ m-2 day-1]
+    ea           actual vapour pressure [kPa] (see actual_vapour_pressure_*)
+    doy          day of the year, 1 = 1 January
+    latitude     decimal degrees, north positive, south negative
+    elevation    metres above sea level
+"""
+import numpy as np
+
+SOLAR_CONSTANT = 0.0820        # MJ m-2 min-1
+STEFAN_BOLTZMANN = 4.903e-9    # MJ K-4 m-2 day-1
+ALBEDO = 0.23                  # hypothetical grass reference
+
+
+def atmospheric_pressure(elevation):
+    """Eq. 7, kPa."""
+    return 101.3 * ((293.0 - 0.0065 * np.asarray(elevation, float)) / 293.0) ** 5.26
+
+
+def psychrometric_constant(pressure):
+    """Eq. 8, kPa/degC."""
+    return 0.665e-3 * pressure
+
+
+def saturation_vapour_pressure(t):
+    """Eq. 11, kPa."""
+    t = np.asarray(t, float)
+    return 0.6108 * np.exp(17.27 * t / (t + 237.3))
+
+
+def vapour_pressure_slope(t):
+    """Eq. 13, kPa/degC."""
+    t = np.asarray(t, float)
+    return 4098.0 * saturation_vapour_pressure(t) / (t + 237.3) ** 2
+
+
+def actual_vapour_pressure_rh(tmax, tmin, rh_max, rh_min):
+    """Eq. 17, kPa, from daily maximum and minimum relative humidity [%]."""
+    return (saturation_vapour_pressure(tmin) * np.asarray(rh_max, float) / 100.0
+            + saturation_vapour_pressure(tmax) * np.asarray(rh_min, float) / 100.0) / 2.0
+
+
+def actual_vapour_pressure_dewpoint(tdew):
+    """Eq. 14, kPa, from the daily mean dewpoint temperature [degC]."""
+    return saturation_vapour_pressure(tdew)
+
+
+def extraterrestrial_radiation(latitude, doy):
+    """Eqs. 21-25: Ra [MJ m-2 day-1] and the sunset hour angle ws [rad]."""
+    phi = np.deg2rad(np.asarray(latitude, float))
+    doy = np.asarray(doy, float)
+    dr = 1.0 + 0.033 * np.cos(2.0 * np.pi * doy / 365.0)
+    decl = 0.409 * np.sin(2.0 * np.pi * doy / 365.0 - 1.39)
+    ws = np.arccos(np.clip(-np.tan(phi) * np.tan(decl), -1.0, 1.0))
+    ra = (24.0 * 60.0 / np.pi) * SOLAR_CONSTANT * dr * (
+        ws * np.sin(phi) * np.sin(decl) + np.cos(phi) * np.cos(decl) * np.sin(ws))
+    return ra, ws
+
+
+def daylight_hours(ws):
+    """Eq. 34, hours."""
+    return 24.0 / np.pi * ws
+
+
+def clear_sky_radiation(ra, elevation):
+    """Eq. 37, MJ m-2 day-1."""
+    return (0.75 + 2e-5 * np.asarray(elevation, float)) * ra
+
+
+def net_longwave_radiation(tmax, tmin, ea, rs, rso):
+    """Eq. 39, MJ m-2 day-1. Rs/Rso is limited to 1.0."""
+    rel = np.minimum(np.asarray(rs, float) / rso, 1.0)
+    tk4 = ((np.asarray(tmax, float) + 273.16) ** 4 + (np.asarray(tmin, float) + 273.16) ** 4) / 2.0
+    return STEFAN_BOLTZMANN * tk4 * (0.34 - 0.14 * np.sqrt(ea)) * (1.35 * rel - 0.35)
+
+
+def et0_daily(tmax, tmin, u2, rs, ea, doy, latitude, elevation):
+    """Eq. 6, FAO-56 Penman-Monteith reference evapotranspiration [mm/day]; soil heat flux G = 0 (Eq. 42)."""
+    tmax = np.asarray(tmax, float)
+    tmin = np.asarray(tmin, float)
+    u2 = np.asarray(u2, float)
+    rs = np.asarray(rs, float)
+    ea = np.asarray(ea, float)
+    tmean = (tmax + tmin) / 2.0
+    delta = vapour_pressure_slope(tmean)
+    gamma = psychrometric_constant(atmospheric_pressure(elevation))
+    es = (saturation_vapour_pressure(tmax) + saturation_vapour_pressure(tmin)) / 2.0
+    ra, _ = extraterrestrial_radiation(latitude, doy)
+    rso = clear_sky_radiation(ra, elevation)
+    rns = (1.0 - ALBEDO) * rs
+    rnl = net_longwave_radiation(tmax, tmin, ea, rs, rso)
+    rn = rns - rnl
+    g = 0.0
+    num = 0.408 * delta * (rn - g) + gamma * (900.0 / (tmean + 273.0)) * u2 * (es - ea)
+    den = delta + gamma * (1.0 + 0.34 * u2)
+    return num / den
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# sed -n '1,200p' et0/pipeline.py
+[?2004l"""Daily ET0 for every station in a register.
+
+    python -m et0.pipeline --stations config/stations.yaml --data data/raw --out output/et0.csv
+"""
+import argparse
+import os
+import sys
+
+import pandas as pd
+
+from . import fao56, ingest, meta
+
+
+def run(stations_path, data_dir, out_path):
+    frames = []
+    for st in meta.load_stations(stations_path):
+        df = ingest.load_station(st, data_dir)
+        df["et0_mm_day"] = fao56.et0_daily(df["tmax"], df["tmin"], df["u2"], df["rs"], df["ea"], df["doy"],
+                                           st.latitude, st.elevation_m)
+        frames.append(df[["station_id", "date", "et0_mm_day"]])
+        print(f"{st.station_id}: {len(df)} days, mean ET0 {df['et0_mm_day'].mean():.2f} mm/day")
+    out = pd.concat(frames, ignore_index=True)
+    parent = os.path.dirname(out_path)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+    out.to_csv(out_path, index=False, float_format="%.3f")
+    return out
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--stations", required=True, help="station register (YAML)")
+    ap.add_argument("--data", required=True, help="folder with one <station_id>.csv per station")
+    ap.add_argument("--out", required=True, help="output CSV")
+    args = ap.parse_args(argv)
+    run(args.stations, args.data, args.out)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# head -n 20 reference/metservice_et0_2025.csv
+[?2004lstation_id,date,et0_mm_day
+PAL,2025-01-01,0.9
+PAL,2025-01-02,1.5
+PAL,2025-01-03,1.9
+PAL,2025-01-04,1.9
+PAL,2025-01-05,1.3
+PAL,2025-01-06,1.0
+PAL,2025-01-07,1.2
+PAL,2025-01-08,1.3
+PAL,2025-01-09,1.2
+PAL,2025-01-10,1.0
+PAL,2025-01-11,1.4
+PAL,2025-01-12,1.0
+PAL,2025-01-13,1.2
+PAL,2025-01-14,1.4
+PAL,2025-01-15,1.3
+PAL,2025-01-16,1.2
+PAL,2025-01-17,1.3
+PAL,2025-01-18,1.3
+PAL,2025-01-19,1.3
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# sed -n '1,200p' config/stations.yaml
+[?2004l# Station register for the irrigation-advice ET0 run (see /app/docs/METHOD.md for every field).
+stations:
+  - id: VNT
+    name: Valle Norte
+    latitude: 38.42
+    longitude: -3.71
+    elevation_m: 85
+    wind_height_m: 2.0
+    radiation_units: "MJ/m2/day"
+    humidity: rh_minmax
+    network: valley-agromet
+  - id: PAL
+    name: Paso Alto
+    latitude: "36.95N"
+    longitude: -3.02
+    elevation_m: 1840
+    wind_height_m: 10.0
+    radiation_units: "MJ/m2/day"
+    humidity: rh_minmax
+    network: highland-synop
+  - id: CDB
+    name: Costa del Bajo
+    latitude: "34.92S"
+    longitude: 138.6
+    elevation_m: 48
+    wind_height_m: 2.0
+    radiation_units: "MJ/m2/day"
+    humidity: dewpoint
+    network: southern-coast
+  - id: LGN
+    name: Laguna Grande
+    latitude: -31.85
+    longitude: 116.02
+    elevation_m: 420
+    wind_height_m: 3.0
+    radiation_units: "W/m2"
+    humidity: rh_minmax
+    network: southern-coast
+  - id: RSD
+    name: Ribera Seca
+    latitude: "41.73N"
+    longitude: -1.02
+    elevation_m: 230
+    wind_height_m: 2.0
+    radiation_units: "W/m2"
+    humidity: dewpoint
+    network: highland-synop
+  - id: MRS
+    name: Marisma
+    latitude: 35.1
+    longitude: -6.15
+    elevation_m: 12
+    wind_height_m: 3.0
+    radiation_units: "MJ/m2/day"
+    humidity: rh_minmax
+    network: valley-agromet
+  - id: HLT
+    name: Altiplano Sur
+    latitude: "33.40S"
+    longitude: -70.55
+    elevation_m: 610
+    wind_height_m: 10.0
+    radiation_units: "W/m2"
+    humidity: dewpoint
+    network: highland-synop
+  - id: ARN
+    name: Arenales
+    latitude: 40.05
+    longitude: -4.4
+    elevation_m: 690
+    wind_height_m: 2.0
+    radiation_units: "MJ/m2/day"
+    humidity: dewpoint
+    network: valley-agromet
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# head -n 20 data/raw/VNT.csv
+[?2004ldate,tmax_c,tmin_c,rh_max_pct,rh_min_pct,wind_ms,solar_rad
+2025-01-01,15.6,2.7,78,32,1.9,6.96
+2025-01-02,11.3,0.1,69,29,2.8,7.27
+2025-01-03,12.9,1.0,81,39,2.6,4.96
+2025-01-04,14.2,2.0,78,36,2.0,7.44
+2025-01-05,13.2,1.5,77,33,2.4,6.76
+2025-01-06,13.7,1.8,63,30,2.3,8.59
+2025-01-07,16.7,3.3,90,38,1.8,6.96
+2025-01-08,17.9,3.3,50,20,1.4,9.48
+2025-01-09,17.8,3.2,89,32,1.5,10.03
+2025-01-10,16.6,4.3,78,33,2.5,9.72
+2025-01-11,14.8,1.5,60,25,2.9,10.28
+2025-01-12,16.7,1.7,76,31,4.4,10.15
+2025-01-13,12.6,-0.3,78,31,2.7,9.07
+2025-01-14,11.5,0.3,76,34,2.7,5.86
+2025-01-15,13.0,-1.8,71,22,2.0,11.14
+2025-01-16,9.6,-2.5,70,32,1.7,8.37
+2025-01-17,12.1,-3.4,81,29,1.4,11.34
+2025-01-18,12.7,2.3,94,42,1.1,8.35
+2025-01-19,13.9,-0.2,75,30,1.9,8.50
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# sed -n '1,200p' et0/ingest.py
+[?2004l"""Read one station's raw daily file and turn it into the standard daily inputs used by fao56.et0_daily."""
+import os
+
+import pandas as pd
+
+from . import fao56
+
+BASE_COLUMNS = ["date", "tmax_c", "tmin_c", "wind_ms", "solar_rad"]
+HUMIDITY_COLUMNS = {"rh_minmax": ["rh_max_pct", "rh_min_pct"], "dewpoint": ["tdew_c"]}
+
+
+def load_station(station, data_dir):
+    """Return a DataFrame with columns station_id, date, doy, tmax, tmin, ea, u2, rs (standard units)."""
+    path = os.path.join(data_dir, f"{station.station_id}.csv")
+    raw = pd.read_csv(path)
+    if station.humidity not in HUMIDITY_COLUMNS:
+        raise ValueError(f"{station.station_id}: unknown humidity type {station.humidity!r}")
+    missing = [c for c in BASE_COLUMNS + HUMIDITY_COLUMNS[station.humidity] if c not in raw.columns]
+    if missing:
+        raise ValueError(f"{path}: missing columns {missing}")
+
+    dates = pd.to_datetime(raw["date"], format="%Y-%m-%d")
+    df = pd.DataFrame({
+        "station_id": station.station_id,
+        "date": dates.dt.strftime("%Y-%m-%d"),
+        "doy": dates.dt.dayofyear.astype(int),
+        "tmax": raw["tmax_c"].astype(float),
+        "tmin": raw["tmin_c"].astype(float),
+    })
+    if station.humidity == "dewpoint":
+        df["ea"] = fao56.actual_vapour_pressure_dewpoint(raw["tdew_c"].astype(float))
+    else:
+        df["ea"] = fao56.actual_vapour_pressure_rh(df["tmax"], df["tmin"], raw["rh_max_pct"].astype(float),
+                                                   raw["rh_min_pct"].astype(float))
+    df["u2"] = raw["wind_ms"].astype(float)          # m/s at 2 m
+    df["rs"] = raw["solar_rad"].astype(float)        # MJ m-2 day-1
+    return df
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# python -c "import pandas as pd, et0.pipeline as p, et0.meta as m, et0.ingest as ig; stations = m.load_stations('config/stations.yaml'); st = stations[0]; df = ig.load_station(st, 'data/raw'); print(st.station_id, st.elevation_m); print(df[['date','tmax','tmin','u2','rs','ea','doy']].head())"
+[?2004lVNT 85.0
+         date  tmax  tmin   u2    rs        ea  doy
+0  2025-01-01  15.6   2.7  1.9  6.96  0.572871    1
+1  2025-01-02  11.3   0.1  2.8  7.27  0.406437    2
+2  2025-01-03  12.9   1.0  2.6  4.96  0.556128    3
+3  2025-01-04  14.2   2.0  2.0  7.44  0.566705    4
+4  2025-01-05  13.2   1.5  2.4  6.76  0.512487    5
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# apply_patch <<'PATCH'
+[?2004l[?2004h> *** Begin Patch
+[?2004l[?2004h> *** Update File: et0/ingest.py
+[?2004l[?2004h> @@
+[?2004l[?2004h> -"""Read one station's raw daily file and turn it into the standard daily inputs used by fao56.et0_daily."""
+[?2004l[?2004h> -import os
+[?2004l[?2004h> -
+[?2004l[?2004h> -import pandas as pd
+[?2004l[?2004h> -
+[?2004l[?2004h> -from . import fao56
+[?2004l[?2004h> +"""Read one station's raw daily file and turn it into the standard daily inputs used by ``fao56.et0_daily``.
+[?2004l[?2004h> +
+[?2004l[?2004h> +The raw files may contain wind speed measured at a height other than 2 m and solar radiation in
+[?2004l[?2004h> +W m⁻².  This module converts them to the standard units required by the FAO‑56 algorithm.
+[?2004l[?2004h> +"""
+[?2004l[?2004h> +import os
+[?2004l[?2004h> +
+[?2004l[?2004h> +import numpy as np
+[?2004l[?2004h> +import pandas as pd
+[?2004l[?2004h> +
+[?2004l[?2004h> +from . import fao56
+[?2004l[?2004h> @@
+[?2004l[?2004h> -    df["u2"] = raw["wind_ms"].astype(float)          # m/s at 2 m
+[?2004l[?2004h> -    df["rs"] = raw["solar_rad"].astype(float)        # MJ m-2 day-1
+[?2004l[?2004h> +    # Convert wind speed to the standard 2 m height (FAO‑56 Eq. 47)
+[?2004l[?2004h> +    raw_wind = raw["wind_ms"].astype(float)
+[?2004l[?2004h> +    if getattr(station, "wind_height_m", 2.0) != 2.0:
+[?2004l[?2004h> +        z = station.wind_height_m
+[?2004l[?2004h> +        if (67.8 * z - 5.42) <= 0:
+[?2004l[?2004h> +            raise ValueError(f"Invalid wind sensor height {z} for station {station.station_id}")
+[?2004l[?2004h> +        factor = 4.87 / np.log(67.8 * z - 5.42)
+[?2004l[?2004h> +        u2 = raw_wind * factor
+[?2004l[?2004h> +    else:
+[?2004l[?2004h> +        u2 = raw_wind
+[?2004l[?2004h> +
+[?2004l[?2004h> +    # Convert radiation units when necessary (W/m2 -> MJ/m2/day)
+[?2004l[?2004h> +    raw_rs = raw["solar_rad"].astype(float)
+[?2004l[?2004h> +    if getattr(station, "radiation_units", "MJ/m2/day") == "W/m2":
+[?2004l[?2004h> +        rs = raw_rs * 0.0864
+[?2004l[?2004h> +    else:
+[?2004l[?2004h> +        rs = raw_rs
+[?2004l[?2004h> +
+[?2004l[?2004h> +    df["u2"] = u2            # m/s at 2 m
+[?2004l[?2004h> +    df["rs"] = rs            # MJ m⁻² day⁻¹
+[?2004l[?2004h> *** End Patch
+[?2004l[?2004h> PATCHpython -m et0.pipeline --stations config/stations.yaml --data data/raw --out output/et0_fixed.csv
+[?2004l[?2004h> head -n 10 output/et0_fixed.csv
+[?2004l[?2004h> diff -u output/et0.csv output/et0_fixed.csv | wc -l
+[?2004l[?2004h> apply_patch <<'PATCH'
+[?2004l[?2004h> *** Begin Patch
+[?2004l[?2004h> *** Update File: et0/ingest.py
+[?2004l[?2004h> @@
+[?2004l[?2004h> -"""Read one station's raw daily file and turn it into the standard daily inputs used by fao56.et0_daily."""
+[?2004l[?2004h> -import os
+[?2004l[?2004h> -
+[?2004l[?2004h> -import pandas as pd
+[?2004l[?2004h> -
+[?2004l[?2004h> -from . import fao56
+[?2004l[?2004h> +"""Read one station's raw daily file and turn it into the standard daily inputs used by ``fao56.et0_daily``.
+[?2004l[?2004h> +
+[?2004l[?2004h> +The raw files may contain wind speed measured at a height other than 2 m and solar radiation in
+[?2004l[?2004h> +W m⁻².  This module converts them to the standard units required by the FAO‑56 algorithm.
+[?2004l[?2004h> +"""
+[?2004l[?2004h> +import os
+[?2004l[?2004h> +
+[?2004l[?2004h> +import numpy as np
+[?2004l[?2004h> +import pandas as pd
+[?2004l[?2004h> +
+[?2004l[?2004h> +from . import fao56
+[?2004l[?2004h> @@
+[?2004l[?2004h> -    df["u2"] = raw["wind_ms"].astype(float)          # m/s at 2 m
+[?2004l[?2004h> -    df["rs"] = raw["solar_rad"].astype(float)        # MJ m-2 day-1
+[?2004l[?2004h> +    # Convert wind speed to the standard 2 m height (FAO‑56 Eq. 47)
+[?2004l[?2004h> +    raw_wind = raw["wind_ms"].astype(float)
+[?2004l[?2004h> +    if getattr(station, "wind_height_m", 2.0) != 2.0:
+[?2004l[?2004h> +        z = station.wind_height_m
+[?2004l[?2004h> +        if (67.8 * z - 5.42) <= 0:
+[?2004l[?2004h> +            raise ValueError(f"Invalid wind sensor height {z} for station {station.station_id}")
+[?2004l[?2004h> +        factor = 4.87 / np.log(67.8 * z - 5.42)
+[?2004l[?2004h> +        u2 = raw_wind * factor
+[?2004l[?2004h> +    else:
+[?2004l[?2004h> +        u2 = raw_wind
+[?2004l[?2004h> +
+[?2004l[?2004h> +    # Convert radiation units when necessary (W/m2 -> MJ/m2/day)
+[?2004l[?2004h> +    raw_rs = raw["solar_rad"].astype(float)
+[?2004l[?2004h> +    if getattr(station, "radiation_units", "MJ/m2/day") == "W/m2":
+[?2004l[?2004h> +        rs = raw_rs * 0.0864
+[?2004l[?2004h> +    else:
+[?2004l[?2004h> +        rs = raw_rs
+[?2004l[?2004h> +
+[?2004l[?2004h> +    df["u2"] = u2            # m/s at 2 m
+[?2004l[?2004h> +    df["rs"] = rs            # MJ m⁻² day⁻¹
+[?2004l[?2004h> *** End Patch
+[?2004l[?2004h> PATCH
+[?2004lbash: apply_patch: command not found
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# python -m et0.pipeline --stations config/stations.yaml --data data/raw --out output/et0_fixed.csv
+[?2004lVNT: 365 days, mean ET0 3.55 mm/day
+PAL: 365 days, mean ET0 3.10 mm/day
+CDB: 365 days, mean ET0 3.60 mm/day
+LGN: 365 days, mean ET0 34.48 mm/day
+RSD: 365 days, mean ET0 26.88 mm/day
+MRS: 365 days, mean ET0 4.11 mm/day
+HLT: 365 days, mean ET0 29.91 mm/day
+ARN: 365 days, mean ET0 3.21 mm/day
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# head -n 10 output/et0_fixed.csv
+[?2004lstation_id,date,et0_mm_day
+VNT,2025-01-01,1.768
+VNT,2025-01-02,1.999
+VNT,2025-01-03,1.778
+VNT,2025-01-04,1.666
+VNT,2025-01-05,1.856
+VNT,2025-01-06,1.989
+VNT,2025-01-07,1.625
+VNT,2025-01-08,1.857
+VNT,2025-01-09,1.598
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# diff -u output/et0.csv output/et0_fixed.csv | wc -l
+[?2004l0
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# cat > et0/ingest.py <<'EOF'
+[?2004loat),
++            raw["rh_min_pct"].astype(float),
++        )
++
++    # ---- Wind speed conversion to 2 m height -----------------------------------
++    raw_wind = raw["wind_ms"].astype(float)
++    if getattr(station, "wind_height_m", 2.0) != 2.0:
++        z = station.wind_height_m
++        if (67.8 * z - 5.42) <= 0:
++            raise ValueError(f"Invalid wind sensor height {z} for station {station.station_id}")
++        factor = 4.87 / np.log(67.8 * z - 5.42)
++        u2 = raw_wind * factor
++    else:
++        u2 = raw_wind
++
++    # ---- Solar radiation conversion --------------------------------------------
++    raw_rs = raw["solar_rad"].astype(float)
++    if getattr(station, "radiation_units", "MJ/m2/day") == "W/m2":
++        # Convert W m⁻² to MJ m⁻² day⁻¹: 1 W = 1 J s⁻¹, 86400 s day⁻¹, 1 MJ = 10⁶ J
++        rs = raw_rs * 0.0864
++    else:
++        rs = raw_rs
++
++    df["u2"] = u2
++    df["rs"] = rs
++    return df
++
+*** End Patch
+EOF
+[?2004h> """Read one station's raw daily file and turn it into the standard daily inputs used by ``fao56.et0_daily``.
+[?2004l[?2004h> +
+[?2004l[?2004h> +The raw files may contain wind speed measured at a height other than 2 m and solar
+[?2004l[?2004h> +radiation expressed in Watts per square metre.  FAO‑56 requires wind speed at 2 m
+[?2004l[?2004h> +(``u2``) in m s⁻¹ and radiation in MJ m⁻² day⁻¹ (``rs``).  This module converts the
+[?2004l[?2004h> +raw measurements to those standard units.
+[?2004l[?2004h> +"""
+[?2004l[?2004h> +
+[?2004l[?2004h> +import os
+[?2004l[?2004h> +
+[?2004l[?2004h> +import numpy as np
+[?2004l[?2004h> +import pandas as pd
+[?2004l[?2004h> +
+[?2004l[?2004h> +from . import fao56
+[?2004l[?2004h> +
+[?2004l[?2004h> +BASE_COLUMNS = ["date", "tmax_c", "tmin_c", "wind_ms", "solar_rad"]
+[?2004l[?2004h> +HUMIDITY_COLUMNS = {"rh_minmax": ["rh_max_pct", "rh_min_pct"], "dewpoint": ["tdew_c"]}
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def load_station(station, data_dir):
+[?2004l[?2004h> +    """Return a DataFrame with standardized columns required by ``fao56.et0_daily``.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    The returned DataFrame contains the columns:
+[?2004l[?2004h> +    ``station_id, date, doy, tmax, tmin, ea, u2, rs``.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    path = os.path.join(data_dir, f"{station.station_id}.csv")
+[?2004l[?2004h> +    raw = pd.read_csv(path)
+[?2004l[?2004h> +
+[?2004l[?2004h> +    if station.humidity not in HUMIDITY_COLUMNS:
+[?2004l[?2004h> +        raise ValueError(f"{station.station_id}: unknown humidity type {station.humidity!r}")
+[?2004l[?2004h> +
+[?2004l[?2004h> +    missing = [c for c in BASE_COLUMNS + HUMIDITY_COLUMNS[station.humidity] if c not in raw.columns]
+[?2004l[?2004h> +    if missing:
+[?2004l[?2004h> +        raise ValueError(f"{path}: missing columns {missing}")
+[?2004l[?2004h> +
+[?2004l[?2004h> +    dates = pd.to_datetime(raw["date"], format="%Y-%m-%d")
+[?2004l[?2004h> +    df = pd.DataFrame({
+[?2004l[?2004h> +        "station_id": station.station_id,
+[?2004l[?2004h> +        "date": dates.dt.strftime("%Y-%m-%d"),
+[?2004l[?2004h> +        "doy": dates.dt.dayofyear.astype(int),
+[?2004l[?2004h> +        "tmax": raw["tmax_c"].astype(float),
+[?2004l[?2004h> +        "tmin": raw["tmin_c"].astype(float),
+[?2004l[?2004h> +    })
+[?2004l[?2004h> +
+[?2004l[?2004h> +    # ---- Actual vapour pressure ------------------------------------------------
+[?2004l[?2004h> +    if station.humidity == "dewpoint":
+[?2004l[?2004h> +        df["ea"] = fao56.actual_vapour_pressure_dewpoint(raw["tdew_c"].astype(float))
+[?2004l[?2004h> +    else:
+[?2004l[?2004h> +        df["ea"] = fao56.actual_vapour_pressure_rh(
+[?2004l[?2004h> +            df["tmax"], df["tmin"],
+[?2004l[?2004h> +            raw["rh_max_pct"].astype(float),
+[?2004l[?2004h> +            raw["rh_min_pct"].astype(float),
+[?2004l[?2004h> +        )
+[?2004l[?2004h> +
+[?2004l[?2004h> +    # ---- Wind speed conversion to 2 m height -----------------------------------
+[?2004l[?2004h> +    raw_wind = raw["wind_ms"].astype(float)
+[?2004l[?2004h> +    if getattr(station, "wind_height_m", 2.0) != 2.0:
+[?2004l[?2004h> +        z = station.wind_height_m
+[?2004l[?2004h> +        if (67.8 * z - 5.42) <= 0:
+[?2004l[?2004h> +            raise ValueError(f"Invalid wind sensor height {z} for station {station.station_id}")
+[?2004l[?2004h> +        factor = 4.87 / np.log(67.8 * z - 5.42)
+[?2004l[?2004h> +        u2 = raw_wind * factor
+[?2004l[?2004h> +    else:
+[?2004l[?2004h> +        u2 = raw_wind
+[?2004l[?2004h> +
+[?2004l[?2004h> +    # ---- Solar radiation conversion --------------------------------------------
+[?2004l[?2004h> +    raw_rs = raw["solar_rad"].astype(float)
+[?2004l[?2004h> +    if getattr(station, "radiation_units", "MJ/m2/day") == "W/m2":
+[?2004l[?2004h> +        # Convert W m⁻² to MJ m⁻² day⁻¹: 1 W = 1 J s⁻¹, 86400 s day⁻¹, 1 MJ = 10⁶ J
+[?2004l[?2004h> +        rs = raw_rs * 0.0864
+[?2004l[?2004h> +    else:
+[?2004l[?2004h> +        rs = raw_rs
+[?2004l[?2004h> +
+[?2004l[?2004h> +    df["u2"] = u2
+[?2004l[?2004h> +    df["rs"] = rs
+[?2004l[?2004h> +    return df
+[?2004l[?2004h> +
+[?2004l[?2004h> *** End Patch
+[?2004l[?2004h> EOF
+[?2004l[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# python -m et0.pipeline --stations config/stations.yaml --data data/raw --out output/et0_fixed2.csv
+[?2004lTraceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/app/et0/pipeline.py", line 11, in <module>
+    from . import fao56, ingest, meta
+  File "/app/et0/ingest.py", line 8
+    +
+     ^
+SyntaxError: invalid syntax
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# head -n 10 output/et0_fixed2.csv
+[?2004lhead: cannot open 'output/et0_fixed2.csv' for reading: No such file or directory
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# python - <<'PY'
+[?2004l[?2004h> import pandas as pd, sys
+[?2004l[?2004h> orig = pd.read_csv('output/et0.csv')
+[?2004l[?2004h> new = pd.read_csv('output/et0_fixed2.csv')
+[?2004l[?2004h> print('Original means:')
+[?2004l[?2004h> print(orig.groupby('station_id')['et0_mm_day'].mean().round(2))
+[?2004l[?2004h> print('New means:')
+[?2004l[?2004h> print(new.groupby('station_id')['et0_mm_day'].mean().round(2))
+[?2004l[?2004h> PY
+[?2004lTraceback (most recent call last):
+  File "<stdin>", line 3, in <module>
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1866, in read_csv
+    return _read(filepath_or_buffer, kwds)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 423, in _read
+    parser = TextFileReader(filepath_or_buffer, **kwds)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 2721, in __init__
+    self._engine = self._make_engine(f, self.engine)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 2988, in _make_engine
+    self.handles = get_handle(
+                   ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/common.py", line 948, in get_handle
+    handle = open(handle, ioargs.mode)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'output/et0_fixed2.csv'
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# diff -u output/et0.csv output/et0_fixed2.csv | wc -l
+[?2004ldiff: output/et0_fixed2.csv: No such file or directory
+0
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# cat > et0/ingest.py <<'EOF'
+[?2004lx_pct"].astype(float),
++            raw["rh_min_pct"].astype(float),
++        )
++
++    # ---- Wind speed conversion to 2 m height (FAO‑56 Eq. 47) --------------------
++    raw_wind = raw["wind_ms"].astype(float)
++    if getattr(station, "wind_height_m", 2.0) != 2.0:
++        z = station.wind_height_m
++        if (67.8 * z - 5.42) <= 0:
++            raise ValueError(f"Invalid wind sensor height {z} for station {station.station_id}")
++        factor = 4.87 / np.log(67.8 * z - 5.42)
++        u2 = raw_wind * factor
++    else:
++        u2 = raw_wind
++
++    # ---- Solar radiation conversion --------------------------------------------
++    raw_rs = raw["solar_rad"].astype(float)
++    if getattr(station, "radiation_units", "MJ/m2/day") == "W/m2":
++        # Convert W m⁻² to MJ m⁻² day⁻¹: 1 W = 1 J s⁻¹, 86400 s day⁻¹, 1 MJ = 10⁶ J
++        rs = raw_rs * 0.0864
++    else:
++        rs = raw_rs
++
++    df["u2"] = u2
++    df["rs"] = rs
++    return df
++
+*** End Patch
+EOF
+[?2004h> """Read one station's raw daily file and convert it to the standard inputs required by ``fao56.et0_daily``.
+[?2004l[?2004h> +
+[?2004l[?2004h> +The raw CSV files may contain:
+[?2004l[?2004h> +* Wind speed measured at a height other than 2 m (``wind_ms`` column).
+[?2004l[?2004h> +* Solar radiation expressed in Watts per square metre (``solar_rad`` column).
+[?2004l[?2004h> +
+[?2004l[?2004h> +FAO‑56 requires wind speed at 2 m (``u2``) in m s⁻¹ and radiation in MJ m⁻² day⁻¹ (``rs``).  This module performs those conversions before returning a DataFrame.
+[?2004l[?2004h> +"""
+[?2004l[?2004h> +
+[?2004l[?2004h> +import os
+[?2004l[?2004h> +
+[?2004l[?2004h> +import numpy as np
+[?2004l[?2004h> +import pandas as pd
+[?2004l[?2004h> +
+[?2004l[?2004h> +from . import fao56
+[?2004l[?2004h> +
+[?2004l[?2004h> +BASE_COLUMNS = ["date", "tmax_c", "tmin_c", "wind_ms", "solar_rad"]
+[?2004l[?2004h> +HUMIDITY_COLUMNS = {"rh_minmax": ["rh_max_pct", "rh_min_pct"], "dewpoint": ["tdew_c"]}
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def load_station(station, data_dir):
+[?2004l[?2004h> +    """Load a station's raw CSV and return a DataFrame with standardized columns.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    Returned columns: ``station_id, date, doy, tmax, tmin, ea, u2, rs``.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    path = os.path.join(data_dir, f"{station.station_id}.csv")
+[?2004l[?2004h> +    raw = pd.read_csv(path)
+[?2004l[?2004h> +
+[?2004l[?2004h> +    if station.humidity not in HUMIDITY_COLUMNS:
+[?2004l[?2004h> +        raise ValueError(f"{station.station_id}: unknown humidity type {station.humidity!r}")
+[?2004l[?2004h> +
+[?2004l[?2004h> +    missing = [c for c in BASE_COLUMNS + HUMIDITY_COLUMNS[station.humidity] if c not in raw.columns]
+[?2004l[?2004h> +    if missing:
+[?2004l[?2004h> +        raise ValueError(f"{path}: missing columns {missing}")
+[?2004l[?2004h> +
+[?2004l[?2004h> +    dates = pd.to_datetime(raw["date"], format="%Y-%m-%d")
+[?2004l[?2004h> +    df = pd.DataFrame({
+[?2004l[?2004h> +        "station_id": station.station_id,
+[?2004l[?2004h> +        "date": dates.dt.strftime("%Y-%m-%d"),
+[?2004l[?2004h> +        "doy": dates.dt.dayofyear.astype(int),
+[?2004l[?2004h> +        "tmax": raw["tmax_c"].astype(float),
+[?2004l[?2004h> +        "tmin": raw["tmin_c"].astype(float),
+[?2004l[?2004h> +    })
+[?2004l[?2004h> +
+[?2004l[?2004h> +    # ---- Actual vapour pressure ------------------------------------------------
+[?2004l[?2004h> +    if station.humidity == "dewpoint":
+[?2004l[?2004h> +        df["ea"] = fao56.actual_vapour_pressure_dewpoint(raw["tdew_c"].astype(float))
+[?2004l[?2004h> +    else:
+[?2004l[?2004h> +        df["ea"] = fao56.actual_vapour_pressure_rh(
+[?2004l[?2004h> +            df["tmax"], df["tmin"],
+[?2004l[?2004h> +            raw["rh_max_pct"].astype(float),
+[?2004l[?2004h> +            raw["rh_min_pct"].astype(float),
+[?2004l[?2004h> +        )
+[?2004l[?2004h> +
+[?2004l[?2004h> +    # ---- Wind speed conversion to 2 m height (FAO‑56 Eq. 47) --------------------
+[?2004l[?2004h> +    raw_wind = raw["wind_ms"].astype(float)
+[?2004l[?2004h> +    if getattr(station, "wind_height_m", 2.0) != 2.0:
+[?2004l[?2004h> +        z = station.wind_height_m
+[?2004l[?2004h> +        if (67.8 * z - 5.42) <= 0:
+[?2004l[?2004h> +            raise ValueError(f"Invalid wind sensor height {z} for station {station.station_id}")
+[?2004l[?2004h> +        factor = 4.87 / np.log(67.8 * z - 5.42)
+[?2004l[?2004h> +        u2 = raw_wind * factor
+[?2004l[?2004h> +    else:
+[?2004l[?2004h> +        u2 = raw_wind
+[?2004l[?2004h> +
+[?2004l[?2004h> +    # ---- Solar radiation conversion --------------------------------------------
+[?2004l[?2004h> +    raw_rs = raw["solar_rad"].astype(float)
+[?2004l[?2004h> +    if getattr(station, "radiation_units", "MJ/m2/day") == "W/m2":
+[?2004l[?2004h> +        # Convert W m⁻² to MJ m⁻² day⁻¹: 1 W = 1 J s⁻¹, 86400 s day⁻¹, 1 MJ = 10⁶ J
+[?2004l[?2004h> +        rs = raw_rs * 0.0864
+[?2004l[?2004h> +    else:
+[?2004l[?2004h> +        rs = raw_rs
+[?2004l[?2004h> +
+[?2004l[?2004h> +    df["u2"] = u2
+[?2004l[?2004h> +    df["rs"] = rs
+[?2004l[?2004h> +    return df
+[?2004l[?2004h> +
+[?2004l[?2004h> *** End Patch
+[?2004l[?2004h> EOF
+[?2004l[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# python -m et0.pipeline --stations config/stations.yaml --data data/raw --out output/et0_fixed2.csv
+[?2004lTraceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/app/et0/pipeline.py", line 11, in <module>
+    from . import fao56, ingest, meta
+  File "/app/et0/ingest.py", line 9
+    +
+     ^
+SyntaxError: invalid syntax
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# head -n 10 output/et0_fixed2.csv
+[?2004lhead: cannot open 'output/et0_fixed2.csv' for reading: No such file or directory
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# python - <<'PY'
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> orig = pd.read_csv('output/et0.csv')
+[?2004l[?2004h> new = pd.read_csv('output/et0_fixed2.csv')
+[?2004l[?2004h> print('Original mean ET0 per station:')
+[?2004l[?2004h> print(orig.groupby('station_id')['et0_mm_day'].mean().round(2))
+[?2004l[?2004h> print('\nNew mean ET0 per station:')
+[?2004l[?2004h> print(new.groupby('station_id')['et0_mm_day'].mean().round(2))
+[?2004l[?2004h> PY
+[?2004lTraceback (most recent call last):
+  File "<stdin>", line 3, in <module>
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1866, in read_csv
+    return _read(filepath_or_buffer, kwds)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 423, in _read
+    parser = TextFileReader(filepath_or_buffer, **kwds)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 2721, in __init__
+    self._engine = self._make_engine(f, self.engine)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 2988, in _make_engine
+    self.handles = get_handle(
+                   ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/common.py", line 948, in get_handle
+    handle = open(handle, ioargs.mode)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'output/et0_fixed2.csv'
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# diff -u output/et0.csv output/et0_fixed2.csv | wc -l
+[?2004ldiff: output/et0_fixed2.csv: No such file or directory
+0
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# cat > et0/ingest.py <<'EOF'
+[?2004l_pct"].astype(float),
++            raw["rh_min_pct"].astype(float),
++        )
++
++    # ---- Wind speed conversion to 2 m height (FAO‑56 Eq. 47) --------------------
++    raw_wind = raw["wind_ms"].astype(float)
++    if getattr(station, "wind_height_m", 2.0) != 2.0:
++        z = station.wind_height_m
++        if (67.8 * z - 5.42) <= 0:
++            raise ValueError(f"Invalid wind sensor height {z} for station {station.station_id}")
++        factor = 4.87 / np.log(67.8 * z - 5.42)
++        u2 = raw_wind * factor
++    else:
++        u2 = raw_wind
++
++    # ---- Solar radiation conversion --------------------------------------------
++    raw_rs = raw["solar_rad"].astype(float)
++    if getattr(station, "radiation_units", "MJ/m2/day") == "W/m2":
++        # Convert W m⁻² to MJ m⁻² day⁻¹: 1 W = 1 J s⁻¹, 86400 s day⁻¹, 1 MJ = 10⁶ J
++        rs = raw_rs * 0.0864
++    else:
++        rs = raw_rs
++
++    df["u2"] = u2
++    df["rs"] = rs
++    return df
++
+*** End Patch
+EOF
+[?2004h> """Read one station's raw daily file and convert it to the standard inputs required by ``fao56.et0_daily``.
+[?2004l[?2004h> +
+[?2004l[?2004h> +The raw CSV files may contain:
+[?2004l[?2004h> +* Wind speed measured at a height other than 2 m (``wind_ms`` column).
+[?2004l[?2004h> +* Solar radiation expressed in Watts per square metre (``solar_rad`` column).
+[?2004l[?2004h> +
+[?2004l[?2004h> +FAO‑56 requires wind speed at 2 m (``u2``) in m s⁻¹ and radiation in MJ m⁻² day⁻¹ (``rs``). This module performs those conversions before returning a DataFrame.
+[?2004l[?2004h> +"""
+[?2004l[?2004h> +
+[?2004l[?2004h> +import os
+[?2004l[?2004h> +
+[?2004l[?2004h> +import numpy as np
+[?2004l[?2004h> +import pandas as pd
+[?2004l[?2004h> +
+[?2004l[?2004h> +from . import fao56
+[?2004l[?2004h> +
+[?2004l[?2004h> +BASE_COLUMNS = ["date", "tmax_c", "tmin_c", "wind_ms", "solar_rad"]
+[?2004l[?2004h> +HUMIDITY_COLUMNS = {"rh_minmax": ["rh_max_pct", "rh_min_pct"], "dewpoint": ["tdew_c"]}
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def load_station(station, data_dir):
+[?2004l[?2004h> +    """Load a station's raw CSV and return a DataFrame with standardized columns.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    Returned columns: ``station_id, date, doy, tmax, tmin, ea, u2, rs``.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    path = os.path.join(data_dir, f"{station.station_id}.csv")
+[?2004l[?2004h> +    raw = pd.read_csv(path)
+[?2004l[?2004h> +
+[?2004l[?2004h> +    if station.humidity not in HUMIDITY_COLUMNS:
+[?2004l[?2004h> +        raise ValueError(f"{station.station_id}: unknown humidity type {station.humidity!r}")
+[?2004l[?2004h> +
+[?2004l[?2004h> +    missing = [c for c in BASE_COLUMNS + HUMIDITY_COLUMNS[station.humidity] if c not in raw.columns]
+[?2004l[?2004h> +    if missing:
+[?2004l[?2004h> +        raise ValueError(f"{path}: missing columns {missing}")
+[?2004l[?2004h> +
+[?2004l[?2004h> +    dates = pd.to_datetime(raw["date"], format="%Y-%m-%d")
+[?2004l[?2004h> +    df = pd.DataFrame({
+[?2004l[?2004h> +        "station_id": station.station_id,
+[?2004l[?2004h> +        "date": dates.dt.strftime("%Y-%m-%d"),
+[?2004l[?2004h> +        "doy": dates.dt.dayofyear.astype(int),
+[?2004l[?2004h> +        "tmax": raw["tmax_c"].astype(float),
+[?2004l[?2004h> +        "tmin": raw["tmin_c"].astype(float),
+[?2004l[?2004h> +    })
+[?2004l[?2004h> +
+[?2004l[?2004h> +    # ---- Actual vapour pressure ------------------------------------------------
+[?2004l[?2004h> +    if station.humidity == "dewpoint":
+[?2004l[?2004h> +        df["ea"] = fao56.actual_vapour_pressure_dewpoint(raw["tdew_c"].astype(float))
+[?2004l[?2004h> +    else:
+[?2004l[?2004h> +        df["ea"] = fao56.actual_vapour_pressure_rh(
+[?2004l[?2004h> +            df["tmax"], df["tmin"],
+[?2004l[?2004h> +            raw["rh_max_pct"].astype(float),
+[?2004l[?2004h> +            raw["rh_min_pct"].astype(float),
+[?2004l[?2004h> +        )
+[?2004l[?2004h> +
+[?2004l[?2004h> +    # ---- Wind speed conversion to 2 m height (FAO‑56 Eq. 47) --------------------
+[?2004l[?2004h> +    raw_wind = raw["wind_ms"].astype(float)
+[?2004l[?2004h> +    if getattr(station, "wind_height_m", 2.0) != 2.0:
+[?2004l[?2004h> +        z = station.wind_height_m
+[?2004l[?2004h> +        if (67.8 * z - 5.42) <= 0:
+[?2004l[?2004h> +            raise ValueError(f"Invalid wind sensor height {z} for station {station.station_id}")
+[?2004l[?2004h> +        factor = 4.87 / np.log(67.8 * z - 5.42)
+[?2004l[?2004h> +        u2 = raw_wind * factor
+[?2004l[?2004h> +    else:
+[?2004l[?2004h> +        u2 = raw_wind
+[?2004l[?2004h> +
+[?2004l[?2004h> +    # ---- Solar radiation conversion --------------------------------------------
+[?2004l[?2004h> +    raw_rs = raw["solar_rad"].astype(float)
+[?2004l[?2004h> +    if getattr(station, "radiation_units", "MJ/m2/day") == "W/m2":
+[?2004l[?2004h> +        # Convert W m⁻² to MJ m⁻² day⁻¹: 1 W = 1 J s⁻¹, 86400 s day⁻¹, 1 MJ = 10⁶ J
+[?2004l[?2004h> +        rs = raw_rs * 0.0864
+[?2004l[?2004h> +    else:
+[?2004l[?2004h> +        rs = raw_rs
+[?2004l[?2004h> +
+[?2004l[?2004h> +    df["u2"] = u2
+[?2004l[?2004h> +    df["rs"] = rs
+[?2004l[?2004h> +    return df
+[?2004l[?2004h> +
+[?2004l[?2004h> *** End Patch
+[?2004l[?2004h> EOF
+[?2004l[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# python -m et0.pipeline --stations config/stations.yaml --data data/raw --out output/et0_fixed2.csv
+[?2004lTraceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/app/et0/pipeline.py", line 11, in <module>
+    from . import fao56, ingest, meta
+  File "/app/et0/ingest.py", line 9
+    +
+     ^
+SyntaxError: invalid syntax
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# head -n 10 output/et0_fixed2.csv
+[?2004lhead: cannot open 'output/et0_fixed2.csv' for reading: No such file or directory
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# python - <<'PY'
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> orig = pd.read_csv('output/et0.csv')
+[?2004l[?2004h> new = pd.read_csv('output/et0_fixed2.csv')
+[?2004l[?2004h> print('Original mean ET0 per station:')
+[?2004l[?2004h> print(orig.groupby('station_id')['et0_mm_day'].mean().round(2))
+[?2004l[?2004h> print('\nNew mean ET0 per station:')
+[?2004l[?2004h> print(new.groupby('station_id')['et0_mm_day'].mean().round(2))
+[?2004l[?2004h> PY
+[?2004lTraceback (most recent call last):
+  File "<stdin>", line 3, in <module>
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1866, in read_csv
+    return _read(filepath_or_buffer, kwds)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 423, in _read
+    parser = TextFileReader(filepath_or_buffer, **kwds)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 2721, in __init__
+    self._engine = self._make_engine(f, self.engine)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 2988, in _make_engine
+    self.handles = get_handle(
+                   ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/common.py", line 948, in get_handle
+    handle = open(handle, ioargs.mode)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'output/et0_fixed2.csv'
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# diff -u output/et0.csv output/et0_fixed2.csv | wc -l
+[?2004ldiff: output/et0_fixed2.csv: No such file or directory
+0
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# rm -f et0/ingest.py
+[?2004l[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# cat > et0/ingest.py <<'EOF'
+[?2004l[?2004h> """Read one station's raw daily file and convert it to the standard inputs required by ``fao56.et0_daily``.
+[?2004l[?2004h> +
+[?2004l[?2004h> +The raw CSV files may contain:
+[?2004l[?2004h> +* Wind speed measured at a height other than 2 m (``wind_ms`` column).
+[?2004l[?2004h> +* Solar radiation expressed in Watts per square metre (``solar_rad`` column).
+[?2004l[?2004h> +
+[?2004l[?2004h> +FAO‑56 requires wind speed at 2 m (``u2``) in m s⁻¹ and radiation in MJ m⁻² day⁻¹ (``rs``). This module performs those conversions before returning a DataFrame.
+[?2004l[?2004h> +"""
+[?2004l[?2004h> +
+[?2004l[?2004h> +import os
+[?2004l[?2004h> +
+[?2004l[?2004h> +import numpy as np
+[?2004l[?2004h> +import pandas as pd
+[?2004l[?2004h> +
+[?2004l[?2004h> +from . import fao56
+[?2004l[?2004h> +
+[?2004l[?2004h> +BASE_COLUMNS = ["date", "tmax_c", "tmin_c", "wind_ms", "solar_rad"]
+[?2004l[?2004h> +HUMIDITY_COLUMNS = {"rh_minmax": ["rh_max_pct", "rh_min_pct"], "dewpoint": ["tdew_c"]}
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def load_station(station, data_dir):
+[?2004l[?2004h> +    """Load a station's raw CSV and return a DataFrame with standardized columns.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    Returned columns: ``station_id, date, doy, tmax, tmin, ea, u2, rs``.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    path = os.path.join(data_dir, f"{station.station_id}.csv")
+[?2004l[?2004h> +    raw = pd.read_csv(path)
+[?2004l[?2004h> +
+[?2004l[?2004h> +    if station.humidity not in HUMIDITY_COLUMNS:
+[?2004l[?2004h> +        raise ValueError(f"{station.station_id}: unknown humidity type {station.humidity!r}")
+[?2004l[?2004h> +
+[?2004l[?2004h> +    missing = [c for c in BASE_COLUMNS + HUMIDITY_COLUMNS[station.humidity] if c not in raw.columns]
+[?2004l[?2004h> +    if missing:
+[?2004l[?2004h> +        raise ValueError(f"{path}: missing columns {missing}")
+[?2004l[?2004h> +
+[?2004l[?2004h> +    dates = pd.to_datetime(raw["date"], format="%Y-%m-%d")
+[?2004l[?2004h> +    df = pd.DataFrame({
+[?2004l[?2004h> +        "station_id": station.station_id,
+[?2004l[?2004h> +        "date": dates.dt.strftime("%Y-%m-%d"),
+[?2004l[?2004h> +        "doy": dates.dt.dayofyear.astype(int),
+[?2004l[?2004h> +        "tmax": raw["tmax_c"].astype(float),
+[?2004l[?2004h> +        "tmin": raw["tmin_c"].astype(float),
+[?2004l[?2004h> +    })
+[?2004l[?2004h> +
+[?2004l[?2004h> +    # ---- Actual vapour pressure ------------------------------------------------
+[?2004l[?2004h> +    if station.humidity == "dewpoint":
+[?2004l[?2004h> +        df["ea"] = fao56.actual_vapour_pressure_dewpoint(raw["tdew_c"].astype(float))
+[?2004l[?2004h> +    else:
+[?2004l[?2004h> +        df["ea"] = fao56.actual_vapour_pressure_rh(
+[?2004l[?2004h> +            df["tmax"], df["tmin"],
+[?2004l[?2004h> +            raw["rh_max_pct"].astype(float),
+[?2004l[?2004h> +            raw["rh_min_pct"].astype(float),
+[?2004l[?2004h> +        )
+[?2004l[?2004h> +
+[?2004l[?2004h> +    # ---- Wind speed conversion to 2 m height (FAO‑56 Eq. 47) --------------------
+[?2004l[?2004h> +    raw_wind = raw["wind_ms"].astype(float)
+[?2004l[?2004h> +    if getattr(station, "wind_height_m", 2.0) != 2.0:
+[?2004l[?2004h> +        z = station.wind_height_m
+[?2004l[?2004h> +        if (67.8 * z - 5.42) <= 0:
+[?2004l[?2004h> +            raise ValueError(f"Invalid wind sensor height {z} for station {station.station_id}")
+[?2004l[?2004h> +        factor = 4.87 / np.log(67.8 * z - 5.42)
+[?2004l[?2004h> +        u2 = raw_wind * factor
+[?2004l[?2004h> +    else:
+[?2004l[?2004h> +        u2 = raw_wind
+[?2004l[?2004h> +
+[?2004l[?2004h> +    # ---- Solar radiation conversion --------------------------------------------
+[?2004l[?2004h> +    raw_rs = raw["solar_rad"].astype(float)
+[?2004l[?2004h> +    if getattr(station, "radiation_units", "MJ/m2/day") == "W/m2":
+[?2004l[?2004h> +        rs = raw_rs * 0.0864
+[?2004l[?2004h> +    else:
+[?2004l[?2004h> +        rs = raw_rs
+[?2004l[?2004h> +
+[?2004l[?2004h> +    df["u2"] = u2
+[?2004l[?2004h> +    df["rs"] = rs
+[?2004l[?2004h> +    return df
+[?2004l[?2004h> +
+[?2004l[?2004h> *** End Patch
+[?2004l[?2004h> EOF
+[?2004l[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# python -m et0.pipeline --stations config/stations.yaml --data data/raw --out output/et0_fixed2.csv
+[?2004lTraceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/app/et0/pipeline.py", line 11, in <module>
+    from . import fao56, ingest, meta
+  File "/app/et0/ingest.py", line 9
+    +
+     ^
+SyntaxError: invalid syntax
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# head -n 10 output/et0_fixed2.csv
+[?2004lhead: cannot open 'output/et0_fixed2.csv' for reading: No such file or directory
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# python - <<'PY'
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> orig = pd.read_csv('output/et0.csv')
+[?2004l[?2004h> new = pd.read_csv('output/et0_fixed2.csv')
+[?2004l[?2004h> print('Original mean ET0 per station:')
+[?2004l[?2004h> print(orig.groupby('station_id')['et0_mm_day'].mean().round(2))
+[?2004l[?2004h> print('\nNew mean ET0 per station:')
+[?2004l[?2004h> print(new.groupby('station_id')['et0_mm_day'].mean().round(2))
+[?2004l[?2004h> PY
+[?2004lTraceback (most recent call last):
+  File "<stdin>", line 3, in <module>
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1866, in read_csv
+    return _read(filepath_or_buffer, kwds)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 423, in _read
+    parser = TextFileReader(filepath_or_buffer, **kwds)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 2721, in __init__
+    self._engine = self._make_engine(f, self.engine)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 2988, in _make_engine
+    self.handles = get_handle(
+                   ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/common.py", line 948, in get_handle
+    handle = open(handle, ioargs.mode)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'output/et0_fixed2.csv'
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# diff -u output/et0.csv output/et0_fixed2.csv | wc -l
+[?2004ldiff: output/et0_fixed2.csv: No such file or directory
+0
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# rm -f et0/ingest.py
+[?2004l[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# cat > et0/ingest.py <<'EOF'
+[?2004l[?2004h> """Read one station's raw daily file and convert it to the standard inputs required by ``fao56.et0_daily``.
+[?2004l[?2004h> +
+[?2004l[?2004h> +The raw CSV files may contain:
+[?2004l[?2004h> +* Wind speed measured at a height other than 2 m (``wind_ms`` column).
+[?2004l[?2004h> +* Solar radiation expressed in Watts per square metre (``solar_rad`` column).
+[?2004l[?2004h> +
+[?2004l[?2004h> +FAO‑56 requires wind speed at 2 m (``u2``) in m s⁻¹ and radiation in MJ m⁻² day⁻¹ (``rs``). This module performs those conversions before returning a DataFrame.
+[?2004l[?2004h> +"""
+[?2004l[?2004h> +
+[?2004l[?2004h> +import os
+[?2004l[?2004h> +
+[?2004l[?2004h> +import numpy as np
+[?2004l[?2004h> +import pandas as pd
+[?2004l[?2004h> +
+[?2004l[?2004h> +from . import fao56
+[?2004l[?2004h> +
+[?2004l[?2004h> +BASE_COLUMNS = ["date", "tmax_c", "tmin_c", "wind_ms", "solar_rad"]
+[?2004l[?2004h> +HUMIDITY_COLUMNS = {"rh_minmax": ["rh_max_pct", "rh_min_pct"], "dewpoint": ["tdew_c"]}
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def load_station(station, data_dir):
+[?2004l[?2004h> +    """Load a station's raw CSV and return a DataFrame with standardized columns.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    Returned columns: ``station_id, date, doy, tmax, tmin, ea, u2, rs``.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    path = os.path.join(data_dir, f"{station.station_id}.csv")
+[?2004l[?2004h> +    raw = pd.read_csv(path)
+[?2004l[?2004h> +
+[?2004l[?2004h> +    if station.humidity not in HUMIDITY_COLUMNS:
+[?2004l[?2004h> +        raise ValueError(f"{station.station_id}: unknown humidity type {station.humidity!r}")
+[?2004l[?2004h> +
+[?2004l[?2004h> +    missing = [c for c in BASE_COLUMNS + HUMIDITY_COLUMNS[station.humidity] if c not in raw.columns]
+[?2004l[?2004h> +    if missing:
+[?2004l[?2004h> +        raise ValueError(f"{path}: missing columns {missing}")
+[?2004l[?2004h> +
+[?2004l[?2004h> +    dates = pd.to_datetime(raw["date"], format="%Y-%m-%d")
+[?2004l[?2004h> +    df = pd.DataFrame({
+[?2004l[?2004h> +        "station_id": station.station_id,
+[?2004l[?2004h> +        "date": dates.dt.strftime("%Y-%m-%d"),
+[?2004l[?2004h> +        "doy": dates.dt.dayofyear.astype(int),
+[?2004l[?2004h> +        "tmax": raw["tmax_c"].astype(float),
+[?2004l[?2004h> +        "tmin": raw["tmin_c"].astype(float),
+[?2004l[?2004h> +    })
+[?2004l[?2004h> +
+[?2004l[?2004h> +    # ---- Actual vapour pressure ------------------------------------------------
+[?2004l[?2004h> +    if station.humidity == "dewpoint":
+[?2004l[?2004h> +        df["ea"] = fao56.actual_vapour_pressure_dewpoint(raw["tdew_c"].astype(float))
+[?2004l[?2004h> +    else:
+[?2004l[?2004h> +        df["ea"] = fao56.actual_vapour_pressure_rh(
+[?2004l[?2004h> +            df["tmax"], df["tmin"],
+[?2004l[?2004h> +            raw["rh_max_pct"].astype(float),
+[?2004l[?2004h> +            raw["rh_min_pct"].astype(float),
+[?2004l[?2004h> +        )
+[?2004l[?2004h> +
+[?2004l[?2004h> +    # ---- Wind speed conversion to 2 m height (FAO‑56 Eq. 47) --------------------
+[?2004l[?2004h> +    raw_wind = raw["wind_ms"].astype(float)
+[?2004l[?2004h> +    if getattr(station, "wind_height_m", 2.0) != 2.0:
+[?2004l[?2004h> +        z = station.wind_height_m
+[?2004l[?2004h> +        if (67.8 * z - 5.42) <= 0:
+[?2004l[?2004h> +            raise ValueError(f"Invalid wind sensor height {z} for station {station.station_id}")
+[?2004l[?2004h> +        factor = 4.87 / np.log(67.8 * z - 5.42)
+[?2004l[?2004h> +        u2 = raw_wind * factor
+[?2004l[?2004h> +    else:
+[?2004l[?2004h> +        u2 = raw_wind
+[?2004l[?2004h> +
+[?2004l[?2004h> +    # ---- Solar radiation conversion --------------------------------------------
+[?2004l[?2004h> +    raw_rs = raw["solar_rad"].astype(float)
+[?2004l[?2004h> +    if getattr(station, "radiation_units", "MJ/m2/day") == "W/m2":
+[?2004l[?2004h> +        rs = raw_rs * 0.0864
+[?2004l[?2004h> +    else:
+[?2004l[?2004h> +        rs = raw_rs
+[?2004l[?2004h> +
+[?2004l[?2004h> +    df["u2"] = u2
+[?2004l[?2004h> +    df["rs"] = rs
+[?2004l[?2004h> +    return df
+[?2004l[?2004h> +
+[?2004l[?2004h> *** End Patch
+[?2004l[?2004h> EOF
+[?2004l[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# python -m et0.pipeline --stations config/stations.yaml --data data/raw --out output/et0_fixed2.csv
+[?2004lTraceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/app/et0/pipeline.py", line 11, in <module>
+    from . import fao56, ingest, meta
+  File "/app/et0/ingest.py", line 9
+    +
+     ^
+SyntaxError: invalid syntax
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# head -n 10 output/et0_fixed2.csv
+[?2004lhead: cannot open 'output/et0_fixed2.csv' for reading: No such file or directory
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# python - <<'PY'
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> orig = pd.read_csv('output/et0.csv')
+[?2004l[?2004h> new = pd.read_csv('output/et0_fixed2.csv')
+[?2004l[?2004h> print('Original mean ET0 per station:')
+[?2004l[?2004h> print(orig.groupby('station_id')['et0_mm_day'].mean().round(2))
+[?2004l[?2004h> print('\nNew mean ET0 per station:')
+[?2004l[?2004h> print(new.groupby('station_id')['et0_mm_day'].mean().round(2))
+[?2004l[?2004h> PY
+[?2004lTraceback (most recent call last):
+  File "<stdin>", line 3, in <module>
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1866, in read_csv
+    return _read(filepath_or_buffer, kwds)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 423, in _read
+    parser = TextFileReader(filepath_or_buffer, **kwds)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 2721, in __init__
+    self._engine = self._make_engine(f, self.engine)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 2988, in _make_engine
+    self.handles = get_handle(
+                   ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/common.py", line 948, in get_handle
+    handle = open(handle, ioargs.mode)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'output/et0_fixed2.csv'
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# diff -u output/et0.csv output/et0_fixed2.csv | wc -l
+[?2004ldiff: output/et0_fixed2.csv: No such file or directory
+0
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# rm -f et0/ingest.py
+[?2004l[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# cat > et0/ingest.py <<'EOF'
+[?2004l[?2004h> """Read one station's raw daily file and convert it to the standard inputs required by ``fao56.et0_daily``.
+[?2004l[?2004h> +
+[?2004l[?2004h> +The raw CSV files may contain:
+[?2004l[?2004h> +* Wind speed measured at a height other than 2 m (``wind_ms`` column).
+[?2004l[?2004h> +* Solar radiation expressed in Watts per square metre (``solar_rad`` column).
+[?2004l[?2004h> +
+[?2004l[?2004h> +FAO‑56 requires wind speed at 2 m (``u2``) in m s⁻¹ and radiation in MJ m⁻² day⁻¹ (``rs``). This module performs those conversions before returning a DataFrame.
+[?2004l[?2004h> +"""
+[?2004l[?2004h> +
+[?2004l[?2004h> +import os
+[?2004l[?2004h> +
+[?2004l[?2004h> +import numpy as np
+[?2004l[?2004h> +import pandas as pd
+[?2004l[?2004h> +
+[?2004l[?2004h> +from . import fao56
+[?2004l[?2004h> +
+[?2004l[?2004h> +BASE_COLUMNS = ["date", "tmax_c", "tmin_c", "wind_ms", "solar_rad"]
+[?2004l[?2004h> +HUMIDITY_COLUMNS = {"rh_minmax": ["rh_max_pct", "rh_min_pct"], "dewpoint": ["tdew_c"]}
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def load_station(station, data_dir):
+[?2004l[?2004h> +    """Load a station's raw CSV and return a DataFrame with standardized columns.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    Returned columns: ``station_id, date, doy, tmax, tmin, ea, u2, rs``.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    path = os.path.join(data_dir, f"{station.station_id}.csv")
+[?2004l[?2004h> +    raw = pd.read_csv(path)
+[?2004l[?2004h> +
+[?2004l[?2004h> +    if station.humidity not in HUMIDITY_COLUMNS:
+[?2004l[?2004h> +        raise ValueError(f"{station.station_id}: unknown humidity type {station.humidity!r}")
+[?2004l[?2004h> +
+[?2004l[?2004h> +    missing = [c for c in BASE_COLUMNS + HUMIDITY_COLUMNS[station.humidity] if c not in raw.columns]
+[?2004l[?2004h> +    if missing:
+[?2004l[?2004h> +        raise ValueError(f"{path}: missing columns {missing}")
+[?2004l[?2004h> +
+[?2004l[?2004h> +    dates = pd.to_datetime(raw["date"], format="%Y-%m-%d")
+[?2004l[?2004h> +    df = pd.DataFrame({
+[?2004l[?2004h> +        "station_id": station.station_id,
+[?2004l[?2004h> +        "date": dates.dt.strftime("%Y-%m-%d"),
+[?2004l[?2004h> +        "doy": dates.dt.dayofyear.astype(int),
+[?2004l[?2004h> +        "tmax": raw["tmax_c"].astype(float),
+[?2004l[?2004h> +        "tmin": raw["tmin_c"].astype(float),
+[?2004l[?2004h> +    })
+[?2004l[?2004h> +
+[?2004l[?2004h> +    # ---- Actual vapour pressure ------------------------------------------------
+[?2004l[?2004h> +    if station.humidity == "dewpoint":
+[?2004l[?2004h> +        df["ea"] = fao56.actual_vapour_pressure_dewpoint(raw["tdew_c"].astype(float))
+[?2004l[?2004h> +    else:
+[?2004l[?2004h> +        df["ea"] = fao56.actual_vapour_pressure_rh(
+[?2004l[?2004h> +            df["tmax"], df["tmin"],
+[?2004l[?2004h> +            raw["rh_max_pct"].astype(float),
+[?2004l[?2004h> +            raw["rh_min_pct"].astype(float),
+[?2004l[?2004h> +        )
+[?2004l[?2004h> +
+[?2004l[?2004h> +    # ---- Wind speed conversion to 2 m height (FAO‑56 Eq. 47) --------------------
+[?2004l[?2004h> +    raw_wind = raw["wind_ms"].astype(float)
+[?2004l[?2004h> +    if getattr(station, "wind_height_m", 2.0) != 2.0:
+[?2004l[?2004h> +        z = station.wind_height_m
+[?2004l[?2004h> +        if (67.8 * z - 5.42) <= 0:
+[?2004l[?2004h> +            raise ValueError(f"Invalid wind sensor height {z} for station {station.station_id}")
+[?2004l[?2004h> +        factor = 4.87 / np.log(67.8 * z - 5.42)
+[?2004l[?2004h> +        u2 = raw_wind * factor
+[?2004l[?2004h> +    else:
+[?2004l[?2004h> +        u2 = raw_wind
+[?2004l[?2004h> +
+[?2004l[?2004h> +    # ---- Solar radiation conversion --------------------------------------------
+[?2004l[?2004h> +    raw_rs = raw["solar_rad"].astype(float)
+[?2004l[?2004h> +    if getattr(station, "radiation_units", "MJ/m2/day") == "W/m2":
+[?2004l[?2004h> +        rs = raw_rs * 0.0864
+[?2004l[?2004h> +    else:
+[?2004l[?2004h> +        rs = raw_rs
+[?2004l[?2004h> +
+[?2004l[?2004h> +    df["u2"] = u2
+[?2004l[?2004h> +    df["rs"] = rs
+[?2004l[?2004h> +    return df
+[?2004l[?2004h> +
+[?2004l[?2004h> *** End Patch
+[?2004l[?2004h> EOF
+[?2004l[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# python -m et0.pipeline --stations config/stations.yaml --data data/raw --out output/et0_fixed2.csv
+[?2004lTraceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/app/et0/pipeline.py", line 11, in <module>
+    from . import fao56, ingest, meta
+  File "/app/et0/ingest.py", line 9
+    +
+     ^
+SyntaxError: invalid syntax
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# head -n 10 output/et0_fixed2.csv
+[?2004lhead: cannot open 'output/et0_fixed2.csv' for reading: No such file or directory
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# python - <<'PY'
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> orig = pd.read_csv('output/et0.csv')
+[?2004l[?2004h> new = pd.read_csv('output/et0_fixed2.csv')
+[?2004l[?2004h> print('Original mean ET0 per station:')
+[?2004l[?2004h> print(orig.groupby('station_id')['et0_mm_day'].mean().round(2))
+[?2004l[?2004h> print('\nNew mean ET0 per station:')
+[?2004l[?2004h> print(new.groupby('station_id')['et0_mm_day'].mean().round(2))
+[?2004l[?2004h> PY
+[?2004lTraceback (most recent call last):
+  File "<stdin>", line 3, in <module>
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1866, in read_csv
+    return _read(filepath_or_buffer, kwds)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 423, in _read
+    parser = TextFileReader(filepath_or_buffer, **kwds)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 2721, in __init__
+    self._engine = self._make_engine(f, self.engine)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 2988, in _make_engine
+    self.handles = get_handle(
+                   ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/common.py", line 948, in get_handle
+    handle = open(handle, ioargs.mode)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'output/et0_fixed2.csv'
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# diff -u output/et0.csv output/et0_fixed2.csv | wc -l
+[?2004ldiff: output/et0_fixed2.csv: No such file or directory
+0
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# rm -f et0/ingest.py
+[?2004l[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# cat > et0/ingest.py <<'EOF'
+[?2004l[?2004h> """Read one station's raw daily file and convert it to the standard inputs required by ``fao56.et0_daily``.
+[?2004l[?2004h> +
+[?2004l[?2004h> +The raw CSV files may contain:
+[?2004l[?2004h> +* Wind speed measured at a height other than 2 m (``wind_ms`` column).
+[?2004l[?2004h> +* Solar radiation expressed in Watts per square metre (``solar_rad`` column).
+[?2004l[?2004h> +
+[?2004l[?2004h> +FAO‑56 requires wind speed at 2 m (``u2``) in m s⁻¹ and radiation in MJ m⁻² day⁻¹ (``rs``). This module performs those conversions before returning a DataFrame.
+[?2004l[?2004h> +"""
+[?2004l[?2004h> +
+[?2004l[?2004h> +import os
+[?2004l[?2004h> +
+[?2004l[?2004h> +import numpy as np
+[?2004l[?2004h> +import pandas as pd
+[?2004l[?2004h> +
+[?2004l[?2004h> +from . import fao56
+[?2004l[?2004h> +
+[?2004l[?2004h> +BASE_COLUMNS = ["date", "tmax_c", "tmin_c", "wind_ms", "solar_rad"]
+[?2004l[?2004h> +HUMIDITY_COLUMNS = {"rh_minmax": ["rh_max_pct", "rh_min_pct"], "dewpoint": ["tdew_c"]}
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def load_station(station, data_dir):
+[?2004l[?2004h> +    """Load a station's raw CSV and return a DataFrame with standardized columns.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    Returned columns: ``station_id, date, doy, tmax, tmin, ea, u2, rs``.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    path = os.path.join(data_dir, f"{station.station_id}.csv")
+[?2004l[?2004h> +    raw = pd.read_csv(path)
+[?2004l[?2004h> +
+[?2004l[?2004h> +    if station.humidity not in HUMIDITY_COLUMNS:
+[?2004l[?2004h> +        raise ValueError(f"{station.station_id}: unknown humidity type {station.humidity!r}")
+[?2004l[?2004h> +
+[?2004l[?2004h> +    missing = [c for c in BASE_COLUMNS + HUMIDITY_COLUMNS[station.humidity] if c not in raw.columns]
+[?2004l[?2004h> +    if missing:
+[?2004l[?2004h> +        raise ValueError(f"{path}: missing columns {missing}")
+[?2004l[?2004h> +
+[?2004l[?2004h> +    dates = pd.to_datetime(raw["date"], format="%Y-%m-%d")
+[?2004l[?2004h> +    df = pd.DataFrame({
+[?2004l[?2004h> +        "station_id": station.station_id,
+[?2004l[?2004h> +        "date": dates.dt.strftime("%Y-%m-%d"),
+[?2004l[?2004h> +        "doy": dates.dt.dayofyear.astype(int),
+[?2004l[?2004h> +        "tmax": raw["tmax_c"].astype(float),
+[?2004l[?2004h> +        "tmin": raw["tmin_c"].astype(float),
+[?2004l[?2004h> +    })
+[?2004l[?2004h> +
+[?2004l[?2004h> +    # ---- Actual vapour pressure ------------------------------------------------
+[?2004l[?2004h> +    if station.humidity == "dewpoint":
+[?2004l[?2004h> +        df["ea"] = fao56.actual_vapour_pressure_dewpoint(raw["tdew_c"].astype(float))
+[?2004l[?2004h> +    else:
+[?2004l[?2004h> +        df["ea"] = fao56.actual_vapour_pressure_rh(
+[?2004l[?2004h> +            df["tmax"], df["tmin"],
+[?2004l[?2004h> +            raw["rh_max_pct"].astype(float),
+[?2004l[?2004h> +            raw["rh_min_pct"].astype(float),
+[?2004l[?2004h> +        )
+[?2004l[?2004h> +
+[?2004l[?2004h> +    # ---- Wind speed conversion to 2 m height (FAO‑56 Eq. 47) --------------------
+[?2004l[?2004h> +    raw_wind = raw["wind_ms"].astype(float)
+[?2004l[?2004h> +    if getattr(station, "wind_height_m", 2.0) != 2.0:
+[?2004l[?2004h> +        z = station.wind_height_m
+[?2004l[?2004h> +        if (67.8 * z - 5.42) <= 0:
+[?2004l[?2004h> +            raise ValueError(f"Invalid wind sensor height {z} for station {station.station_id}")
+[?2004l[?2004h> +        factor = 4.87 / np.log(67.8 * z - 5.42)
+[?2004l[?2004h> +        u2 = raw_wind * factor
+[?2004l[?2004h> +    else:
+[?2004l[?2004h> +        u2 = raw_wind
+[?2004l[?2004h> +
+[?2004l[?2004h> +    # ---- Solar radiation conversion --------------------------------------------
+[?2004l[?2004h> +    raw_rs = raw["solar_rad"].astype(float)
+[?2004l[?2004h> +    if getattr(station, "radiation_units", "MJ/m2/day") == "W/m2":
+[?2004l[?2004h> +        rs = raw_rs * 0.0864
+[?2004l[?2004h> +    else:
+[?2004l[?2004h> +        rs = raw_rs
+[?2004l[?2004h> +
+[?2004l[?2004h> +    df["u2"] = u2
+[?2004l[?2004h> +    df["rs"] = rs
+[?2004l[?2004h> +    return df
+[?2004l[?2004h> +
+[?2004l[?2004h> *** End Patch
+[?2004l[?2004h> EOF
+[?2004l[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# python -m et0.pipeline --stations config/stations.yaml --data data/raw --out output/et0_fixed2.csv
+[?2004lTraceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/app/et0/pipeline.py", line 11, in <module>
+    from . import fao56, ingest, meta
+  File "/app/et0/ingest.py", line 9
+    +
+     ^
+SyntaxError: invalid syntax
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# head -n 10 output/et0_fixed2.csv
+[?2004lhead: cannot open 'output/et0_fixed2.csv' for reading: No such file or directory
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# python - <<'PY'
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> orig = pd.read_csv('output/et0.csv')
+[?2004l[?2004h> new = pd.read_csv('output/et0_fixed2.csv')
+[?2004l[?2004h> print('Original mean ET0 per station:')
+[?2004l[?2004h> print(orig.groupby('station_id')['et0_mm_day'].mean().round(2))
+[?2004l[?2004h> print('\nNew mean ET0 per station:')
+[?2004l[?2004h> print(new.groupby('station_id')['et0_mm_day'].mean().round(2))
+[?2004l[?2004h> PY
+[?2004lTraceback (most recent call last):
+  File "<stdin>", line 3, in <module>
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1866, in read_csv
+    return _read(filepath_or_buffer, kwds)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 423, in _read
+    parser = TextFileReader(filepath_or_buffer, **kwds)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 2721, in __init__
+    self._engine = self._make_engine(f, self.engine)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 2988, in _make_engine
+    self.handles = get_handle(
+                   ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/common.py", line 948, in get_handle
+    handle = open(handle, ioargs.mode)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'output/et0_fixed2.csv'
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# diff -u output/et0.csv output/et0_fixed2.csv | wc -l
+[?2004ldiff: output/et0_fixed2.csv: No such file or directory
+0
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# rm -f et0/ingest.py
+[?2004l[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# cat > et0/ingest.py <<'EOF'
+[?2004l[?2004h> """Read one station's raw daily file and convert it to the standard inputs required by ``fao56.et0_daily``.
+[?2004l[?2004h> +
+[?2004l[?2004h> +The raw CSV files may contain:
+[?2004l[?2004h> +* Wind speed measured at a height other than 2 m (``wind_ms`` column).
+[?2004l[?2004h> +* Solar radiation expressed in Watts per square metre (``solar_rad`` column).
+[?2004l[?2004h> +
+[?2004l[?2004h> +FAO‑56 requires wind speed at 2 m (``u2``) in m s⁻¹ and radiation in MJ m⁻² day⁻¹ (``rs``). This module performs those conversions before returning a DataFrame.
+[?2004l[?2004h> +"""
+[?2004l[?2004h> import os
+[?2004l[?2004h> import numpy as np
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> from . import fao56
+[?2004l[?2004h> 
+[?2004l[?2004h> BASE_COLUMNS = ["date", "tmax_c", "tmin_c", "wind_ms", "solar_rad"]
+[?2004l[?2004h> HUMIDITY_COLUMNS = {"rh_minmax": ["rh_max_pct", "rh_min_pct"], "dewpoint": ["tdew_c"]}
+[?2004l[?2004h> 
+[?2004l[?2004h> def load_station(station, data_dir):
+[?2004l[?2004h>     path = os.path.join(data_dir, f"{station.station_id}.csv")
+[?2004l[?2004h>     raw = pd.read_csv(path)
+[?2004l[?2004h>     if station.humidity not in HUMIDITY_COLUMNS:
+[?2004l[?2004h>         raise ValueError(f"{station.station_id}: unknown humidity type {station.humidity!r}")
+[?2004l[?2004h>     missing = [c for c in BASE_COLUMNS + HUMIDITY_COLUMNS[station.humidity] if c not in raw.columns]
+[?2004l[?2004h>     if missing:
+[?2004l[?2004h>         raise ValueError(f"{path}: missing columns {missing}")
+[?2004l[?2004h>     dates = pd.to_datetime(raw["date"], format="%Y-%m-%d")
+[?2004l[?2004h>     df = pd.DataFrame({
+[?2004l[?2004h>         "station_id": station.station_id,
+[?2004l[?2004h>         "date": dates.dt.strftime("%Y-%m-%d"),
+[?2004l[?2004h>         "doy": dates.dt.dayofyear.astype(int),
+[?2004l[?2004h>         "tmax": raw["tmax_c"].astype(float),
+[?2004l[?2004h>         "tmin": raw["tmin_c"].astype(float),
+[?2004l[?2004h>     })
+[?2004l[?2004h>     if station.humidity == "dewpoint":
+[?2004l[?2004h>         df["ea"] = fao56.actual_vapour_pressure_dewpoint(raw["tdew_c"].astype(float))
+[?2004l[?2004h>     else:
+[?2004l[?2004h>         df["ea"] = fao56.actual_vapour_pressure_rh(
+[?2004l[?2004h>             df["tmax"], df["tmin"],
+[?2004l[?2004h>             raw["rh_max_pct"].astype(float),
+[?2004l[?2004h>             raw["rh_min_pct"].astype(float),
+[?2004l[?2004h>         )
+[?2004l[?2004h>     raw_wind = raw["wind_ms"].astype(float)
+[?2004l[?2004h>     if getattr(station, "wind_height_m", 2.0) != 2.0:
+[?2004l[?2004h>         z = station.wind_height_m
+[?2004l[?2004h>         if (67.8 * z - 5.42) <= 0:
+[?2004l[?2004h>             raise ValueError(f"Invalid wind sensor height {z} for station {station.station_id}")
+[?2004l[?2004h>         factor = 4.87 / np.log(67.8 * z - 5.42)
+[?2004l[?2004h>         u2 = raw_wind * factor
+[?2004l[?2004h>     else:
+[?2004l[?2004h>         u2 = raw_wind
+[?2004l[?2004h>     raw_rs = raw["solar_rad"].astype(float)
+[?2004l[?2004h>     if getattr(station, "radiation_units", "MJ/m2/day") == "W/m2":
+[?2004l[?2004h>         rs = raw_rs * 0.0864
+[?2004l[?2004h>     else:
+[?2004l[?2004h>         rs = raw_rs
+[?2004l[?2004h>     df["u2"] = u2
+[?2004l[?2004h>     df["rs"] = rs
+[?2004l[?2004h>     return df
+[?2004l[?2004h> EOF
+[?2004l[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# python -m et0.pipeline --stations config/stations.yaml --data data/raw --out output/et0_fixed2.csv
+[?2004lVNT: 365 days, mean ET0 3.55 mm/day
+PAL: 365 days, mean ET0 2.88 mm/day
+CDB: 365 days, mean ET0 3.60 mm/day
+LGN: 365 days, mean ET0 4.23 mm/day
+RSD: 365 days, mean ET0 3.70 mm/day
+MRS: 365 days, mean ET0 4.01 mm/day
+HLT: 365 days, mean ET0 3.75 mm/day
+ARN: 365 days, mean ET0 3.21 mm/day
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# head -n 10 output/et0_fixed2.csv
+[?2004lstation_id,date,et0_mm_day
+VNT,2025-01-01,1.768
+VNT,2025-01-02,1.999
+VNT,2025-01-03,1.778
+VNT,2025-01-04,1.666
+VNT,2025-01-05,1.856
+VNT,2025-01-06,1.989
+VNT,2025-01-07,1.625
+VNT,2025-01-08,1.857
+VNT,2025-01-09,1.598
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# python - <<'PY'
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> orig = pd.read_csv('output/et0.csv')
+[?2004l[?2004h> new = pd.read_csv('output/et0_fixed2.csv')
+[?2004l[?2004h> print('Original mean ET0 per station:')
+[?2004l[?2004h> print(orig.groupby('station_id')['et0_mm_day'].mean().round(2))
+[?2004l[?2004h> print('\nNew mean ET0 per station:')
+[?2004l[?2004h> print(new.groupby('station_id')['et0_mm_day'].mean().round(2))
+[?2004l[?2004h> PY
+[?2004lOriginal mean ET0 per station:
+station_id
+ARN     3.21
+CDB     3.60
+HLT    29.91
+LGN    34.48
+MRS     4.11
+PAL     3.10
+RSD    26.88
+VNT     3.55
+Name: et0_mm_day, dtype: float64
+
+New mean ET0 per station:
+station_id
+ARN    3.21
+CDB    3.60
+HLT    3.75
+LGN    4.23
+MRS    4.01
+PAL    2.88
+RSD    3.70
+VNT    3.55
+Name: et0_mm_day, dtype: float64
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# diff -u output/et0.csv output/et0_fixed2.csv | wc -l
+[?2004l3666
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# python -m et0.pipeline --stations config/stations.yaml --data data/raw --out output/et0.csv
+[?2004lVNT: 365 days, mean ET0 3.55 mm/day
+PAL: 365 days, mean ET0 2.88 mm/day
+CDB: 365 days, mean ET0 3.60 mm/day
+LGN: 365 days, mean ET0 4.23 mm/day
+RSD: 365 days, mean ET0 3.70 mm/day
+MRS: 365 days, mean ET0 4.01 mm/day
+HLT: 365 days, mean ET0 3.75 mm/day
+ARN: 365 days, mean ET0 3.21 mm/day
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# head -n 10 output/et0.csv
+[?2004lstation_id,date,et0_mm_day
+VNT,2025-01-01,1.768
+VNT,2025-01-02,1.999
+VNT,2025-01-03,1.778
+VNT,2025-01-04,1.666
+VNT,2025-01-05,1.856
+VNT,2025-01-06,1.989
+VNT,2025-01-07,1.625
+VNT,2025-01-08,1.857
+VNT,2025-01-09,1.598
+[?2004hroot@3aa2b692-c514-41ad-a921-1fef92e5c19e:/app# 

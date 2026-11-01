@@ -1,0 +1,447 @@
+{
+    "id": "a00b8fc7-cfbc-4cf2-864e-6795691511cf",
+    "started_at": "2026-10-31T02:10:49.903275",
+    "updated_at": "2026-10-31T02:11:22.253866",
+    "finished_at": "2026-10-31T02:11:22.253866",
+    "n_total_trials": 1,
+    "stats": {
+        "n_completed_trials": 1,
+        "n_errored_trials": 0,
+        "n_running_trials": 0,
+        "n_pending_trials": 0,
+        "n_cancelled_trials": 0,
+        "n_retries": 0,
+        "evals": {
+            "oracle__adhoc": {
+                "n_trials": 1,
+                "n_errors": 0,
+                "metrics": [
+                    {
+                        "A_duplicate_rows": 0.0,
+                        "A_extra_rows": 0.0,
+                        "A_mismatch_app_minutes_7d": 57896.0,
+                        "A_mismatch_days_since_last_order": 57896.0,
+                        "A_mismatch_orders_30d": 57478.0,
+                        "A_mismatch_orders_7d": 16046.0,
+                        "A_mismatch_plan": 35625.0,
+                        "A_mismatch_spend_30d_cents": 57478.0,
+                        "A_mismatch_status": 2829.0,
+                        "A_mismatch_te_district": 57896.0,
+                        "A_mismatch_tenure_days": 57896.0,
+                        "A_mismatch_tickets_30d": 21105.0,
+                        "A_mismatched_cells": 422145.0,
+                        "A_missing_rows": 0.0,
+                        "B_cut1_changed_cells": 0.0,
+                        "B_cut1_duplicate_rows": 0.0,
+                        "B_cut1_extra_rows": 0.0,
+                        "B_cut1_invariant_problems": 0.0,
+                        "B_cut1_mismatch_app_minutes_7d": 0.0,
+                        "B_cut1_mismatch_days_since_last_order": 0.0,
+                        "B_cut1_mismatch_orders_30d": 0.0,
+                        "B_cut1_mismatch_orders_7d": 0.0,
+                        "B_cut1_mismatch_plan": 0.0,
+                        "B_cut1_mismatch_spend_30d_cents": 0.0,
+                        "B_cut1_mismatch_status": 0.0,
+                        "B_cut1_mismatch_te_district": 0.0,
+                        "B_cut1_mismatch_tenure_days": 0.0,
+                        "B_cut1_mismatch_tickets_30d": 0.0,
+                        "B_cut1_missing_rows": 0.0,
+                        "B_cut1_points": 54086.0,
+                        "B_cut1_rows_compared": 9451.0,
+                        "B_cut2_changed_cells": 0.0,
+                        "B_cut2_duplicate_rows": 0.0,
+                        "B_cut2_extra_rows": 0.0,
+                        "B_cut2_invariant_problems": 0.0,
+                        "B_cut2_mismatch_app_minutes_7d": 0.0,
+                        "B_cut2_mismatch_days_since_last_order": 0.0,
+                        "B_cut2_mismatch_orders_30d": 0.0,
+                        "B_cut2_mismatch_orders_7d": 0.0,
+                        "B_cut2_mismatch_plan": 0.0,
+                        "B_cut2_mismatch_spend_30d_cents": 0.0,
+                        "B_cut2_mismatch_status": 0.0,
+                        "B_cut2_mismatch_te_district": 0.0,
+                        "B_cut2_mismatch_tenure_days": 0.0,
+                        "B_cut2_mismatch_tickets_30d": 0.0,
+                        "B_cut2_missing_rows": 0.0,
+                        "B_cut2_points": 56911.0,
+                        "B_cut2_rows_compared": 45706.0,
+                        "H_days_since_last_login_nonnull": 0.0,
+                        "check_A": 0.0,
+                        "check_B_cut1": 1.0,
+                        "check_B_cut2": 1.0,
+                        "cut1_days_since_last_login_nonnull": 0.0,
+                        "cut2_days_since_last_login_nonnull": 0.0,
+                        "net_private_H": 1.0,
+                        "net_private_cut1": 1.0,
+                        "net_private_cut2": 1.0,
+                        "reward": 0.0,
+                        "seconds_H": 0.522,
+                        "seconds_convert_H": 0.524,
+                        "seconds_convert_cut1": 0.531,
+                        "seconds_convert_cut2": 0.531,
+                        "seconds_cut1": 0.529,
+                        "seconds_cut2": 0.534,
+                        "seconds_grade_total": 7.059000203968026,
+                        "verifier_cpu_quota": 2.0,
+                        "verifier_cpus_visible": 48.0,
+                        "verifier_memory_limit_mib": 4096.0,
+                        "verifier_memtotal_mib": 386459.6
+                    }
+                ],
+                "pass_at_k": {},
+                "reward_stats": {
+                    "reward": {
+                        "0.0": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "check_A": {
+                        "0": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "check_B_cut1": {
+                        "1": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "check_B_cut2": {
+                        "1": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "verifier_cpus_visible": {
+                        "48": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "verifier_cpu_quota": {
+                        "2.0": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "verifier_memory_limit_mib": {
+                        "4096.0": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "verifier_memtotal_mib": {
+                        "386459.6": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "seconds_H": {
+                        "0.522": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "net_private_H": {
+                        "1": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "seconds_convert_H": {
+                        "0.524": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "H_days_since_last_login_nonnull": {
+                        "0": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "A_duplicate_rows": {
+                        "0": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "A_missing_rows": {
+                        "0": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "A_extra_rows": {
+                        "0": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "A_mismatch_orders_7d": {
+                        "16046": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "A_mismatch_orders_30d": {
+                        "57478": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "A_mismatch_spend_30d_cents": {
+                        "57478": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "A_mismatch_tickets_30d": {
+                        "21105": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "A_mismatch_days_since_last_order": {
+                        "57896": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "A_mismatch_tenure_days": {
+                        "57896": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "A_mismatch_app_minutes_7d": {
+                        "57896": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "A_mismatch_te_district": {
+                        "57896": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "A_mismatch_status": {
+                        "2829": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "A_mismatch_plan": {
+                        "35625": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "A_mismatched_cells": {
+                        "422145": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "B_cut1_invariant_problems": {
+                        "0": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "B_cut1_points": {
+                        "54086": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "seconds_cut1": {
+                        "0.529": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "net_private_cut1": {
+                        "1": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "seconds_convert_cut1": {
+                        "0.531": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "cut1_days_since_last_login_nonnull": {
+                        "0": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "B_cut1_rows_compared": {
+                        "9451": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "B_cut1_changed_cells": {
+                        "0": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "B_cut1_mismatch_orders_7d": {
+                        "0": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "B_cut1_mismatch_orders_30d": {
+                        "0": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "B_cut1_mismatch_spend_30d_cents": {
+                        "0": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "B_cut1_mismatch_tickets_30d": {
+                        "0": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "B_cut1_mismatch_days_since_last_order": {
+                        "0": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "B_cut1_mismatch_tenure_days": {
+                        "0": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "B_cut1_mismatch_app_minutes_7d": {
+                        "0": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "B_cut1_mismatch_te_district": {
+                        "0": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "B_cut1_mismatch_status": {
+                        "0": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "B_cut1_mismatch_plan": {
+                        "0": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "B_cut1_duplicate_rows": {
+                        "0": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "B_cut1_missing_rows": {
+                        "0": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "B_cut1_extra_rows": {
+                        "0": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "B_cut2_invariant_problems": {
+                        "0": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "B_cut2_points": {
+                        "56911": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "seconds_cut2": {
+                        "0.534": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "net_private_cut2": {
+                        "1": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "seconds_convert_cut2": {
+                        "0.531": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "cut2_days_since_last_login_nonnull": {
+                        "0": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "B_cut2_rows_compared": {
+                        "45706": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "B_cut2_changed_cells": {
+                        "0": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "B_cut2_mismatch_orders_7d": {
+                        "0": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "B_cut2_mismatch_orders_30d": {
+                        "0": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "B_cut2_mismatch_spend_30d_cents": {
+                        "0": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "B_cut2_mismatch_tickets_30d": {
+                        "0": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "B_cut2_mismatch_days_since_last_order": {
+                        "0": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "B_cut2_mismatch_tenure_days": {
+                        "0": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "B_cut2_mismatch_app_minutes_7d": {
+                        "0": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "B_cut2_mismatch_te_district": {
+                        "0": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "B_cut2_mismatch_status": {
+                        "0": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "B_cut2_mismatch_plan": {
+                        "0": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "B_cut2_duplicate_rows": {
+                        "0": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "B_cut2_missing_rows": {
+                        "0": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "B_cut2_extra_rows": {
+                        "0": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    },
+                    "seconds_grade_total": {
+                        "7.059000203968026": [
+                            "feature-leakage-churn__sBVgqqs"
+                        ]
+                    }
+                },
+                "exception_stats": {}
+            }
+        },
+        "n_input_tokens": null,
+        "n_cache_tokens": null,
+        "n_output_tokens": null,
+        "cost_usd": null
+    }
+}

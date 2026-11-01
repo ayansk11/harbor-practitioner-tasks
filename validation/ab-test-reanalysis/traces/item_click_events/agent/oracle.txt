@@ -1,0 +1,2 @@
+solve.sh: SOLUTION=item_click_events
+wrote output/result.json: decision=no_ship diff=+0.00107 ci=[-0.00450, +0.00664] srm_p=0.469

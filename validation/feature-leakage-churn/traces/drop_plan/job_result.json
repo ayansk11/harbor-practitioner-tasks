@@ -1,0 +1,135 @@
+{
+    "id": "3e940fc3-1d54-4ab8-8db8-00524dd22e00",
+    "started_at": "2026-10-31T19:20:41.440405",
+    "updated_at": "2026-10-31T19:21:02.845959",
+    "finished_at": "2026-10-31T19:21:02.845959",
+    "n_total_trials": 1,
+    "stats": {
+        "n_completed_trials": 1,
+        "n_errored_trials": 0,
+        "n_running_trials": 0,
+        "n_pending_trials": 0,
+        "n_cancelled_trials": 0,
+        "n_retries": 0,
+        "evals": {
+            "oracle__adhoc": {
+                "n_trials": 1,
+                "n_errors": 0,
+                "metrics": [
+                    {
+                        "bad_output_H": 1.0,
+                        "check_A": 0.0,
+                        "check_B_cut1": 0.0,
+                        "check_B_cut2": 0.0,
+                        "net_private_H": 1.0,
+                        "residual_runner_paths_H": 0.0,
+                        "reward": 0.0,
+                        "seconds_H": 0.724,
+                        "seconds_convert_H": 0.374,
+                        "seconds_grade_total": 1.8763502724468708,
+                        "seconds_sweep_H": 0.694,
+                        "sweep_errors_H": 0.0,
+                        "swept_runner_paths_H": 1.0,
+                        "verifier_cpu_quota": 2.0,
+                        "verifier_cpus_visible": 48.0,
+                        "verifier_memory_limit_mib": 4096.0,
+                        "verifier_memtotal_mib": 386464.3
+                    }
+                ],
+                "pass_at_k": {},
+                "reward_stats": {
+                    "reward": {
+                        "0.0": [
+                            "feature-leakage-churn__7vhhJvH"
+                        ]
+                    },
+                    "check_A": {
+                        "0": [
+                            "feature-leakage-churn__7vhhJvH"
+                        ]
+                    },
+                    "check_B_cut1": {
+                        "0": [
+                            "feature-leakage-churn__7vhhJvH"
+                        ]
+                    },
+                    "check_B_cut2": {
+                        "0": [
+                            "feature-leakage-churn__7vhhJvH"
+                        ]
+                    },
+                    "verifier_cpus_visible": {
+                        "48": [
+                            "feature-leakage-churn__7vhhJvH"
+                        ]
+                    },
+                    "verifier_cpu_quota": {
+                        "2.0": [
+                            "feature-leakage-churn__7vhhJvH"
+                        ]
+                    },
+                    "verifier_memory_limit_mib": {
+                        "4096.0": [
+                            "feature-leakage-churn__7vhhJvH"
+                        ]
+                    },
+                    "verifier_memtotal_mib": {
+                        "386464.3": [
+                            "feature-leakage-churn__7vhhJvH"
+                        ]
+                    },
+                    "swept_runner_paths_H": {
+                        "1": [
+                            "feature-leakage-churn__7vhhJvH"
+                        ]
+                    },
+                    "residual_runner_paths_H": {
+                        "0": [
+                            "feature-leakage-churn__7vhhJvH"
+                        ]
+                    },
+                    "seconds_sweep_H": {
+                        "0.694": [
+                            "feature-leakage-churn__7vhhJvH"
+                        ]
+                    },
+                    "sweep_errors_H": {
+                        "0": [
+                            "feature-leakage-churn__7vhhJvH"
+                        ]
+                    },
+                    "seconds_H": {
+                        "0.724": [
+                            "feature-leakage-churn__7vhhJvH"
+                        ]
+                    },
+                    "net_private_H": {
+                        "1": [
+                            "feature-leakage-churn__7vhhJvH"
+                        ]
+                    },
+                    "seconds_convert_H": {
+                        "0.374": [
+                            "feature-leakage-churn__7vhhJvH"
+                        ]
+                    },
+                    "bad_output_H": {
+                        "1": [
+                            "feature-leakage-churn__7vhhJvH"
+                        ]
+                    },
+                    "seconds_grade_total": {
+                        "1.8763502724468708": [
+                            "feature-leakage-churn__7vhhJvH"
+                        ]
+                    }
+                },
+                "exception_stats": {}
+            }
+        },
+        "n_input_tokens": null,
+        "n_cache_tokens": null,
+        "n_output_tokens": null,
+        "cost_usd": null
+    }
+}

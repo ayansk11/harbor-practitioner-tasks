@@ -1,5 +1,7 @@
 """Run as uid 1001 by grade.py, never as root: read the agent's parquet, normalise it (compare.normalise) and write
-plain JSON for root to parse (kit rule 3: root never deserializes agent output except as CSV, JSON or text).
+plain JSON for root to parse (kit rule 3: root never deserializes agent output except as CSV, JSON or text). The JSON
+holds the keys, the ten kept features and the count of non-null values in a column named after the left-out feature
+(compare.DROPPED_KEY; 0 when the column is absent or all null).
 
 python3 -I convert.py <features.parquet> <rows.json>   exit 0 ok, 3 output rejected (reason on stderr)
 """
@@ -8,7 +10,7 @@ import json, math, os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import compare as C  # noqa: E402
 
-MAX_BYTES = 100_000_000  # a correct output is about 2 MB
+MAX_BYTES = 100_000_000  # a correct output is about 1.5 MB
 
 
 def main(src, dst):
@@ -16,14 +18,18 @@ def main(src, dst):
         if os.path.getsize(src) > MAX_BYTES:
             raise C.BadOutput(f"output file is larger than {MAX_BYTES} bytes")
         import pandas as pd
-        n = C.normalise(pd.read_parquet(src))
+        df = pd.read_parquet(src)
+        n = C.normalise(df)
+        dropped = C.dropped_nonnull(df)
     except Exception as e:
         print(f"{type(e).__name__}: {e}", file=sys.stderr)
         return 3
     cols = {"customer_id": [int(v) for v in n["customer_id"]], "as_of": [int(v) for v in n["as_of"]]}
     for c in C.INT_FEATS + C.FLOAT_FEATS:
         cols[c] = [None if math.isnan(v) else float(v) for v in n[c].tolist()]
-    cols["status"] = [None if C._null(v) else str(v) for v in n["status"].tolist()]
+    for c in C.STR_FEATS:
+        cols[c] = [None if C._null(v) else str(v) for v in n[c].tolist()]
+    cols[C.DROPPED_KEY] = int(dropped)
     try:
         text = json.dumps(cols, allow_nan=False)
     except ValueError as e:  # an infinite value

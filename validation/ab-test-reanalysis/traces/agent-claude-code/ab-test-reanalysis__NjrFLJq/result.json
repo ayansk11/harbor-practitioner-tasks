@@ -1,0 +1,198 @@
+{
+    "id": "b978d1f6-15c6-4bc9-8a2a-17804be6303a",
+    "task_name": "diffuse-labs/ab-test-reanalysis",
+    "trial_name": "ab-test-reanalysis__NjrFLJq",
+    "trial_uri": "file://<submission>/jobs/agent-trials/ab-test-reanalysis-claudecode-opus55-cc2/ab-test-reanalysis__NjrFLJq",
+    "task_id": {
+        "path": "<submission>/jobs/ab-test-reanalysis/package-rev1/ab-test-reanalysis"
+    },
+    "source": null,
+    "task_checksum": "274fcfeb9730803d14e0e19bfa6772a2f81ee82d3477737e0f3fb3e263048240",
+    "config": {
+        "task": {
+            "path": "<submission>/jobs/ab-test-reanalysis/package-rev1/ab-test-reanalysis",
+            "git_url": null,
+            "git_commit_id": null,
+            "name": null,
+            "ref": null,
+            "overwrite": false,
+            "download_dir": null,
+            "source": null
+        },
+        "trial_name": "ab-test-reanalysis__NjrFLJq",
+        "trials_dir": "jobs/agent-trials/ab-test-reanalysis-claudecode-opus55-cc2",
+        "install_only": false,
+        "timeout_multiplier": 1.0,
+        "agent_timeout_multiplier": null,
+        "verifier_timeout_multiplier": null,
+        "agent_setup_timeout_multiplier": null,
+        "environment_build_timeout_multiplier": 3.0,
+        "agent": {
+            "name": "claude-code",
+            "import_path": null,
+            "model_name": "anthropic/claude-opus-5-5",
+            "base_url": null,
+            "model_api_key_name": null,
+            "model_api_format": null,
+            "skip_model_parsing": false,
+            "n_concurrent": null,
+            "concurrency_group": null,
+            "skills": [],
+            "override_timeout_sec": null,
+            "override_setup_timeout_sec": null,
+            "max_timeout_sec": null,
+            "resume_trajectory": false,
+            "load_trajectory": null,
+            "extra_allowed_hosts": [],
+            "kwargs": {
+                "max_budget_usd": 20,
+                "disable_web_search": true
+            },
+            "mcp_servers": []
+        },
+        "user_agent": null,
+        "environment": {
+            "type": "daytona",
+            "import_path": null,
+            "force_build": false,
+            "delete": true,
+            "stream": false,
+            "cpu_enforcement_policy": "auto",
+            "memory_enforcement_policy": "auto",
+            "override_cpus": null,
+            "override_memory_mb": null,
+            "override_storage_mb": null,
+            "override_gpus": null,
+            "override_tpu": null,
+            "mounts": null,
+            "extra_docker_compose": [],
+            "kwargs": {},
+            "extra_allowed_hosts": []
+        },
+        "verifier": {
+            "override_timeout_sec": null,
+            "max_timeout_sec": null,
+            "disable": false
+        },
+        "artifacts": [],
+        "extra_instruction_paths": [],
+        "extra_instructions": [],
+        "job_id": "2bbab911-2d00-4ed8-afbe-e661a61acb02",
+        "source_trial": null
+    },
+    "agent_info": {
+        "name": "claude-code",
+        "version": "2.1.316",
+        "model_info": {
+            "name": "claude-opus-5-5",
+            "provider": "anthropic"
+        }
+    },
+    "agent_result": {
+        "n_input_tokens": 333955,
+        "n_cache_tokens": 315127,
+        "n_output_tokens": 8419,
+        "cost_usd": 0.3255234,
+        "model_usage": {
+            "claude-opus-5-5": {
+                "n_input_tokens": 333955,
+                "n_cache_tokens": 315127,
+                "n_output_tokens": 8419,
+                "cost_usd": 0.3255234
+            }
+        },
+        "rollout_details": null,
+        "metadata": null
+    },
+    "verifier_result": {
+        "rewards": {
+            "reward": 1.0,
+            "band_hw": 0.25,
+            "run_cap_sec": 120,
+            "res_os_cpu_count": 48,
+            "res_cpu_affinity": 48,
+            "res_cgroup_cpus": 1.0,
+            "res_cgroup_mem_mib": 2048.0,
+            "res_host_memtotal_mib": 386466.5390625,
+            "visible_ok": 1,
+            "visible_problems": 0,
+            "visible_ctr_max_err": 0.0,
+            "visible_diff_err": 0.0,
+            "visible_srm_p_rel_err": 1.1829140680293875e-16,
+            "visible_ci_lo_err_hw": 3.286667476061109e-16,
+            "visible_ci_hi_err_hw": 3.286667476061109e-16,
+            "h_null_run_rc": 0,
+            "h_null_run_timed_out": 0,
+            "h_null_run_seconds": 1.582,
+            "h_null_ok": 1,
+            "h_null_problems": 0,
+            "h_null_ctr_max_err": 0.0,
+            "h_null_diff_err": 0.0,
+            "h_null_srm_p_rel_err": 8.902975794635376e-15,
+            "h_null_ci_lo_err_hw": 3.2386974051446843e-16,
+            "h_null_ci_hi_err_hw": 3.2386974051446843e-16,
+            "h_pos_run_rc": 0,
+            "h_pos_run_timed_out": 0,
+            "h_pos_run_seconds": 1.73,
+            "h_pos_ok": 1,
+            "h_pos_problems": 0,
+            "h_pos_ctr_max_err": 0.0,
+            "h_pos_diff_err": 0.0,
+            "h_pos_srm_p_rel_err": 1.9239355888896643e-16,
+            "h_pos_ci_lo_err_hw": 0.0,
+            "h_pos_ci_hi_err_hw": 0.0,
+            "h_srm_run_rc": 0,
+            "h_srm_run_timed_out": 0,
+            "h_srm_run_seconds": 1.726,
+            "h_srm_ok": 1,
+            "h_srm_problems": 0,
+            "h_srm_ctr_max_err": 0.0,
+            "h_srm_diff_err": 0.0,
+            "h_srm_srm_p_rel_err": 8.693279730455397e-16,
+            "h_srm_ci_lo_err_hw": 3.0467330944995497e-16,
+            "h_srm_ci_hi_err_hw": 6.093466188999099e-16,
+            "h_plain_run_rc": 0,
+            "h_plain_run_timed_out": 0,
+            "h_plain_run_seconds": 1.526,
+            "h_plain_ok": 1,
+            "h_plain_problems": 0,
+            "h_plain_ctr_max_err": 0.0,
+            "h_plain_diff_err": 0.0,
+            "h_plain_srm_p_rel_err": 1.4240168292155358e-14,
+            "h_plain_ci_lo_err_hw": 2.8350708528922217e-16,
+            "h_plain_ci_hi_err_hw": 0.0,
+            "h_neg_run_rc": 0,
+            "h_neg_run_timed_out": 0,
+            "h_neg_run_seconds": 1.624,
+            "h_neg_ok": 1,
+            "h_neg_problems": 0,
+            "h_neg_ctr_max_err": 0.0,
+            "h_neg_diff_err": 0.0,
+            "h_neg_srm_p_rel_err": 2.205587558053253e-16,
+            "h_neg_ci_lo_err_hw": 6.283091179353852e-16,
+            "h_neg_ci_hi_err_hw": 3.141545589676926e-16,
+            "sets_passed": 6
+        }
+    },
+    "verifier_environment_mode": "separate",
+    "exception_info": null,
+    "started_at": "2026-10-31T09:29:31.932744Z",
+    "finished_at": "2026-10-31T09:32:19.903854Z",
+    "environment_setup": {
+        "started_at": "2026-10-31T09:29:31.954063Z",
+        "finished_at": "2026-10-31T09:29:33.894160Z"
+    },
+    "agent_setup": {
+        "started_at": "2026-10-31T09:29:33.894257Z",
+        "finished_at": "2026-10-31T09:30:26.795664Z"
+    },
+    "agent_execution": {
+        "started_at": "2026-10-31T09:30:26.795934Z",
+        "finished_at": "2026-10-31T09:31:55.498266Z"
+    },
+    "verifier": {
+        "started_at": "2026-10-31T09:32:01.814540Z",
+        "finished_at": "2026-10-31T09:32:19.903824Z"
+    },
+    "step_results": null
+}

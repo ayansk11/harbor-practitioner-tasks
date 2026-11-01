@@ -1,0 +1,2 @@
+solve.sh: SOLUTION=literal_bot_filter
+wrote output/result.json: decision=invalid diff=-0.00501 ci=[-0.01036, +0.00035] srm_p=1.27e-07

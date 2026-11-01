@@ -1,0 +1,20 @@
+{
+    "task": {
+        "path": "<submission>/jobs/feature-leakage-churn/package-rev1/feature-leakage-churn"
+    },
+    "trial_name": "feature-leakage-churn__PqYpM4P",
+    "trials_dir": "jobs/agent-trials/feature-leakage-churn-claudecode-opus55-cc1",
+    "environment_build_timeout_multiplier": 3.0,
+    "agent": {
+        "name": "claude-code",
+        "model_name": "anthropic/claude-opus-5-5",
+        "kwargs": {
+            "max_budget_usd": 20,
+            "disable_web_search": true
+        }
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "e0b465e4-d3dd-4b1e-ae69-7ae57a1b48ad"
+}
