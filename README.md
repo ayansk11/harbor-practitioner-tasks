@@ -5,16 +5,17 @@ and canonical solution: a production pagination bug, a multi-tenant authorizatio
 scientific ET0 pipeline and an ML feature pipeline whose training values differ from what the live service computed.
 Every package was run with Harbor 0.25.0 on Daytona cloud sandboxes: the canonical solution several times (the count
 is in the last column), one or two other valid solutions, a clean rebuild, the no-op agent and a set of plausible
-wrong or shortcut attempts. Where a task's `task.toml` denies the agent network, those runs used a copy of the task
-without that one line ([Setup](#setup)). The last column links each task's results and its run traces; model-agent
-trials are summarized under [Known limitations](#known-limitations).
+wrong or shortcut attempts; for `tenant-isolation-docshare`, after a fix to its grader on 2026-11-03 (run `full2`).
+Where a task's `task.toml` denies the agent network, those runs used a copy of the task without that one line
+([Setup](#setup)). The last column links each task's results and its run traces; model-agent trials are summarized
+under [Known limitations](#known-limitations).
 
 ## The tasks
 
 | Task | Capability assessed | User-facing objective | How success is checked | Validation run (Daytona, Harbor 0.25.0) |
 |---|---|---|---|---|
 | [`orders-export-missing-rows`](tasks/orders-export-missing-rows/) ([design](docs/orders-export-missing-rows/DESIGN.md)) | Production debugging of a backend API: keyset pagination over SQLite with a non-unique sort key, a second copy of the bug, writes during paging | The finance export wrote 47,961 rows while the API counted 48,213: fix the Flask orders API so every listing returns each order exactly once, in the documented order, also while new orders arrive | About 5,300 requests on a hidden 30,000-order database, page sizes 1 to 500, 56 orders inserted during two walks: ids must follow `ORDER BY created_at DESC, id DESC`, the API contract must match the original, the database must stay unchanged | [run full1](validation/orders-export-missing-rows/PROOF_RESULTS_full1.md), [traces](validation/orders-export-missing-rows/README.md): oracle 10/10 = 1.0; alt 1.0; clean rebuild 1.0; no-op 0.0; 12 wrong or shortcut attempts 0.0. [Agent trials](validation/orders-export-missing-rows/README.md#agent-trials) (`terminus-2`, `openai/gpt-oss-120b`): 3 of 3 passed |
-| [`tenant-isolation-docshare`](tasks/tenant-isolation-docshare/) ([design](docs/tenant-isolation-docshare/DESIGN.md)) | Defensive application security: authorization in a multi-tenant document API | A researcher reported a cross-organisation download: make the service enforce `PERMISSIONS.md` on every endpoint (the report names one of six flaws), keeping share links, org switching and support's read-only access | About 3,700 requests on a hidden database: a refused request must get a 4xx, leak no file content or name and change nothing; a permitted one must answer as the untouched service does | [run full1](validation/tenant-isolation-docshare/PROOF_RESULTS_full1.md), [traces](validation/tenant-isolation-docshare/README.md): oracle 10/10 = 1.0; alt 1.0; clean rebuild 1.0; no-op 0.0; 6 wrong or shortcut attempts 0.0. [Agent trials](validation/tenant-isolation-docshare/README.md#agent-trials) (`terminus-2`, `openai/gpt-oss-120b`): 0 of 3 passed |
+| [`tenant-isolation-docshare`](tasks/tenant-isolation-docshare/) ([design](docs/tenant-isolation-docshare/DESIGN.md)) | Defensive application security: authorization in a multi-tenant document API | A researcher reported a cross-organisation download: make the service enforce `PERMISSIONS.md` on every endpoint (the report names one of six flaws), keeping share links, org switching and support's read-only access | About 3,700 requests on a hidden database: a refused request must get a 4xx, leak no file content or name and change nothing; a permitted one must answer as the untouched service does | [run full2](validation/tenant-isolation-docshare/PROOF_RESULTS_full2.md), [traces](validation/tenant-isolation-docshare/README.md): oracle 10/10 = 1.0; alt 1.0; clean rebuild 1.0; no-op 0.0; 7 wrong or shortcut attempts 0.0 (one, `replay_memo`, a service that remembers the writes it refused in the grader's first run). [Agent trials](validation/tenant-isolation-docshare/README.md#agent-trials) (`terminus-2`, `openai/gpt-oss-120b`, graded by the grader before its fix of 2026-11-03): 0 of 3 passed |
 | [`ab-test-reanalysis`](tasks/ab-test-reanalysis/) ([design](docs/ab-test-reanalysis/DESIGN.md)) | Data analysis and experiment validity: auditing an A/B readout against its analysis plan, the data platform's documentation and the data (what counts as a click, a bot rule that reads behaviour during the experiment, hand-assigned accounts) | The readout came back "invalid" on a failed sample ratio check, the PM's dashboards show a clean 50/50 split and B's click-through 12.3% above A's, and the PM wants to turn B on for everyone: find out what the experiment shows, fix the pipeline so it gives the plan's readout on any export of this layout, and regenerate the readout | The agent's command on five hidden exports plus the regenerated readout, all six must pass: counts, SRM flag and decision exact; CTR and diff within 1e-9; SRM p within 1% relative; each CI bound within 0.25 half-widths of a delta-method reference (the plan's bootstrap and cluster-robust options land inside) | [run rev1](validation/ab-test-reanalysis/PROOF_RESULTS_rev1.md), [traces](validation/ab-test-reanalysis/README.md), on a copy without the agent network line: oracle 10/10 = 1.0; alt_time (bootstrap) 1.0; alt_recount (cluster-robust) 1.0; clean rebuild 1.0; no-op 0.0; 10 wrong or shortcut attempts 0.0. [Agent trials](validation/ab-test-reanalysis/README.md#agent-trials) (`claude-code`, `claude-opus-5-5`, web search off, on the same copy): 3 of 3 passed |
 | [`et0-station-ingest`](tasks/et0-station-ingest/) ([design](docs/et0-station-ingest/DESIGN.md)) | Scientific computing against a published standard (FAO-56 Penman-Monteith): input and metadata handling, against a misleading hint | Irrigation advice is off at some stations (the user suspects altitude): fix the ET0 pipeline for any station register in the documented formats, and regenerate the output | Ten hidden stations (other sensor heights, both hemispheres, both radiation units), run from a copy of `/app` with `/app` removed, plus the regenerated `/app/output/et0.csv`: one row per station-day, each within 0.03 mm/day of an independent FAO-56 reference that reproduces FAO-56 Example 18 | [run full1](validation/et0-station-ingest/PROOF_RESULTS_full1.md), [traces](validation/et0-station-ingest/README.md), [notes](validation/et0-station-ingest/NOTES.md): oracle 10/10 = 1.0; alt 1.0; clean rebuild 1.0; no-op 0.0; 9 wrong or shortcut attempts 0.0. [Agent trials](validation/et0-station-ingest/README.md#agent-trials) (`terminus-2`, `openai/gpt-oss-120b`, the pilot included): 0 of 3 passed |
 | [`feature-leakage-churn`](tasks/feature-leakage-churn/) ([design](docs/feature-leakage-churn/DESIGN.md)) | ML systems: point-in-time training features, rebuilt from a warehouse's own records of its loads (a scheduler log and a commit log): which commit made each order visible, which table bore the name `orders` during an 8-week dual run before a rename, task states that are not commits, as-of attributes, and a feature no extract determines | The churn model scored AUC 0.805 offline and 0.656 in its first live month, although its pipeline uses only events stamped before each prediction: make each feature equal what the live scoring service would have computed at each past prediction against the warehouse as it stood then, for any extract of this layout, and leave out any feature the extract cannot determine | The agent's command on a hidden extract of another brand (its own job runs, failures and migration): one row per prediction, the ten kept features equal to the live service's values from the simulator's true warehouse state (integer features exact, other numbers within 1e-6 + 1e-9 x value, strings and nulls exact), the left-out feature absent or all null; then on two copies changed in everything the warehouse did not yet hold at a cut time, their `_ops/` records included, no prediction at or before the cut may move; 60 s per run | [run v3](validation/feature-leakage-churn/PROOF_RESULTS_v3.md), [traces](validation/feature-leakage-churn/README.md), on a copy without the agent network line: oracle 5/5 = 1.0; alt 1.0; clean rebuild 1.0; no-op 0.0; 23 wrong or shortcut attempts 0.0 (one a probe that keeps state between the grader's runs). [Agent trials](validation/feature-leakage-churn/README.md#agent-trials) (`claude-code`, `claude-opus-5-5`, web search off, on the same copy): 3 of 3 passed |
@@ -126,7 +127,8 @@ validation/            README.md (all five); per task <slug>/README.md (each var
                        et0's pre-check smoke), NOTES.md (et0, and churn's first version), traces/<variant>/,
                        traces/agent-*/ (agent trials), REDACTIONS.md in each traces/ folder;
                        ab-test-reanalysis/first-version/, feature-leakage-churn/second-version/ and
-                       feature-leakage-churn/first-version/ (the earlier versions of the two revised tasks)
+                       feature-leakage-churn/first-version/ (the earlier versions of the two revised tasks);
+                       tenant-isolation-docshare/first-version/ (that task's grader before its fix of 2026-11-03)
 authoring/<slug>/      generators and local checks that made the data and expected answers (not used in grading)
 base/verifier_kit/     the shared grading kit
 tools/                 proof_matrix.py, check_task.py, sync_kit.py, BASE_IMAGE_DIGEST, dev-requirements.in / .lock
@@ -146,16 +148,18 @@ All five tasks:
   `openai/gpt-oss-120b` ran three trials on each of the five tasks as published in commit `495c9f5` (a pilot on
   `et0-station-ingest` on 2026-10-29, the rest on 2026-10-30, Mac clock): 4 of 15 passed (`orders-export-missing-rows`
   3 of 3, `ab-test-reanalysis` 1 of 3, `et0-station-ingest`, `tenant-isolation-docshare` and `feature-leakage-churn`
-  0 of 3; for `ab-test-reanalysis` and `feature-leakage-churn` these were their first versions). A review of the
+  0 of 3; for `ab-test-reanalysis` and `feature-leakage-churn` these were their first versions, and
+  `tenant-isolation-docshare`'s were graded by its grader before the fix of 2026-11-03). A review of the
   trajectories found each pass a genuine fix and each failure a gap the task targets, not a task defect. Those
   versions set no network line, so the agent had Harbor's default public network; no trajectory shows a fetch from
-  GitHub. Harbor's `claude-code` agent (Claude Code 2.1.316) with `claude-opus-5-5`, web search off, ran three trials
-  on each of three revised packages on 2026-10-31, on the copies without the agent network line: 3 of 3 passed on the
-  revised `ab-test-reanalysis`, 3 of 3 on `feature-leakage-churn` as shipped (task v3) and 3 of 3 on its first
-  revision (task v2, whose package was never committed; only its evidence is here), from which task v3 was hardened.
-  Task v3's trials took 427 to 455 s of agent time each, about twice task v2's 182 to 221 s. Three trials of one
-  agent are not a pass rate (3 of 3 has a Wilson 95% interval of 0.44 to 1.00), and the `difficulty` labels in
-  `task.toml` are the authors' estimates. Details:
+  GitHub. Each docshare trial failed at least 460 read checks of the grader's first run, which the fixed grader still
+  sends unchanged, so the fix would not lift their 0 (INFERENCE; they were not graded again). Harbor's `claude-code`
+  agent (Claude Code 2.1.316) with `claude-opus-5-5`, web search off, ran three trials on each of three revised packages
+  on 2026-10-31, on the copies without the agent network line: 3 of 3 passed on the revised `ab-test-reanalysis`, 3 of 3
+  on `feature-leakage-churn` as shipped (task v3) and 3 of 3 on its first revision (task v2, whose package was never
+  committed; only its evidence is here), from which task v3 was hardened. Task v3's trials took 427 to 455 s of agent
+  time each, about twice task v2's 182 to 221 s. Three trials of one agent are not a pass rate (3 of 3 has a Wilson 95%
+  interval of 0.44 to 1.00), and the `difficulty` labels in `task.toml` are the authors' estimates. Details:
   [orders](validation/orders-export-missing-rows/README.md#agent-trials),
   [docshare](validation/tenant-isolation-docshare/README.md#agent-trials),
   [et0](validation/et0-station-ingest/README.md#agent-trials),
@@ -195,7 +199,9 @@ All five tasks:
   for Claude Code. The earlier versions of the two revised tasks keep their evidence (proof runs, traces and agent
   trials) in `validation/ab-test-reanalysis/first-version/`, `validation/feature-leakage-churn/second-version/` (task
   v2) and `validation/feature-leakage-churn/first-version/`, where one trial of run `full1` was lost to a DNS failure
-  on the machine running Harbor and has no reward or verifier log. The raw job folders (`jobs/`) are git-ignored; the
+  on the machine running Harbor and has no reward or verifier log. `tenant-isolation-docshare` keeps the evidence of
+  its grader before the fix of 2026-11-03 (run `full1` and its traces, the fresh-clone results and the three agent
+  trials) in `validation/tenant-isolation-docshare/first-version/`. The raw job folders (`jobs/`) are git-ignored; the
   "Job folder" column of `PROOF_RESULTS_*.md` points there, and the trace folders are the shipped copy.
 - The DESIGN.md files cite planning notes that are not in this repository. So do the shared kit's docstring
   (`base/verifier_kit/kit.py` line 3, copied into each task's `tests/`: an infrastructure-check log) and two et0
@@ -209,11 +215,19 @@ Per task:
   passing agent trials refuse such ids ([agent trials](validation/orders-export-missing-rows/README.md#agent-trials)).
 - **tenant-isolation-docshare:** the flaw class is well known. "Act in one active organisation" is a policy choice,
   stated in `PERMISSIONS.md` section 2. Thumbnails must be byte-identical to today's; list and export order are not
-  checked. The grader's second run repeats refused requests from its first, and both runs start the same copy of
-  `/app`, so a service that remembers run 1's refused writes and refuses only those in run 2 scores 1 with the
-  authorization of rename, delete and link creation left as in the original (a local probe of 2026-11-02;
-  [design](docs/tenant-isolation-docshare/DESIGN.md) section 9; the comment at lines 14-15 of the task's
-  `tests/grade.py` overstates). Closing it changes the package digest and needs a new proof.
+  checked. A gap found on 2026-11-02 was closed in `tests/grade.py` on 2026-11-03: every refused request of the
+  grader's second run had already been sent in its first, so a service that remembered run 1's refused writes and
+  refused only those in run 2 scored 1 with the authorization of rename, delete and link creation left as in the
+  original. Now a seeded third of each class of refused write (264 of 793) is held back from run 1 and sent only in
+  run 2, among the permitted writes, and what those writes act on is read back. That service, now the attempt
+  `replay_memo`, scores 0 in run `full2` on Daytona: it passes run 1, and 57 of the 60 checks it fails in run 2 check
+  held-back writes or what they act on ([design](docs/tenant-isolation-docshare/DESIGN.md) sections 4, 5 and 9). Still
+  not caught: a service that rebuilds the grader's fixed, public plan; a held-back link creation carried out behind a
+  4xx; the effect of a held-back write on the 14 files the write list also uses (only their answers are checked); and
+  any effect of a held-back write that the API does not show (the read-back sees only each file's presence and name).
+  Run `full1`, the fresh-clone run and the agent trials were graded by the grader before the fix, which in the task
+  package changed only `tests/grade.py` and added the attempt `replay_memo`; their evidence is in
+  `validation/tenant-isolation-docshare/first-version/`.
 - **ab-test-reanalysis:** Claude Code with `claude-opus-5-5` passed 3 of 3 trials, so the `hard` in `task.toml`, written
   before any trial, overstates the task for this agent (INFERENCE; an edit to `task.toml` would change the proven
   package's digest). The plan states every graded rule; neither the instruction nor the plan names the hand-assigned

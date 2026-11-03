@@ -1,0 +1,17 @@
+{
+    "task": {
+        "path": "<submission>/tasks/tenant-isolation-docshare"
+    },
+    "trial_name": "tenant-isolation-docshare__MLvAmEf",
+    "trials_dir": "<submission>/jobs/tenant-isolation-docshare/tenant-isolation-docshare-patch_get_only-full1",
+    "agent": {
+        "name": "oracle",
+        "env": {
+            "SOLUTION": "patch_get_only"
+        }
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "1d797886-be12-4fcd-b39a-1c7b31cd73c5"
+}

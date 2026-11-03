@@ -2,11 +2,12 @@
     "task": {
         "path": "<submission>/tasks/tenant-isolation-docshare"
     },
-    "trial_name": "tenant-isolation-docshare__JXRGo7G",
-    "trials_dir": "<submission>/jobs/tenant-isolation-docshare/tenant-isolation-docshare-force-build-full1",
+    "trial_name": "tenant-isolation-docshare__qjhkmeV",
+    "trials_dir": "<submission>/jobs/tenant-isolation-docshare/tenant-isolation-docshare-force-build-full2",
+    "environment_build_timeout_multiplier": 3.0,
     "environment": {
         "type": "daytona",
         "force_build": true
     },
-    "job_id": "ad2e90eb-cd55-425d-ac0e-23ae217622be"
+    "job_id": "cb0c3a84-b57a-4835-b11a-abc54c5bcd2a"
 }

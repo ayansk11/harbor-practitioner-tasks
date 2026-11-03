@@ -3,13 +3,14 @@
 For each variant: copy environment/app to a scratch folder, apply solution/solve.sh with SOLUTION=<variant> (the
 original is left untouched), drop folders named data, __pycache__ and .venv at any depth (what the /app artifact
 keeps), then run tests/grade.py with KIT_LOCAL=1 and read reward.json.
-Variants: canonical and alt (expect 1); original = what a no-op agent leaves (expect 0); the six attempts in
+Variants: canonical and alt (expect 1); original = what a no-op agent leaves (expect 0); the seven attempts in
 solution/attempts (expect 0); local-only variants made here, not shipped: six ablations of the canonical fix, each
 undoing one of the six fixes, one that writes before it refuses, one slow service, two more services that tell the
-grading runs apart, and six that break one permitted behaviour (all expect 0); one that lists files in another order
-(expect 1: list order is deliberately not checked). Also: package integrity (SHA256SUMS, tests/original == shipped
-app, no __pycache__), the visible pytest suite on the original, canonical and alt, the matrix diff with a mutation
-test, and (with no arguments) repeated runs of canonical and alt.
+grading runs apart, five that remember what the first run sent (memo_*), and six that break one permitted behaviour
+(all expect 0); one that lists files in another order (expect 1: list order is deliberately not checked). Also:
+package integrity (SHA256SUMS, tests/original == shipped app, no __pycache__), the visible pytest suite on the
+original, canonical and alt, the matrix diff with a mutation test, and (with no arguments) repeated runs of canonical
+and alt.
 
 Usage: submission/.venv/bin/python submission/authoring/tenant-isolation-docshare/local_check.py [variant ...]
 Writes submission/docs/tenant-isolation-docshare/local_results.txt (only when run with no arguments).
@@ -25,7 +26,7 @@ SCRATCH = pathlib.Path(os.environ.get("LOCAL_SCRATCH") or tempfile.mkdtemp(prefi
 EXCLUDE = {"data", "__pycache__", ".venv"}
 
 ATTEMPTS = ["patch_get_only", "membership_plus_get", "deny_most", "drop_org_switching", "hardcode_visible_orgs",
-            "phase_gate"]
+            "phase_gate", "replay_memo"]
 REPEATS = 5   # extra runs of canonical and alt (flake check), only with no arguments
 
 RAW_FILE = '''
@@ -150,6 +151,29 @@ ABLATIONS.update({
 })
 ABLATION_BASE = {"ablate_phase_strict_first_start": "original"}
 VARIANT_ENV = {"ablate_slow_service": {"GRADE_PHASE_CAP": "5"}}
+# Services that remember what the first grading run sent (G12). The first four put the guard of attempts/replay_memo
+# (its app.py, copied over the canonical fix by make_app) in front of the canonical fix with one write check undone;
+# memo_arm_on_replay is replay_memo whose memory also arms it: unseen writes stay refused until a write the first
+# start recorded comes back, then pass.
+MEMO_GUARD_VARIANTS = {"memo_member_delete", "memo_share_any_org", "memo_support_writes", "memo_rename_write_then_404"}
+ABLATIONS.update({
+    "memo_member_delete": [("access.py", '"member": {"read", "download", "thumb", "export", "rename", "share"},',
+                            '"member": {"read", "download", "thumb", "export", "rename", "share", "delete"},', "")],
+    "memo_share_any_org": [("routes/share.py", '    row = load_file(file_id, "share", "id")\n',
+                            '    if g.identity.role not in ("member", "org_admin"):\n        abort(403)\n'
+                            '    row = db.query_one("SELECT id FROM files WHERE id = ?", (file_id,))\n'
+                            '    if row is None:\n        abort(404)\n', "")],
+    "memo_support_writes": [("access.py", 'SUPPORT_ACTIONS = {"read", "download", "thumb", "export"}',
+                             'SUPPORT_ACTIONS = {"read", "download", "thumb", "export", "rename", "delete"}', "")],
+    "memo_rename_write_then_404": [("routes/files.py", '    row = load_file(file_id, "rename")\n',
+                                    '    row = db.query_one(f"SELECT {db.FILE_COLUMNS} FROM files WHERE id = ?", '
+                                    '(file_id,))\n    if row is None:\n        abort(404)\n', "")],
+    "memo_arm_on_replay": [("app.py", '    return (jsonify(error="not_found"), 404) if s in _seen else None',
+                            '    if s in _seen:\n        _ARMED.append(1)\n'
+                            '        return jsonify(error="not_found"), 404\n'
+                            '    return None if _ARMED else (jsonify(error="not_found"), 404)', "\n_ARMED = []\n")],
+})
+ABLATION_BASE.update({"memo_arm_on_replay": "replay_memo"})
 
 EXPECT = {"canonical": 1.0, "alt": 1.0, "original": 0.0, **{a: 0.0 for a in ATTEMPTS}, **{a: 0.0 for a in ABLATIONS},
           "lenient_lists_unsorted": 1.0}
@@ -171,6 +195,9 @@ def make_app(variant):
     if base_variant != "original":
         env["SOLUTION"] = base_variant
         subprocess.run(["bash", str(TASK / "solution" / "solve.sh")], env=env, check=True, capture_output=True)
+    if variant in MEMO_GUARD_VARIANTS:      # the guard of attempts/replay_memo in front of the canonical fix
+        shutil.copyfile(TASK / "solution" / "attempts" / "replay_memo" / "docshare" / "app.py",
+                        app / "docshare" / "app.py")
     for rel, old, new, extra in ABLATIONS.get(variant, []):
         p = app / "docshare" / rel
         text = p.read_text()

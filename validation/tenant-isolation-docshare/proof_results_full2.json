@@ -1,0 +1,170 @@
+{
+ "slug": "tenant-isolation-docshare",
+ "tag": "full2",
+ "package": "tasks/tenant-isolation-docshare",
+ "rows": [
+  {
+   "variant": "canonical",
+   "args": "-a oracle -k 10",
+   "expected": 1,
+   "rewards": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "exceptions": [],
+   "trials": 10,
+   "pass": true,
+   "job": "jobs/tenant-isolation-docshare/tenant-isolation-docshare-canonical-full2",
+   "started": "2026-11-03 03:36:31",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "alt",
+   "args": "-a oracle --ae SOLUTION=alt",
+   "expected": 1,
+   "rewards": [
+    1.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/tenant-isolation-docshare/tenant-isolation-docshare-alt-full2",
+   "started": "2026-11-03 03:39:00",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "nop",
+   "args": "-a nop",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/tenant-isolation-docshare/tenant-isolation-docshare-nop-full2",
+   "started": "2026-11-03 03:39:33",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "deny_most",
+   "args": "-a oracle --ae SOLUTION=deny_most",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/tenant-isolation-docshare/tenant-isolation-docshare-deny_most-full2",
+   "started": "2026-11-03 03:40:04",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "drop_org_switching",
+   "args": "-a oracle --ae SOLUTION=drop_org_switching",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/tenant-isolation-docshare/tenant-isolation-docshare-drop_org_switching-full2",
+   "started": "2026-11-03 03:40:36",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "hardcode_visible_orgs",
+   "args": "-a oracle --ae SOLUTION=hardcode_visible_orgs",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/tenant-isolation-docshare/tenant-isolation-docshare-hardcode_visible_orgs-full2",
+   "started": "2026-11-03 03:41:03",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "membership_plus_get",
+   "args": "-a oracle --ae SOLUTION=membership_plus_get",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/tenant-isolation-docshare/tenant-isolation-docshare-membership_plus_get-full2",
+   "started": "2026-11-03 03:41:39",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "patch_get_only",
+   "args": "-a oracle --ae SOLUTION=patch_get_only",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/tenant-isolation-docshare/tenant-isolation-docshare-patch_get_only-full2",
+   "started": "2026-11-03 03:42:14",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "phase_gate",
+   "args": "-a oracle --ae SOLUTION=phase_gate",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/tenant-isolation-docshare/tenant-isolation-docshare-phase_gate-full2",
+   "started": "2026-11-03 03:42:47",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "replay_memo",
+   "args": "-a oracle --ae SOLUTION=replay_memo",
+   "expected": 0,
+   "rewards": [
+    0.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/tenant-isolation-docshare/tenant-isolation-docshare-replay_memo-full2",
+   "started": "2026-11-03 03:43:22",
+   "harbor_rc": 0
+  },
+  {
+   "variant": "force-build",
+   "args": "-a oracle --force-build",
+   "expected": 1,
+   "rewards": [
+    1.0
+   ],
+   "exceptions": [],
+   "trials": 1,
+   "pass": true,
+   "job": "jobs/tenant-isolation-docshare/tenant-isolation-docshare-force-build-full2",
+   "started": "2026-11-03 03:43:58",
+   "harbor_rc": 0
+  }
+ ]
+}

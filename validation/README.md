@@ -1,6 +1,17 @@
 # Validation results
 
-Last updated: 2026-10-31, 20:45 MST (Mac clock; last written at 20:51 MST by the file's time, this note added at 21:58
+Last updated: 2026-11-03, 06:37 MST (Mac clock): in the `tenant-isolation-docshare` row, `replay_memo` is described by
+what it remembers, the writes it refused in the grader's first run, since `phase_gate` also keeps state between the
+grader's runs.
+Before that, 2026-11-03, 05:43 MST (Mac clock): wording fixed after an independent check (no result changed): for
+`tenant-isolation-docshare`, the fresh-clone run `clone2` is said to be graded by the earlier grader, and the note on
+agent traces says where that task's trials are; a clause of 2026-11-03 that called its proof pending, written before the
+proof ran and never published, is removed from this head.
+Before that, 2026-11-03, 04:30 MST (Mac clock): `tenant-isolation-docshare` shows run `full2`, the Daytona proof of
+its grader as fixed on 2026-11-03 (all as expected; seven attempts, the new `replay_memo` among them), and its
+earlier grader's evidence in `tenant-isolation-docshare/first-version/` (the results table, the fresh-clone run, the
+agent trials and the folder notes).
+Before that, 2026-10-31, 20:45 MST (Mac clock; last written at 20:51 MST by the file's time, this note added at 21:58
 MST): `feature-leakage-churn` as task v3 (run `v3` and its Claude Code trials), its earlier versions in
 `feature-leakage-churn/second-version/` (task v2) and `first-version/`, and prose lines wrapped. Before that,
 2026-10-31, 14:13 MST (Mac clock): the revised `ab-test-reanalysis` (run `rev1` and its agent trials), the fresh-clone
@@ -15,10 +26,15 @@ network_mode = "no-network"`), the matrix ran a copy of the task without that on
 `tools/proof_matrix.py --without-agent-network-line`, because the authors' Daytona account refuses the network switch
 that the line needs (repository README, "The agent network line" under "Setup").
 
+For `tenant-isolation-docshare`, run `full2` graded the task after its grader fix of 2026-11-03 (`tests/grade.py`
+holds back a seeded third of each class of refused write from the grader's first run and sends those writes only in
+its second; the attempt `replay_memo` was added); the earlier grader's evidence is in
+`tenant-isolation-docshare/first-version/`.
+
 | Task | Final run | Canonical | Alternative solutions | nop | Wrong or shortcut attempts | force-build | Overall | Details |
 |---|---|---|---|---|---|---|---|---|
 | `orders-export-missing-rows` | `full1` | 10 of 10 = 1.0 | `alt` 1.0 | 0.0 | 12 of 12 = 0.0 | 1.0 | all as expected | [`orders-export-missing-rows/`](orders-export-missing-rows/README.md) |
-| `tenant-isolation-docshare` | `full1` | 10 of 10 = 1.0 | `alt` 1.0 | 0.0 | 6 of 6 = 0.0 | 1.0 | all as expected | [`tenant-isolation-docshare/`](tenant-isolation-docshare/README.md) |
+| `tenant-isolation-docshare` | `full2` (after the grader fix of 2026-11-03) | 10 of 10 = 1.0 | `alt` 1.0 | 0.0 | 7 of 7 = 0.0 (one of them, `replay_memo`, a service that remembers the writes it refused in the grader's first run) | 1.0 | all as expected | [`tenant-isolation-docshare/`](tenant-isolation-docshare/README.md) |
 | `ab-test-reanalysis` | `rev1` (the revised task, on a copy without its agent network line) | 10 of 10 = 1.0 | `alt_recount` 1.0, `alt_time` 1.0 | 0.0 | 10 of 10 = 0.0 | 1.0 | all as expected | [`ab-test-reanalysis/`](ab-test-reanalysis/README.md) |
 | `et0-station-ingest` | `full1` | 10 of 10 = 1.0 | `alt` 1.0 | 0.0 | 9 of 9 = 0.0 | 1.0 | all as expected | [`et0-station-ingest/`](et0-station-ingest/README.md) |
 | `feature-leakage-churn` | `v3` (task v3, the second revision, on a copy without its agent network line) | 5 of 5 = 1.0 | `alt` 1.0 | 0.0 | 23 of 23 = 0.0 (one of them a probe that keeps state between the grader's runs) | 1.0 | all as expected | [`feature-leakage-churn/`](feature-leakage-churn/README.md) |
@@ -31,9 +47,10 @@ once (`--only canonical,nop --oracle-k 1 --n 1`, run `clone2`), one trial at a t
 clock, MST). Every task gave canonical [1.0] and nop [0.0], ALL AS EXPECTED, and each job's task digest equals the one
 in the proof traces shipped in that commit. Harbor waited up to three times its default image-build time
 (`--environment-build-timeout-multiplier 3`). Only results files are shipped from this run (`PROOF_RESULTS_clone2.md`
-and `proof_results_clone2.json`; no traces, no run log): in the folders of `orders-export-missing-rows`,
-`tenant-isolation-docshare` and `et0-station-ingest`, which are unchanged since, and in
-`ab-test-reanalysis/first-version/` and `feature-leakage-churn/first-version/`.
+and `proof_results_clone2.json`; no traces, no run log): in the folders of `orders-export-missing-rows` and
+`et0-station-ingest`, which are unchanged since, and in `tenant-isolation-docshare/first-version/` (its grader was
+fixed on 2026-11-03, so run `clone2` was graded by the earlier grader), `ab-test-reanalysis/first-version/` and
+`feature-leakage-churn/first-version/`.
 
 ## Agent trials
 
@@ -43,7 +60,7 @@ what the agent changed and its trace folder.
 | Task | Package | Agent and model | Date (Mac clock) | Passed | Details |
 |---|---|---|---|---|---|
 | `orders-export-missing-rows` | as published in `495c9f5` (unchanged since) | `terminus-2`, `openai/gpt-oss-120b` | 2026-10-30 | 3 of 3 | [README](orders-export-missing-rows/README.md#agent-trials) |
-| `tenant-isolation-docshare` | as published in `495c9f5` (unchanged since) | `terminus-2`, `openai/gpt-oss-120b` | 2026-10-30 | 0 of 3 | [README](tenant-isolation-docshare/README.md#agent-trials) |
+| `tenant-isolation-docshare` | as published in `495c9f5`, graded by its grader before the fix of 2026-11-03 (traces in `first-version/`) | `terminus-2`, `openai/gpt-oss-120b` | 2026-10-30 | 0 of 3 | [README](tenant-isolation-docshare/README.md#agent-trials) |
 | `et0-station-ingest` | as published in `495c9f5` (unchanged since) | `terminus-2`, `openai/gpt-oss-120b` | 2026-10-29 (the pilot) and 2026-10-30 | 0 of 3 | [README](et0-station-ingest/README.md#agent-trials) |
 | `ab-test-reanalysis` | the first version, as published in `495c9f5` | `terminus-2`, `openai/gpt-oss-120b` | 2026-10-30 | 1 of 3 | [README](ab-test-reanalysis/README.md), section "First version" |
 | `ab-test-reanalysis` | the revised task, on a copy without its agent network line | `claude-code` (Claude Code 2.1.316), `claude-opus-5-5`, web search off | 2026-10-31 | 3 of 3 | [README](ab-test-reanalysis/README.md#agent-trials) |
@@ -73,16 +90,20 @@ what the agent changed and its trace folder.
   `config.json`, `trial.log`, `agent/` (`oracle.txt`; nop trials have no `agent/`), `verifier/` (reward and full
   verifier log), `artifacts/manifest.json`, and the job's `result.json` and `lock.json` as `job_result.json` and
   `job_lock.json`. The downloaded copy of `/app` is not shipped.
-- Agent traces, outside the matrices: `traces/agent-pilot/` (et0) and `traces/agent-r3/<trial>/` (et0, docshare and
-  orders; for the first versions of ab-test and churn in `<slug>/first-version/traces/agent-r3/`), the `terminus-2`
-  trials, with the same files except `agent/oracle.txt`, plus the agent's `trajectory.json`, `terminus_2.pane` and
-  `recording.cast` in `agent/`; `traces/agent-claude-code/<trial>/` (ab-test and churn task v3; churn task v2's in
+- Agent traces, outside the matrices: `traces/agent-pilot/` (et0) and `traces/agent-r3/<trial>/` (et0 and orders; the
+  trials of docshare, graded by its earlier grader, and those of the first versions of ab-test and churn are in
+  `<slug>/first-version/traces/agent-r3/`), the `terminus-2` trials, with the same files except `agent/oracle.txt`,
+  plus the agent's `trajectory.json`, `terminus_2.pane` and `recording.cast` in `agent/`;
+  `traces/agent-claude-code/<trial>/` (ab-test and churn task v3; churn task v2's in
   `feature-leakage-churn/second-version/traces/agent-claude-code/`), the Claude Code trials, with the same files
   except `agent/oracle.txt`, plus `trajectory.json` and `claude-code.txt` in `agent/`. Claude Code's raw session files
   (`agent/sessions/`, which hold its full requests, its system prompt among them) are not shipped.
 - `REDACTIONS.md` in each `traces/` folder: what was replaced in the copies (machine-specific paths, by placeholders
   such as `<submission>`, and in the `terminus-2` traces the model service's URL, by `<model-endpoint>`); no reward,
   count or timing was changed.
+- `tenant-isolation-docshare/first-version/`: the evidence of that task's grader before its fix of 2026-11-03 (its
+  proof run `full1`, the traces of `full1`, its fresh-clone results and its three agent trials of 2026-10-30). In the
+  task package the fix changed only `tests/grade.py` and added the attempt `replay_memo`.
 - `ab-test-reanalysis/first-version/`: the evidence of that task's first version (its proof runs `full1` and `full2`,
   the traces of `full2`, its fresh-clone results and its three agent trials of 2026-10-30), as described in its README.
 - `feature-leakage-churn/second-version/`: the evidence of task v2, that task's first revision (its proof run `rev1`,
@@ -98,11 +119,13 @@ what the agent changed and its trace folder.
   (`tools/BASE_IMAGE_DIGEST`). The sandboxes were linux/amd64; this is inferred from the Daytona backend, not read from
   the traces. No run used a local Docker engine.
 - Superseded runs kept as dated records: `et0-station-ingest` run `smoke` (a pre-check; no traces are shipped from
-  it); the first version of `ab-test-reanalysis` in `ab-test-reanalysis/first-version/` (its run `full1` predates the
-  rebuild of its hidden set `h_twin`; `full2` was its final run); and the earlier versions of `feature-leakage-churn`:
-  task v2's run `rev1` in `feature-leakage-churn/second-version/`, and the first version's runs `full1` and `full1b`
-  in `feature-leakage-churn/first-version/` (one `full1` canonical trial was lost to a DNS failure on the Mac;
-  `full1b` re-ran the ten canonical trials).
+  it); `tenant-isolation-docshare` run `full1`, which proved its grader before the fix of 2026-11-03, in
+  `tenant-isolation-docshare/first-version/`; the first version of `ab-test-reanalysis` in
+  `ab-test-reanalysis/first-version/` (its run `full1` predates the rebuild of its hidden set `h_twin`; `full2` was its
+  final run); and the earlier versions of `feature-leakage-churn`: task v2's run `rev1` in
+  `feature-leakage-churn/second-version/`, and the first version's runs `full1` and `full1b` in
+  `feature-leakage-churn/first-version/` (one `full1` canonical trial was lost to a DNS failure on the Mac; `full1b`
+  re-ran the ten canonical trials).
 - The matrices use Harbor's `oracle` and `nop` agents only, so their results show that the verifiers accept the
   reference and alternative solutions and reject the nop and the listed attempts; how agents fare is in the agent
   trials.

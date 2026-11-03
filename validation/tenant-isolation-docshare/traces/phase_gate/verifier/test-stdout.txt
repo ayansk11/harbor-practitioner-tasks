@@ -1,38 +1,60 @@
 [test.sh] lock ok: /logs/verifier 0:0 755, /logs 0:0 755, owner before 0:0; protected_symlinks=1 protected_hardlinks=1 protected_regular=2; setid files left: 0
 [kit] submission copied to /work/sub; removed 0 auto-run entries; skipped 0 special files
-[kit] 2012 refusal cases, 402 permitted reads
-[kit] staged /tests/original for uid 1001 at /work/w17c178fb
-[kit] staged /tests/hidden/seed.db for uid 1001 at /work/w1050c572
-[kit] service on 127.0.0.1:51633 answered after 0.20s
-[kit] service from /work/w17c178fb on port 51633: up in 0.21s
-[kit] phase original: 356 checks, 0 failed, 0.62s; failed by check: {}
-[kit] staged /tests/hidden/seed.db for uid 1001 at /work/wacc937bc
-[kit] service on 127.0.0.1:56239 answered after 1.40s
-[kit] service from /work/sub on port 56239: up in 1.41s
+[kit] 2012 refusal cases, 402 permitted reads; 264 refused writes held back for run 2
+[kit] staged /tests/original for uid 1001 at /work/w4d1065a8
+[kit] staged /tests/hidden/seed.db for uid 1001 at /work/w8addae77
+[kit] service on 127.0.0.1:59743 answered after 0.20s
+[kit] service from /work/w4d1065a8 on port 59743: up in 0.21s
+[kit] phase original: 356 checks, 0 failed, 0.66s; failed by check: {}
+[kit] staged /tests/hidden/seed.db for uid 1001 at /work/wf6821621
+[kit] service on 127.0.0.1:54815 answered after 0.20s
+[kit] service from /work/sub on port 54815: up in 0.21s
 [kit] network isolation: ON (private namespace, loopback only); probe rc=0 out=b'NETNS-OK' err=b''
-[kit] ran ['/usr/local/bin/python3', '-I', '-c', "import sqlite3, sys, urllib.parse\nc = sqlite3.connect('file:' + urllib.parse.quote(sys.argv[1]) + '?mode=rw', uri=True)\nr = c.execute('PRAGMA wal_checkpoint(TRUNCATE)').fetchone()\nc.close()\nsys.exit(0 if r[0] == 0 else 3)\n"]... rc=0 timed_out=False 0.038s net=private strays_killed=0
-[kit] phase run1: 2475 checks, 0 failed, 4.52s; failed by check: {}
-[kit] staged /tests/hidden/seed.db for uid 1001 at /work/w8552e556
-[kit] service on 127.0.0.1:51149 answered after 0.20s
-[kit] service from /work/sub on port 51149: up in 0.21s
-[kit] write list: 45 requests, with 351 refused requests mixed in; 0 steps skipped
-[kit] phase run2: 1198 checks, 50 failed, 1.67s; failed by check: {"noise_status_delete": 11, "noise_status_rename": 8, "noise_status_revoke": 17, "noise_status_share": 6, "write_create_link": 1, "write_link_works": 5, "write_outsider_revoke": 2}
+[kit] ran ['/usr/local/bin/python3', '-I', '-c', "import sqlite3, sys, urllib.parse\nc = sqlite3.connect('file:' + urllib.parse.quote(sys.argv[1]) + '?mode=rw', uri=True)\nr = c.execute('PRAGMA wal_checkpoint(TRUNCATE)').fetchone()\nc.close()\nsys.exit(0 if r[0] == 0 else 3)\n"]... rc=0 timed_out=False 0.036s net=private strays_killed=0
+[kit] phase run1: 2211 checks, 0 failed, 3.16s; failed by check: {}
+[kit] staged /tests/hidden/seed.db for uid 1001 at /work/wf82bdb6a
+[kit] service on 127.0.0.1:42659 answered after 0.20s
+[kit] service from /work/sub on port 42659: up in 0.21s
+[kit] write list: 43 requests, with 337 refused requests and 253 held-back refused writes mixed in; 0 steps skipped
+[kit] held back from run 1: 264 refused writes; sent in run 2: 264 (253 in the write list, 11 after it)
+[kit] held-back writes read back: 41 files and 4 seed links; 14 files they act on were used by the write list and not read back
+[kit] phase run2: 1491 checks, 139 failed, 2.00s; failed by check: {"held_link": 4, "held_status_delete": 19, "held_status_rename": 15, "held_status_revoke": 20, "held_status_share": 13, "held_sweep": 32, "noise_status_delete": 6, "noise_status_rename": 6, "noise_status_revoke": 8, "noise_status_share": 6, "write_create_link": 1, "write_delete": 1, "write_link_works": 5, "write_outsider_revoke": 2, "write_rename": 1}
+[kit]   FAIL run2 [held_status_delete]: DELETE /api/files/ff553146-0ea3-460c-b263-0ea26f92c632 as victor@support.docshare.example X-Org-Id=Ilse Varga Architects: got 204, expected a refusal (4xx)
+[kit]   FAIL run2 [held_status_revoke]: DELETE /api/shares/wueJiGhgOZR-oIKbfBWvirTP as victor@support.docshare.example X-Org-Id=Ilse Varga Architects: got 204, expected a refusal (4xx)
+[kit]   FAIL run2 [held_status_share]: POST /api/files/633009bf-cd90-4565-a03e-ff980d8bcf3f/shares as uma@support.docshare.example X-Org-Id=Ilse Varga Architects: got 201, expected a refusal (4xx)
+[kit]   FAIL run2 [held_status_delete]: DELETE /api/files/f1d04d40-4867-42bd-9e01-61859e851d5a as tomas@eriksen-it.example X-Org-Id=Sable Point Credit Union: got 204, expected a refusal (4xx)
+[kit]   FAIL run2 [held_status_share]: POST /api/files/77073b0e-645d-4044-9d1f-06f14e843dad/shares as ines@corvane.example X-Org-Id=Corvane Freight: got 201, expected a refusal (4xx)
+[kit]   FAIL run2 [held_status_revoke]: DELETE /api/shares/LAb0B-LT7uZRlv-Qdezc0si3 as uma@support.docshare.example X-Org-Id=Sable Point Credit Union: got 204, expected a refusal (4xx)
 [kit]   FAIL run2 [noise_status_share]: POST /api/files/6bbc99a4-9945-47d1-b9b8-373447dbc6ee/shares as priya@sablepoint.example: got 201, expected a refusal (4xx)
+[kit]   FAIL run2 [held_status_revoke]: DELETE /api/shares/bBsOUDnjiEYq6jOgyL6Yjcr2 as uma@support.docshare.example: got 204, expected a refusal (4xx)
+[kit]   FAIL run2 [held_status_delete]: DELETE /api/files/aa4f05f5-9234-4dc5-b975-f7f0af77cde4 as tomas@eriksen-it.example X-Org-Id=Northpine Dental Group: got 204, expected a refusal (4xx)
+[kit]   FAIL run2 [held_status_rename]: PATCH /api/files/2b530ddf-4a6d-4df6-9db3-e308d6ca10de as rosa@lindgren-advisory.example: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [held_status_rename]: PATCH /api/files/057a909d-246c-44b2-ae98-1f8f1d5eb871 as priya@sablepoint.example X-Org-Id=Sable Point Credit Union: got 200, expected a refusal (4xx)
 [kit]   FAIL run2 [noise_status_rename]: PATCH /api/files/5e96d434-2a48-4043-a622-14e99437fa3d as tomas@eriksen-it.example X-Org-Id=Northpine Dental Group: got 200, expected a refusal (4xx)
-[kit]   FAIL run2 [noise_status_revoke]: DELETE /api/shares/xDUvB0qxxDABLGuUSDnFbx9V as uma@support.docshare.example X-Org-Id=Corvane Freight: got 204, expected a refusal (4xx)
+[kit]   FAIL run2 [held_status_rename]: PATCH /api/files/5e96d434-2a48-4043-a622-14e99437fa3d as tomas@eriksen-it.example: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [held_status_share]: POST /api/files/dafc9295-e81c-4248-bcb0-f480044d2a47/shares as uma@support.docshare.example X-Org-Id=Corvane Freight: got 201, expected a refusal (4xx)
+[kit]   FAIL run2 [write_rename]: rename (second-org): file reads back as {'created_at': '2026-08-15T23:42:00Z', 'folder_id': 'ea699759-5bc5-4e0a-9d51-91ea9543fc0b', 'id': '5e96d434-2a48-4043-a6
 [kit]   FAIL run2 [noise_status_rename]: PATCH /api/files/d42f27af-be43-402a-9f30-540392fac785 as uma@support.docshare.example X-Org-Id=Corvane Freight: got 200, expected a refusal (4xx)
-[kit]   FAIL run2 [noise_status_delete]: DELETE /api/files/5e96d434-2a48-4043-a622-14e99437fa3d as rosa@lindgren-advisory.example: got 204, expected a refusal (4xx)
-[kit]   FAIL run2 [noise_status_rename]: PATCH /api/files/ff553146-0ea3-460c-b263-0ea26f92c632 as quinn@sablepoint.example X-Org-Id=Sable Point Credit Union: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [noise_status_revoke]: DELETE /api/shares/xDUvB0qxxDABLGuUSDnFbx9V as uma@support.docshare.example X-Org-Id=Corvane Freight: got 204, expected a refusal (4xx)
 [kit]   FAIL run2 [noise_status_revoke]: DELETE /api/shares/ycVYVat5OaYT2IOrtO-zEw67 as uma@support.docshare.example X-Org-Id=Ilse Varga Architects: got 204, expected a refusal (4xx)
+[kit]   FAIL run2 [noise_status_delete]: DELETE /api/files/5e96d434-2a48-4043-a622-14e99437fa3d as rosa@lindgren-advisory.example: got 204, expected a refusal (4xx)
 [kit]   FAIL run2 [noise_status_delete]: DELETE /api/files/872f2cca-df0f-4657-ae4d-b9e4d88f4af6 as uma@support.docshare.example: got 204, expected a refusal (4xx)
-[kit]   FAIL run2 [noise_status_share]: POST /api/files/e7adfd78-6109-4db2-b3b4-0c4b2a895a9b/shares as quinn@sablepoint.example: got 201, expected a refusal (4xx)
-[kit]   FAIL run2 [noise_status_delete]: DELETE /api/files/3806fd78-4d6b-41f9-97ca-a0dd3e015a8f as quinn@sablepoint.example X-Org-Id=Sable Point Credit Union: got 204, expected a refusal (4xx)
-[kit]   FAIL run2 [write_outsider_revoke]: outsider revoke (member): DELETE /api/shares/FfS41YrlMu4KG0w2GJvK35jr as hugo@corvane.example got 204 b'', expected a 4xx
+[kit]   FAIL run2 [noise_status_delete]: DELETE /api/files/cc75967e-7b8a-4e11-af27-4cb7f61dff2c as rosa@lindgren-advisory.example X-Org-Id=Corvane Freight: got 204, expected a refusal (4xx)
 [kit]   FAIL run2 [noise_status_share]: POST /api/files/ebafec01-3e45-4203-b7fa-245abea27f91/shares as tomas@eriksen-it.example: got 201, expected a refusal (4xx)
-[kit]   FAIL run2 [write_link_works]: link after a refused revoke (member): anonymous GET /s/<token> got 404, expected the file's bytes
+[kit]   FAIL run2 [write_outsider_revoke]: outsider revoke (member): DELETE /api/shares/jW2N9_xulb5RAg8QcakzFyAw as hugo@corvane.example got 204 b'', expected a 4xx
+[kit]   FAIL run2 [noise_status_rename]: PATCH /api/files/2b530ddf-4a6d-4df6-9db3-e308d6ca10de as victor@support.docshare.example X-Org-Id=Sable Point Credit Union: got 200, expected a refusal (4xx)
 [kit]   FAIL run2 [noise_status_revoke]: DELETE /api/shares/Lhx8H2Y0025VujmZKs6iYzGP as rosa@lindgren-advisory.example X-Org-Id=Ilse Varga Architects: got 204, expected a refusal (4xx)
-[kit]   FAIL run2 [write_outsider_revoke]: outsider revoke (second-org): DELETE /api/shares/kJp_SCE4MhJ4FqvbysuB3JQq as uma@support.docshare.example X-Org-Id=Ilse Varga Architects got 204 b'', expected a 4xx
+[kit]   FAIL run2 [write_link_works]: link after a refused revoke (member): anonymous GET /s/<token> got 404, expected the file's bytes
+[kit]   FAIL run2 [noise_status_share]: POST /api/files/58f54bd8-df5b-475f-be6c-1fabe6e2c7d0/shares as victor@support.docshare.example X-Org-Id=Northpine Dental Group: got 201, expected a refusal (4xx)
+[kit]   FAIL run2 [write_outsider_revoke]: outsider revoke (second-org): DELETE /api/shares/UH3DwG4GaRsHF1fBrn0YtmTy as uma@support.docshare.example X-Org-Id=Ilse Varga Architects got 204 b'', expected a 4xx
 [kit]   FAIL run2 [write_link_works]: link after a refused revoke (second-org): anonymous GET /s/<token> got 404, expected the file's bytes
 [kit]   FAIL run2 [write_create_link]: create link (second-org): POST /api/files/aa4f05f5-9234-4dc5-b975-f7f0af77cde4/shares as tomas@eriksen-it.example X-Org-Id=Sable Point Credit Union got 404 b'{"error":"not_found"}\n'
 [kit]   FAIL run2 [write_link_works]: seed link (second-org): anonymous GET /s/<token> got 404, expected the file's bytes
-[kit] reward=0.0 (killed 0 runner processes) metrics={'reward': 0.0, 'run1_checks': 2475, 'run1_failed': 0, 'run2_checks': 1198, 'run2_failed': 50, 'leaking_refusals': 0, 'grading_seconds': 6.84, 'run2_fail_noise_status_share': 6, 'run2_fail_noise_status_rename': 8, 'run2_fail_noise_status_revoke': 17, 'run2_fail_noise_status_delete': 11, 'run2_fail_write_outsider_revoke': 2, 'run2_fail_write_link_works': 5, 'run2_fail_write_create_link': 1}
+[kit]   FAIL run2 [write_delete]: delete (org_admin): DELETE /api/files/781868a0-7376-4cc5-a179-4d7c74907191 as kiri@ilsevarga.example got 404 b'{"error":"not_found"}\n'
+[kit]   FAIL run2 [held_sweep]: after the refused requests, data-retention-policy-fa63.txt reads as 200 b'{"created_at":"2026-05-04T16:22:00Z","folder_id":"4781fdc8-078e-42b4-a154-ba1401'
+[kit]   FAIL run2 [held_sweep]: after the refused requests, settlement-draft-9f38.md reads as 404 b'{"error":"not_found"}\n'
+[kit]   FAIL run2 [held_sweep]: after the refused requests, procurement-request-6b20.csv reads as 200 b'{"created_at":"2026-07-26T11:35:00Z","folder_id":"fbe38fc8-d1ea-4253-b498-4c1cc6'
+[kit]   FAIL run2 [held_link]: after the held-back refused writes, the seed link of training-records-d1ae.md answers 404
+[kit]   FAIL run2 [held_link]: after the held-back refused writes, the seed link of patient-intake-checklist-4215.csv answers 404
+[kit]   FAIL run2 [held_link]: after the held-back refused writes, the seed link of board-minutes-c0cf.txt answers 404
+[kit] reward=0.0 (killed 0 runner processes) metrics={'reward': 0.0, 'run1_checks': 2211, 'run1_failed': 0, 'run2_checks': 1491, 'run2_failed': 139, 'leaking_refusals': 0, 'held_back': 264, 'held_back_sent': 264, 'grading_seconds': 5.85, 'run2_fail_held_status_delete': 19, 'run2_fail_held_status_revoke': 20, 'run2_fail_held_status_share': 13, 'run2_fail_noise_status_share': 6, 'run2_fail_held_status_rename': 15, 'run2_fail_noise_status_rename': 6, 'run2_fail_write_rename': 1, 'run2_fail_noise_status_revoke': 8, 'run2_fail_noise_status_delete': 6, 'run2_fail_write_outsider_revoke': 2, 'run2_fail_write_link_works': 5, 'run2_fail_write_create_link': 1, 'run2_fail_write_delete': 1, 'run2_fail_held_sweep': 32, 'run2_fail_held_link': 4}

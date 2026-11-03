@@ -6,28 +6,56 @@ G1 to G30), the Daytona proof results and the known limitations. Paths are relat
 `submission/` in a command is that root as it was named on the authoring Mac. Short names such as `tests/grade.py`
 are inside the task folder `tasks/tenant-isolation-docshare/`.
 
-Last updated: 2026-11-02 (Mac clock, MST): section 9 corrects the claim that mixing the grader's two runs defeats
+Last updated: 2026-11-03, 06:37 MST (Mac clock): fixes after a pre-commit check (no count, result or verdict changed):
+section 7's `replay_memo` row says why it has no held-back rename failure (its rename is carried out, then answered 404,
+so the held sweep counts it) and that its delete checks the login only, where its `ABOUT.md` says role-only; six prose
+lines longer than 120 columns are rewrapped, no word changed.
+Before that, 2026-11-03, 05:43 MST (Mac clock): wording fixed after an independent check (no verdict changed): the
+grader before the fix of 2026-11-03 is called the earlier grader, as in the READMEs, and the runs and trials it graded
+are said to be graded by it; G30 and the status line no longer depend on when they are read; the review that built the
+nine services of section 9 is called the adversarial review; two inferences of section 9 carry the INFERENCE label; the
+file-map row of `old_grader_check.txt` names the review fix of 2026-10-28; section 6's service-start cells of canonical
+(0.20-0.21 s) and alt (0.21 s), which were swapped, are corrected; section 10.1 ends run full2 when its three files were
+written (03:44:49 MST), as this task's validation README does, and gives the force-build job's end beside it; the third
+clause of this head now says that the Daytona proof followed (late edits to 05:51 MST by the file's time).
+Before that, 2026-11-03, 04:37 MST (Mac clock; last written at 04:47 MST by the file's time): the Daytona proof of the
+current grader is recorded. Section 10 now holds run full2 of 2026-11-03 (section 10.1: ALL AS EXPECTED in 20 trials,
+each trial compared field by field with the local matrix of section 7) before run full1 of 2026-10-28 (section 10.2),
+whose files moved to `validation/tenant-isolation-docshare/first-version/`; the gate record (section 8) scores its
+run-dependent items, G12 among them, from run full2; section 9 keeps the replay gap, its fix, the adversarial review's
+nine services and what is left as a dated record; sections 5 and 7 point to the proof, and the status line below is
+brought up to date.
+Before that, 2026-11-03 (Mac clock, MST): the grader is changed to close the gap that section 9 recorded on
+2026-11-02. `tests/grade.py` now holds back a seeded third of each class of refused write from run 1, sends those
+writes only in run 2, mixed into the write list, and then reads back what they act on (sections 4 and 5); the attempt
+`replay_memo` is added (sections 2 and 7); sections 6 and 7 hold a new local run, section 8 a new gate record, and
+sections 9 and 10 say what is left and what the Daytona proof covers. Checked locally only at that point (KIT_LOCAL on
+the Mac); the Daytona proof followed the same day (section 10.1, clause above).
+Before that, 2026-11-02 (Mac clock, MST): section 9 corrects the claim that mixing the grader's two runs defeats
 services that tell the runs apart (a service that keeps state between the runs passes; a verification probe of
 2026-11-02), sections 4 and 5 point to that gap, the G12 record and the result line (section 8) score it FAIL, the
 timings limitation now points to section 10, section 10 says what `verifier.timeout_sec` covers (Harbor's source),
 and six multiplication signs are now ASCII `x`.
 Before that, 2026-10-29 (Mac clock, MST): wording edited for outside readers and pointers fixed (no measurement,
-verdict or limitation changed). Before that, also 2026-10-29: section 10 adds the Daytona proof results of 2026-10-28 and the gate record
-(section 8) is re-scored from them; the Daytona notes of sections 5, 7 and 9 predate that run. Before that: 2026-10-28
-19:36 MST. Built from our design brief for this task and the verifier rules shared by all five tasks, both written and
-approved before the build and not in this repository (the kit's own rules are in `base/verifier_kit/README.md`);
-section 5 lists where the build departs from them. Labels: FACT (a file, a command output),
-INFERENCE (reasoned; basis named), UNVERIFIED.
-Status: built, checked by an independent review, fixed after that review (section 5, "Mixed runs") and checked locally
-(KIT_LOCAL on the Mac). Proven on Daytona in run full1 of 2026-10-28 (section 10); the "(run)" gate items are scored
-from that run.
+verdict or limitation changed). Before that, also 2026-10-29: section 10 adds the Daytona proof results of 2026-10-28
+and the gate record (section 8) is re-scored from them; the Daytona notes of sections 5, 7 and 9 predate that run.
+Before that: 2026-10-28 19:36 MST. Built from our design brief for this task and the verifier rules shared by all five
+tasks, both written and approved before the build and not in this repository (the kit's own rules are in
+`base/verifier_kit/README.md`); section 5 lists where the build departs from them. Labels: FACT (a file, a command
+output), INFERENCE (reasoned; basis named), UNVERIFIED.
+Status: built, checked by an independent review, fixed after that review (section 5, "Mixed runs"), fixed again after
+a verification of 2026-11-02 (section 5, "Held-back refused writes"), checked locally (KIT_LOCAL on the Mac) and
+proven on Daytona: run full2 of 2026-11-03 proved the current grader (section 10.1), and run full1 of 2026-10-28 the
+grader as it was before that second fix (section 10.2). The gate record (section 8) passes; G30 (delivery) is the
+commit and push of this fix, on the authors' word.
 
 ## 1. The task in one paragraph
 A security researcher reports that a member of one organisation can download another organisation's file by changing
-the id in `GET /api/files/<id>/download`. The agent must fix the Flask service so it enforces `environment/app/docs/PERMISSIONS.md`
-on every endpoint, while three legitimate cross-tenant paths keep working: anonymous share links, org switching
-(`X-Org-Id`) for people in two organisations, and support staff's read-only access. Six flaws are planted; the report
-names only the first. The verifier starts the agent's service on a hidden database and sends about 3,700 requests.
+the id in `GET /api/files/<id>/download`. The agent must fix the Flask service so it enforces
+`environment/app/docs/PERMISSIONS.md` on every endpoint, while three legitimate cross-tenant paths keep working:
+anonymous share links, org switching (`X-Org-Id`) for people in two organisations, and support staff's read-only access.
+Six flaws are planted; the report names only the first. The verifier starts the agent's service on a hidden database and
+sends about 3,700 requests.
 
 ## 2. What was built (file map)
 | Path (from the repository root) | What it is |
@@ -50,14 +78,14 @@ names only the first. The verifier starts the agent's service on a hidden databa
 | `.../solution/solve.sh` | `SOLUTION` unset = canonical, `alt`, or an attempt name; `APP_DIR` for local use |
 | `.../solution/canonical/docshare/` | canonical fix: new `access.py` (one `can()` and `load_file()`), membership check in `auth.py`, every route uses it |
 | `.../solution/alt/docshare/` | second fix: no helper; every SQL query scoped by org and role; refusals are 403 instead of 404 |
-| `.../solution/attempts/<name>/` | the five design attempts plus `phase_gate` (added after the review), each with `ABOUT.md` |
+| `.../solution/attempts/<name>/` | the five design attempts plus `phase_gate` (added after the review) and `replay_memo` (added after the 2026-11-02 verification), each with `ABOUT.md` |
 | `authoring/tenant-isolation-docshare/build_data.py` | builds both databases, DEV_USERS.md, the report, `tests/original`, SHA256SUMS (fixed seeds) |
 | `authoring/.../matrix_from_permissions.py` | the second reader (section 3) |
 | `authoring/.../diff_matrices.py` | diffs the second reader against `tests/policy.py` on every cell |
 | `authoring/.../make_attempts.py` | writes `solution/attempts/` from the app and the canonical fix by exact substitution |
 | `authoring/.../local_check.py` | local proof matrix with local-only variants and repeat runs; writes `local_results.txt` |
 | `docs/tenant-isolation-docshare/local_results.txt` | the last full local run (FACT for section 7) |
-| `docs/tenant-isolation-docshare/old_grader_check.txt` | the review's cheats and gaps graded by the grader before the fix (all 1) |
+| `docs/tenant-isolation-docshare/old_grader_check.txt` | the review's cheats and gaps graded by the grader as it was before the review fix of 2026-10-28 (all 1) |
 
 Rebuild order: `build_data.py`, `make_attempts.py`, `python tools/sync_kit.py`, `local_check.py`, `tools/check_task.py`.
 
@@ -72,25 +100,28 @@ Rebuild order: `build_data.py`, `make_attempts.py`, `python tools/sync_kit.py`, 
 | 6 | `routes/files.py` | delete checks login only, not the org_admin role | no | delete refusals; DB diff; read-back sweep |
 
 Policy decisions written into PERMISSIONS.md (our reading where the design brief was silent; INFERENCE from the brief's
-list of roles and actions): members may read, download, thumb, list, export, rename and share; only org_admin deletes; support reads,
-downloads, thumbs, lists and exports anywhere and never writes; a request acts in one *active* organisation, so a user
-in two orgs must switch with `X-Org-Id` before touching the second org's files (stated in section 2 with an example);
-support may name any existing org, and naming one that does not exist refuses the request (this sentence was added
-after the quality-gate check, section 8, found it unstated).
+list of roles and actions): members may read, download, thumb, list, export, rename and share; only org_admin deletes;
+support reads, downloads, thumbs, lists and exports anywhere and never writes; a request acts in one *active*
+organisation, so a user in two orgs must switch with `X-Org-Id` before touching the second org's files (stated in
+section 2 with an example); support may name any existing org, and naming one that does not exist refuses the request
+(this sentence was added after the quality-gate check, section 8, found it unstated).
 
 **Second reader (FACT, `local_results.txt` line 7).** `matrix_from_permissions.py` was written from PERMISSIONS.md
 alone, before `policy.py`, in a different style: it parses the section 3 table at run time and codes the prose rules of
 sections 1, 2, 4 and 5. `diff_matrices.py` compares it with `policy.py` on every cell: 73,542 cells on the hidden
 database and 26,718 on the visible one (every context x action x target, plus 400 random export sets), 0
 disagreements. Mutation test: changing one table cell (member may delete) makes 305 cells disagree, so the second reader
-really reads the document. Limit (honest): both were written by the same author in the same build session, so the diff catches
-transcription errors, not a shared misreading. A second reader written independently, by another author, would make
-it independent.
+really reads the document. Limit (honest): both were written by the same author in the same build session, so the diff
+catches transcription errors, not a shared misreading. A second reader written independently, by another author, would
+make it independent.
 
 ## 4. The verifier
 `test.sh` (kit) runs `python3 -I /tests/grade.py` as root. grade.py (FACT for every count: `local_results.txt` and the
-canonical grading log, lines `2012 refusal cases, 402 permitted reads` and `write list: 50 requests, with 379 refused
-requests mixed in; 0 steps skipped`):
+canonical grading log of the local run of 2026-11-03, whose four count lines are `2012 refusal cases, 402 permitted
+reads; 264 refused writes held back for run 2`, `write list: 50 requests, with 379 refused requests and 264 held-back
+refused writes mixed in; 0 steps skipped`, `held back from run 1: 264 refused writes; sent in run 2: 264 (264 in the
+write list, 0 after it)` and `held-back writes read back: 41 files and 4 seed links; 14 files they act on were used
+by the write list and not read back`):
 1. Checks SHA256SUMS; `kit.prepare_submission()`; loads the hidden seed (root's own file, opened `immutable=1`);
    builds a deterministic case list (seed 20261028) from `policy.py`: 2,012 refused requests and 402 permitted reads.
    The refused list holds, per context (anonymous, bad token, and each of 14 users x {no header, each org, an unknown
@@ -99,20 +130,35 @@ requests mixed in; 0 steps skipped`):
    `[foreign, own]`, `[foreign]`, `[own, own, foreign]`, `[own, unknown]`), the list endpoints (including the 8
    support-without-`X-Org-Id` lists that must get `400`), foreign folders, `/api/me`, `/api/admin/orgs`, revoked and
    unknown share links. A refused rename asks for a name of the same form as a permitted one (`renamed-<8 hex>.md`).
+   Of the 1,219 refused reads and 793 refused writes, 264 writes are held back: run 1 never sends them, run 2 does
+   ("Held-back refused writes", below).
 2. **Reference.** Stages `tests/original` and a seed copy with `kit.stage_for_runner`, starts the untouched app as
    uid 1001 and records its answers (status, headers, body) to the 356 permitted reads that need one. This happens
    before any agent code runs, so agent code can never touch the reference.
 3. **Run 1** (fresh seed copy, agent's app from `/work/sub` via `python -m docshare.serve --db <path> --port <p>`):
-   the 1,219 refused reads and the 402 permitted reads shuffled together (seeded), then the 793 refused writes
-   (renames, link creations, revocations, deletes at the very end, so a wrongly allowed write cannot hide a later read
-   leak), then each of the 60 files is read back by a home member of its org (name unchanged), then the app is
-   stopped, uid 1001 folds the WAL into the database with our own `python3 -I -c` checkpoint script, root copies the
-   file into `kit.SCRATCH` and compares `files`, `shares`, `memberships`, `folders` (named columns, content as hex)
-   with the seed. 2,474 requests plus the database check.
-4. **Run 2** (another fresh copy): the 402 permitted reads shuffled with 400 refused reads, then the write list: 50
-   requests from permitted callers (7 of them must still get a 4xx: two bad names, two bad export bodies, three
-   revokes by an outsider or support), each preceded by 3 to 12 refused requests (a seeded count; 379 in all, reads and writes) drawn
-   from the rest of the refused list. 1,231 requests. The write list: renames by a member, an org_admin and, via
+   the 1,219 refused reads and the 402 permitted reads shuffled together (seeded), then the 529 refused writes that
+   are not held back (renames, link creations, revocations, deletes at the very end, so a wrongly allowed write cannot
+   hide a later read leak), then each of the 60 files is read back by a home member of its org (name unchanged), then
+   the app is stopped, uid 1001 folds the WAL into the database with our own `python3 -I -c` checkpoint script, root
+   copies the file into `kit.SCRATCH` and compares `files`, `shares`, `memberships`, `folders` (named columns, content
+   as hex) with the seed. 2,210 requests plus the database check: 2,211 checks. Request for request, this is the
+   earlier grader's run 1 without the 264 held-back writes, and run 2's read phase below is the earlier grader's
+   (FACT: measured on 2026-11-03 with a local service that logged every request it got, under both graders; not
+   shipped).
+4. **Run 2** (another fresh copy): the 402 permitted reads shuffled with 400 refused reads (no write among them), then
+   the write list: 50 requests from permitted callers (7 of them must still get a 4xx: two bad names, two bad export
+   bodies, three revokes by an outsider or support). Before each one comes a seeded batch, shuffled together: 3 to 12
+   refused requests that run 1 also sent (a seeded count; 379 in all, reads and writes, drawn from the rest of the
+   refused list) and, while they last, 4 to 8 of the 264 held-back refused writes (a seeded count, in a seeded order).
+   On the hidden seed all 264 go out within the write list (the first batch holds 13 requests, 7 of them held back);
+   any held-back write the list did not reach would be sent after it, and one never sent fails the check
+   `held_unsent`. Then the read-back of the held-back writes: each file that a held-back rename, delete or revoke acts
+   on (for a revoke, the file behind the token) is read once by a home member of its org (it must still be there,
+   name unchanged), and each of its seed links that works in the seed is fetched anonymously (it must answer 200 with
+   the file's bytes), unless the write list used that file: 41 files and 4 seed links. The other 14 files that
+   held-back writes act on are used by the write list, so there only the held-back writes' answers are checked. 1,540
+   requests: 402 permitted reads, 400 refused reads, 50 write-list requests, 379 refused requests and 264 held-back
+   writes before them, 41 file reads and 4 link fetches. The write list: renames by a member, an org_admin and, via
    `X-Org-Id`, by each of the two users in two orgs (response and read-back must equal the seed's File with the new
    name); a bad name (`bad/name.md`, empty) and a malformed export body (a string, an empty list) from a permitted
    caller must get a 4xx and change nothing; a link created by a member (response fields `token`, `url` = `/s/<token>`,
@@ -128,14 +174,53 @@ requests mixed in; 0 steps skipped`):
    equal the original's answer on the API.md fields (lists must hold exactly the active org's files); permitted
    exports return exactly the requested files with all API.md fields.
 6. Reward 1 only if no check failed. `reward.json` carries numeric sub-metrics (`run1_checks`, `run1_failed`,
-   `run2_checks`, `run2_failed`, `leaking_refusals`, `grading_seconds`) and a count per failed check
-   (`run1_fail_<check>`, `run2_fail_<check>`; refusals mixed into the write list are `noise_status_<kind>` and
-   `noise_leak_<kind>`); test-stdout shows up to 3 examples per failed check.
+   `run2_checks`, `run2_failed`, `leaking_refusals`, `held_back`, `held_back_sent`, `grading_seconds`) and a count per
+   failed check (`run1_fail_<check>`, `run2_fail_<check>`; refusals mixed into the write list are
+   `noise_status_<kind>` and `noise_leak_<kind>`, held-back writes `held_status_<kind>` and `held_leak_<kind>`, the
+   read-back `held_sweep` and `held_link`, and a held-back write that was never sent `held_unsent`); test-stdout shows
+   up to 3 examples per failed check.
 
-Why the runs are mixed (G12): no run of agent code sees only one kind of request, and the staged folder names are
-random (`w<8 hex>`), so a service that guesses "this run only sends requests to refuse" and refuses everything (or
-allows every write) fails. A service that remembers run 1's refused writes and refuses only those in run 2 is not
-defeated (section 9). Section 5 "Mixed runs" has the history and the evidence.
+**Held-back refused writes.** Each refused write has a class: its kind (rename, share, revoke, delete), the caller's
+state and role (a caller in an org it may use, with its role there; a caller whose `X-Org-Id` names an org it may not
+use or one that does not exist; no token or a bad one) and the file's relation to the caller (for a revoke, the file
+behind the token). `held_back` in `tests/grade.py` takes a seeded (n + 1) // 3 of each class of n (random seed
+20261028 + 6; the order run 2 sends them in uses seed + 7): 264 of the 793 refused writes, in 41 classes (rename 60,
+share 60, revoke 79, delete 65; by caller: 85 by a caller in an org it may use, 174 with a bad `X-Org-Id`, 5 with no
+or a bad token). Every class keeps at least one write in run 1, and 40 classes give at least one to run 2; the 41st,
+a single revoke by a member of a link to a file in the member's other org, stays in run 1. FACT for the table: an
+offline count with the functions of `tests/grade.py` on `tests/hidden/seed.db` (2026-11-03; not shipped); each cell is
+"refused writes (held back)", and "-" means the policy permits that write:
+
+| Caller | File's relation to the caller | rename | share | revoke | delete |
+|---|---|---|---|---|---|
+| no token or a bad one | any | 2 (1) | 2 (1) | 6 (2) | 2 (1) |
+| bad `X-Org-Id` | in the org it names | 34 (11) | 34 (11) | 27 (9) | 34 (11) |
+| bad `X-Org-Id` | in the caller's home org | 46 (15) | 46 (15) | 33 (11) | 46 (15) |
+| bad `X-Org-Id` | elsewhere | 48 (16) | 48 (16) | 84 (28) | 48 (16) |
+| member | in the active org | - | - | - | 15 (5) |
+| member | in the member's other org | 3 (1) | 3 (1) | 1 (0) | 3 (1) |
+| member | in a foreign org | 15 (5) | 15 (5) | 29 (10) | 15 (5) |
+| org_admin | in the admin's other org | 3 (1) | 3 (1) | 4 (1) | 3 (1) |
+| org_admin | in a foreign org | 11 (4) | 11 (4) | 24 (8) | 11 (4) |
+| support | in the org it names | 8 (3) | 8 (3) | 7 (2) | 8 (3) |
+| support | elsewhere | 10 (3) | 10 (3) | 23 (8) | 10 (3) |
+| all | | 180 (60) | 180 (60) | 238 (79) | 195 (65) |
+
+Of the 85 held-back writes by callers in an org they may use, the read-back covers the files that 19 of 22 deletes,
+15 of 17 renames and 23 of 29 revokes act on; the other 11 act on files the write list uses, and the 17 link
+creations have no effect the API shows (no endpoint lists a file's links), so for those only the answer is checked
+(same offline count).
+
+Why the runs are mixed and some refused writes held back (G12): no run of agent code sees only one kind of request,
+and the staged folder names are random (`w<8 hex>`), so a service that guesses "this run only sends requests to
+refuse" and refuses everything (or allows every write) fails. A service that tells the runs apart (by folder name, by
+start, by request count) or that remembers what run 1 sent (in its code folder, `/tmp`, `/work`, its database or over
+the network) meets each held-back write for the first time among run 2's permitted writes, so only the policy can tell
+the two apart. Not defended: a service that rebuilds this fixed, seeded plan from `tests/grade.py`, `tests/policy.py`
+and `tests/hidden/seed.db` (none of them is in the agent's container); a held-back link creation carried out behind a
+4xx (no endpoint lists links); and the effect of a held-back write on a file that the write list also uses (only its
+answer is checked). Section 5 ("Mixed runs", "Held-back refused writes") has the history and the evidence, section 9
+the limits.
 
 Leniency (G13, G15): any 4xx counts as a refusal (the docs say 403 or 404, 401, 400); permitted writes accept 200, 201
 or 204; a bad name or malformed body accepts any 4xx (API.md says 400); only API.md fields are compared, so added
@@ -144,22 +229,24 @@ name; lists and exports are compared as sets, although API.md says "sorted by na
 variant that sorts lists by date scores 1, section 7: deliberate, because the instruction does not state an order);
 tables or columns the agent adds are ignored.
 
-What a service sees (kit rule 8 in `base/verifier_kit/README.md`, G21): the agent's service runs as uid 1001 with the host network (the kit gives
-services no private namespace), its own database copy (the hidden data of all four orgs, which is what the app
-serves), and the grader's requests. It cannot read `/tests`. INFERENCE: a hostile service could send the hidden
-database out over the network; that would not raise its own score, but it would spoil the hidden data for later runs.
+What a service sees (kit rule 8 in `base/verifier_kit/README.md`, G21): the agent's service runs as uid 1001 with the
+host network (the kit gives services no private namespace), its own database copy (the hidden data of all four orgs,
+which is what the app serves), and the grader's requests. It cannot read `/tests`. INFERENCE: a hostile service could
+send the hidden database out over the network; that would not raise its own score, but it would spoil the hidden data
+for later runs.
 
 ## 5. Deviations from the design brief and the shared verifier rules (with reasons)
-- **About 3,700 requests instead of about 600.** The two runs of agent code take 2.5-5.0 s together on the Mac
-  (section 6), so full coverage of every relation class costs little.
+- **About 3,700 requests instead of about 600.** The two runs of agent code take about 2.5 s together on the Mac in
+  the run of 2026-11-03 (up to 5.0 s in a more loaded run of 2026-10-28; section 6), so full coverage of every
+  relation class costs little. Since 2026-11-03: 2,211 checks in run 1 and 1,540 in run 2, 3,751 in all.
 - **The differential runs first, not side by side.** The original answers before any agent code runs; side by side,
   agent code (same uid) could tamper with the reference.
 - **DB check against the seed, not against the original's DB.** Run 1 writes nothing that the policy permits (its
   permitted requests are reads), so the right end state is exactly the seed. Added: the 60-file read-back sweep,
   which also catches a hidden change (for example a soft-delete column) that the named columns would miss.
-- **Mixed runs (fix after the independent review, 2026-10-28).** The first grader had a refusal run that sent only refused
-  requests (plus the read-back) and a second run that sent only permitted ones, and it named the database folders
-  `db_deny` and `db_allow`. The review showed that a service could tell the runs apart: by the `--db` path, by a
+- **Mixed runs (fix after the independent review, 2026-10-28).** The first grader had a refusal run that sent only
+  refused requests (plus the read-back) and a second run that sent only permitted ones, and it named the database
+  folders `db_deny` and `db_allow`. The review showed that a service could tell the runs apart: by the `--db` path, by a
   marker file written on the first start (the code folder `/work/sub` is the same for both runs), or by counting
   requests. Three such services with no real write checks scored 1 (FACT: `old_grader_check.txt`, rows `phase_gate`,
   `ablate_phase_strict_first_start`, `ablate_phase_by_request_count`). Fix, as section 4 describes: run 1 shuffles
@@ -170,7 +257,27 @@ database out over the network; that would not raise its own score, but it would 
   refused revokes used seed tokens and the only permitted ones used new tokens). All three services now score 0
   (section 7). A fresh `/work/sub` per run alone would not have been enough (the request-count service keeps no state
   on disk); the mixing is the fix for services that expect each run to send one kind of request; one that keeps state
-  between the runs and replays run 1's refusals is not defeated (section 9).
+  between the runs and replays run 1's refusals was not defeated by it (next bullet).
+- **Held-back refused writes (fix after the 2026-11-02 verification).** Run 2's refusals all repeated requests that
+  run 1 had sent, and both runs start the service from the same copy of `/app` (a fresh database each), so a service
+  that refused and recorded every rename, delete and link creation on its first start, and later refused only the
+  recorded ones, scored 1 with write authorization left as in the original: the verification probe of 2026-11-02, now
+  the attempt `replay_memo` (0 of 2,475 run-1 and 0 of 1,231 run-2 checks failed on the earlier grader; so did five
+  local variants of it, the `memo_*` rows of section 7; FACT: local runs of 2026-11-02 and 2026-11-03). Fix, as
+  section 4 describes: a seeded third of each class of refused write is held back from run 1 and sent only in run 2,
+  each once, mixed into the write list among the refused requests that run 1 also sent, and then what those writes act
+  on is read back. Memory of any kind (the code folder, `/tmp`, `/work`, the database, the network) holds nothing about
+  a held-back write, so only the policy can refuse it. `replay_memo` and the five variants now score 0 through the
+  `held_*` checks (section 7); on Daytona `replay_memo` scored 0.0 through them as well (run full2, section 10.1).
+  Why in the write list and not in run 2's read phase: a memory can arm itself on the first write that run 1 also
+  sent. `memo_arm_on_replay` (section 7) refuses unseen writes until a recorded write comes back, then lets them
+  through; the read phase holds no write, so on a scratch grader that put the held-back writes there it scored 1, and
+  here it scores 0, since 263 of the 264 held-back writes come after the first write run 1 also sent (FACT: local runs
+  of 2026-11-03 and the request logs above; the scratch grader is not shipped).
+  Why the read-back: run 2 has no database diff (its permitted writes change the database), so a held-back write
+  carried out behind a 4xx was seen only through a later step that happened to use the same file.
+  `memo_rename_write_then_404`, which carries out a refused rename and then answers it with a 4xx, failed one such
+  step without the read-back and fails `held_sweep` 11 with it (FACT: local runs of 2026-11-03).
 - **More permitted behaviour checked (fix after the review).** The review found six variants that broke a permitted
   behaviour and still scored 1 (FACT: `old_grader_check.txt`): revoking via `X-Org-Id`, deleting a file that has
   links (the foreign key makes it a 500 if the links are not removed), support listing without `X-Org-Id` answering
@@ -178,15 +285,16 @@ database out over the network; that would not raise its own score, but it would 
   and Content-Disposition. Section 4's write list and header checks now cover each; all six score 0 (section 7). The
   `400` decisions of `policy.can_list` were dropped by the case builder before; they are now refusal cases.
 - **Time caps.** The shared verifier rules give each run of agent code a cap of 3 x the slowest valid solution, and
-  set `verifier.timeout_sec` = the sum of the caps + the measured grading time + 50%. The slowest
-  valid run measured on the Mac is 2.92 s (alt, run 1), which gives under 9 s; Mac timings do not transfer to a 1-vCPU
-  Daytona sandbox (UNVERIFIED speed), and before the keep-alive fix below a loaded Mac stretched a phase to 19 s. So
-  each run has a 90 s cap (stated in the instruction), each request 10 s plus one retry, each start 30 s; at most one
-  request runs past a cap. `verifier.timeout_sec` = that formula on those caps: 3 x (30 start + 90 run + 20.5
-  overshoot) + 30 checkpoint + 120 copy-out + 15 stops = 587 s, + 6 s measured grading (5.79 s, section 6), + 50% =
-  890 s, rounded to 900 s. A slow service scores 0 through the cap, not `verifier_failed` (shown by
-  `ablate_slow_service`, section 7). The Daytona proof run should record the run times; the caps can be tightened
-  then.
+  set `verifier.timeout_sec` = the sum of the caps + the measured grading time + 50%. The slowest valid run measured
+  on the Mac is 2.92 s (alt, run 1, on 2026-10-28; 1.42 s on 2026-11-03), which gives under 9 s; Mac timings do not
+  transfer to a 1-vCPU Daytona sandbox (UNVERIFIED speed), and before the keep-alive fix below a loaded Mac stretched
+  a phase to 19 s. So each run has a 90 s cap (stated in the instruction), each request 10 s plus one retry, each
+  start 30 s; at most one request runs past a cap. `verifier.timeout_sec` = that formula on those caps: 3 x (30 start
+  + 90 run + 20.5 overshoot) + 30 checkpoint + 120 copy-out + 15 stops = 587 s, + 6 s measured grading (5.79 s,
+  section 6, run of 2026-10-28), + 50% = 890 s, rounded to 900 s; the faster grading of 2026-11-03 (under 3 s wall
+  for each valid solution on the Mac, section 6) leaves it valid. A slow service scores 0 through the cap, not
+  `verifier_failed` (shown by `ablate_slow_service`, section 7). The Daytona proof run should record the run times;
+  the caps can be tightened then. (Both proof runs recorded them, section 10; the caps were kept.)
 - **Keep-alive connections in the grader.** One new TCP connection per request exhausted the Mac's ephemeral ports
   across back-to-back runs (`OSError: [Errno 49] Can't assign requested address`, 3 of 10 alt runs failed). The grader
   keeps one connection per service and retries a request that got no answer once. Repeat runs are now saved: 5 of 5
@@ -194,48 +302,63 @@ database out over the network; that would not raise its own score, but it would 
 - **Uploads are not in the API.** API.md says uploads go through an ingest worker; the six flaws need no upload path.
 - **Thumbs** are generated SVG previews (name plus the first lines), compared byte for byte with the original's.
 - **Extra local-only variants** (not shipped, not for Daytona): one ablation per flaw, one that writes before
-  refusing, one slow service, two more run-telling services, six that break one permitted behaviour, and one lenient
-  case that must score 1. They show that each planted flaw, the DB diff, the time cap, the mixing and each permitted
-  behaviour are checked on their own.
+  refusing, one slow service, two more run-telling services, five that remember what the first run sent (`memo_*`),
+  six that break one permitted behaviour, and one lenient case that must score 1. They show that each planted flaw,
+  the DB diff, the time cap, the mixing, the held-back writes and each permitted behaviour are checked on their own.
 - **Image size** not measured (no Docker on the Mac). INFERENCE: the slim base plus about 15 small pure-Python
   wheels; UNVERIFIED.
 
-## 6. Timings (FACT, Mac, KIT_LOCAL=1, `local_results.txt` run 2026-10-28 19:31:38 MST)
+## 6. Timings (FACT, Mac, KIT_LOCAL=1, `local_results.txt` run 2026-11-03 02:21:36 MST)
+| Run | Total (wall) | original (our code) | run 1 | run 2 | service start |
+|---|---|---|---|---|---|
+| canonical | 2.92 s; repeats 2.86-2.88 s | 0.40 s | 1.38 s | 1.07 s | 0.20-0.21 s (grading log of the last repeat) |
+| alt | 2.93 s; repeats 2.90-2.98 s | 0.40 s | 1.42 s | 1.04 s | 0.21 s (grading log of the last repeat) |
+
+Run 1 and run 2 each stay under 1.5 s against their 90 s caps.
+The grader before the 2026-11-03 fix, run 2026-10-28 19:31:38 MST (the caps of section 5 are derived from it):
+
 | Run | Total (wall) | original (our code) | run 1 | run 2 | service start |
 |---|---|---|---|---|---|
 | canonical | 5.27 s; repeats 5.40-5.57 s | 0.80 s | 2.78 s | 1.58 s | 0.42-0.43 s (grading log) |
 | alt | 5.79 s; repeats 5.44-5.61 s | 0.72 s | 2.92 s | 2.03 s | not read |
+
 The Mac was shared with other builds during that run. An earlier local run during the build, with less load, took
 3.38 s (canonical) and 3.23 s (alt) (console output, not saved in a file).
-Caps derived: start 30 s, request 10 s (+1 retry), run 90 s, verifier 900 s (section 5).
+Caps derived: start 30 s, request 10 s (+1 retry), run 90 s, verifier 900 s (section 5); unchanged on 2026-11-03.
 
-## 7. LOCAL RESULTS (FACT: `docs/tenant-isolation-docshare/local_results.txt`, run 2026-10-28 19:31:38 MST)
+## 7. LOCAL RESULTS (FACT: `docs/tenant-isolation-docshare/local_results.txt`, run 2026-11-03 02:21:36 MST)
 Command: `submission/.venv/bin/python submission/authoring/tenant-isolation-docshare/local_check.py` (each variant:
-copy `environment/app`, `SOLUTION=<variant> APP_DIR=<copy> bash solution/solve.sh` (local variants: canonical or the
-original plus an exact text substitution), drop `data`, `__pycache__`, `.venv`, then `KIT_LOCAL=1 KIT_SUBMISSION=<copy>
-GRADE_TESTS_DIR=<task>/tests python tests/grade.py`). "x-org" = with a foreign or unknown X-Org-Id; "noise" = refused
-requests mixed into the write list.
+copy `environment/app`, `SOLUTION=<variant> APP_DIR=<copy> bash solution/solve.sh` (local variants: canonical, the
+original or `replay_memo` plus an exact text substitution), drop `data`, `__pycache__`, `.venv`, then `KIT_LOCAL=1
+KIT_SUBMISSION=<copy> GRADE_TESTS_DIR=<task>/tests python tests/grade.py`). "x-org" = with a foreign or unknown
+X-Org-Id; "noise" = refused requests that run 1 also sent, mixed into the write list; "held-back" = refused writes
+that only run 2 sends; "held sweep" and "held links" = the read-back of what the held-back writes act on (section 4).
+The results of the grader before the 2026-11-03 fix (run 2026-10-28 19:31:38 MST) are in the repository history, in
+the versions of `local_results.txt` and of this file from before 2026-11-03; every row there scored as expected too
+(the `replay_memo` and `memo_*` rows did not exist yet).
+
 | Variant | Expected | Got | Checks that failed (count per check) |
 |---|---|---|---|
-| canonical | 1 | 1 | none (2,475 run-1 checks, 1,231 run-2 checks); repeats 5 of 5 = 1 |
+| canonical | 1 | 1 | none (2,211 run-1 checks, 1,540 run-2 checks; `held_back` 264, `held_back_sent` 264); repeats 5 of 5 = 1 |
 | alt (`SOLUTION=alt`) | 1 | 1 | none; repeats 5 of 5 = 1 |
-| original (what nop leaves) | 0 | 0 | 1,742 run-1 and 603 run-2 failures, 785 leaking refusals: read, download, thumb, export, rename, share, delete, x-org on every endpoint, DB changed, sweep 60 |
-| patch_get_only | 0 | 0 | thumb 32, export 52, share 32, delete 18, rename 32, x-org (read 36, download 36, thumb 128, lists, me, ...), DB changed, sweep 60 |
-| membership_plus_get | 0 | 0 | thumb 32, export 52, share 32, delete 25, sweep 25, DB changed (run 1); noise share 5, delete 6 (run 2) |
-| deny_most | 0 | 0 | permitted only: support reads 18, downloads 18, thumbs 18, exports 20, lists, folders, me, admin; share links 8; link creation 3 |
+| original (what nop leaves) | 0 | 0 | 1,624 run-1 and 684 run-2 failures, 768 leaking refusals: read, download, thumb, export, rename, share, delete, x-org on every endpoint, DB changed, sweep 59 (run 1); in run 2 also held-back writes 99, held sweep 40, held links 4 |
+| patch_get_only | 0 | 0 | thumb 32, export 52, share 21, delete 18, rename 21, x-org (read 36, download 36, thumb 128, lists, me, ...), DB changed, sweep 59 (run 1); held-back writes 99, held sweep 40, held links 4 (run 2) |
+| membership_plus_get | 0 | 0 | thumb 32, export 52, share 21, delete 20, sweep 20, DB changed (run 1); noise share 4, delete 4; held-back share 9, delete 11; held sweep 14 (run 2) |
+| deny_most | 0 | 0 | permitted only: support reads 18, downloads 18, thumbs 18, exports 20, lists, folders, me, admin; share links 8 (and in run 2 the 4 seed links of the held-back read-back); in the write list, link creation 3 and seed-link fetches 3 |
 | drop_org_switching | 0 | 0 | permitted only: second-org reads, lists, exports, renames, links, delete; support lists, folders and every support request with X-Org-Id |
-| hardcode_visible_orgs | 0 | 0 | x-org on every endpoint (read 34, download 34, thumb 34, lists 46, ...), DB changed, sweep 25 |
-| phase_gate (new attempt) | 0 | 0 | run 1 none; run 2 noise rename 8, share 6, revoke 17, delete 11, outsider revoke 2, link checks 6 |
+| hardcode_visible_orgs | 0 | 0 | x-org on every endpoint (read 34, download 34, thumb 34, lists 46, ...), DB changed, sweep 18 (run 1); held-back x-org writes 31, held sweep 8, held links 3 (run 2) |
+| phase_gate | 0 | 0 | run 1 none; run 2 noise rename 6, share 6, revoke 8, delete 6; held-back rename 15, share 13, revoke 20, delete 19; held sweep 32, held links 4; outsider revoke 2, link checks 6, rename 1, delete 1 |
+| replay_memo (new attempt) | 0 | 0 | run 1 none; run 2 held-back delete 20, share 9; held sweep 26, held links 2; rename 1, link creation 1, delete 1; no noise check (its memory refuses every request that run 1 sent); no held-back rename status failure (its rename is carried out, then answered 404, so the held sweep counts it); its delete checks the login only, where its `ABOUT.md` says role-only |
 | ablate_f1_get_by_id | 0 | 0 | read 32, download 32 (run 1); the same kinds in run 2 |
-| ablate_f2_header_trust | 0 | 0 | x-org on every endpoint, DB changed, sweep 25 |
+| ablate_f2_header_trust | 0 | 0 | x-org on every endpoint, DB changed, sweep 18 (run 1); held-back x-org writes 31, held sweep 8, held links 3 (run 2) |
 | ablate_f3_thumbs | 0 | 0 | thumb 32 |
 | ablate_f4_export_first_id | 0 | 0 | export 52 |
-| ablate_f5_share_no_read_check | 0 | 0 | share 32, DB changed; noise share 6 |
-| ablate_f6_member_delete | 0 | 0 | delete 14, sweep 14, DB changed; noise delete 2 |
-| ablate_write_before_refusal | 0 | 0 | DB changed only |
-| ablate_slow_service (caps 5 s, local only) | 0 | 0 | time cap (run 1 and run 2) |
+| ablate_f5_share_no_read_check | 0 | 0 | share 21, DB changed; noise share 6, held-back share 10 |
+| ablate_f6_member_delete | 0 | 0 | delete 10, sweep 10, DB changed; noise delete 1, held-back delete 5, held sweep 6 |
+| ablate_write_before_refusal | 0 | 0 | DB changed (run 1); held links 2 (run 2: a refused delete that still revokes the file's links) |
+| ablate_slow_service (caps 5 s, local only) | 0 | 0 | time cap (run 1 and run 2); in run 2 also `held_unsent` (the cap came before the write list) |
 | ablate_phase_strict_first_start | 0 | 0 | run 1: permitted reads of every kind (382); run 2: what the original fails |
-| ablate_phase_by_request_count | 0 | 0 | run 1 none; run 2 noise rename 8, share 6, revoke 17, delete 11, outsider revoke 2 |
+| ablate_phase_by_request_count | 0 | 0 | run 1 none; run 2 the same checks and counts as `phase_gate` |
 | gap_revoke_only_in_home_org | 0 | 0 | revoke of a new link 2 and of a seed link 2, both via X-Org-Id |
 | gap_delete_leaves_shares_fk | 0 | 0 | delete of the file with a link 1 |
 | gap_support_list_no_header_200 | 0 | 0 | support list without X-Org-Id: files 2, folders 2 (run 1); 3 in run 2 |
@@ -243,13 +366,41 @@ requests mixed into the write list.
 | gap_no_rename_validation | 0 | 0 | bad name 3 |
 | gap_download_headers_dropped | 0 | 0 | downloads 44 and share links 8 in each run |
 | lenient_lists_unsorted | 1 | 1 | none (list order is deliberately not checked, section 4) |
-Also FACT (same file): integrity OK (SHA256SUMS, `tests/original` equals the shipped app, no `__pycache__`); the visible
-pytest suite passes 9 of 9 on the original, canonical and alt; matrix diff AGREE, mutation DISAGREE on 305 cells.
-FACT (`old_grader_check.txt`): `phase_gate`, both phase ablations and the six `gap_*` variants scored 1 on the grader
-before the fix. `tools/check_task.py tasks/tenant-isolation-docshare` prints `OK tenant-isolation-docshare` (it runs
-`harbor lint`, clean), after `tools/sync_kit.py` (kit unchanged).
+| memo_member_delete | 0 | 0 | run 1 none; run 2 held-back delete 5, held sweep 5 (the guard of `replay_memo` in front of the canonical fix, members allowed to delete) |
+| memo_share_any_org | 0 | 0 | run 1 none; run 2 held-back share 10 (the same guard, link creation for any file id) |
+| memo_support_writes | 0 | 0 | run 1 none; run 2 held-back delete 6, rename 5, held sweep 9, delete 1 (the same guard, support allowed to rename and delete) |
+| memo_rename_write_then_404 | 0 | 0 | run 1 none; run 2 held sweep 11, rename 1 (the same guard, a refused rename carried out before its 4xx) |
+| memo_arm_on_replay | 0 | 0 | run 1 none; run 2 held-back delete 19, share 9; held sweep 25, held links 2; rename 1, link creation 1, delete 1 (`replay_memo` whose guard keeps unseen writes refused until a recorded write comes back) |
 
-What the Daytona proof run had to show (written before the run; section 10 has the results): `harbor lint`;
+Also FACT (same file): integrity OK (SHA256SUMS, `tests/original` equals the shipped app, no `__pycache__`); the visible
+pytest suite passes 9 of 9 on the original, canonical and alt; matrix diff AGREE, mutation DISAGREE on 305 cells; 32
+rows, ALL AS EXPECTED. Only the 5 s cap variant's counts vary from run to run.
+FACT (`old_grader_check.txt`): `phase_gate`, both phase ablations and the six `gap_*` variants scored 1 on the grader
+before the review's fix. FACT (local runs of 2026-11-03 on scratch copies of the task, not saved in this repository):
+with the previous `tests/grade.py`, `replay_memo` and the five `memo_*` variants scored 1 (0 of 2,475 run-1 and 0 of
+1,231 run-2 checks failed) and canonical 1; with a scratch grader that put the held-back writes in run 2's read phase,
+`memo_arm_on_replay` scored 1; with a scratch grader that held writes back as this one does but had no read-back,
+`memo_rename_write_then_404` failed only one write-list step (`write_rename` 1). On the current grader: the
+verification probe without the memory (the write handlers of `replay_memo` with no guard) scored 0 (102 of 2,211
+run-1 and 71 of 1,491 run-2 checks failed); four more valid fixes from the verification (other refusal codes, a guard
+in front of the original routes, an added table and column, `send_file`) scored 1 each; and canonical graded with the
+visible development database as the seed (`GRADE_SEED_DB`) scored 1 (1,060 run-1 and 1,069 run-2 checks; 119 refused
+writes held back, all sent within the write list; one write-list step skipped for want of a working seed link).
+`tools/check_task.py tasks/tenant-isolation-docshare` prints `OK tenant-isolation-docshare` (it runs `harbor lint`,
+clean) and `tools/sync_kit.py --check` passes for all five tasks (kit unchanged), both re-run on 2026-11-03.
+
+What the Daytona proof of the current grader had to show (written on 2026-11-03 before it ran; run full2 met every
+item the same day, section 10.1): the oracle x 10 = 1, `--ae SOLUTION=alt` = 1, nop = 0, each of the seven attempts
+= 0 and the oracle with `--force-build` = 1 (`tools/proof_matrix.py`); in `verifier/test-stdout.txt` the four count
+lines of section 4, the phase lines with their times and the real-mode kit lines listed for run full1 below;
+`held_back` = `held_back_sent` = 264 in every passing trial, with 2,211 run-1 and 1,540 run-2 checks; `replay_memo` at
+0.0 with `run1_failed` 0, `run2_fail_held_status_delete`, `run2_fail_held_status_share` and `run2_fail_held_sweep` each
+above 0 and no `run2_fail_noise_status_*` key (its memory survived between the runs, so the held-back writes are what
+failed it); `phase_gate` at 0.0 with `run1_failed` 0 and both `run2_fail_noise_status_*` and `run2_fail_held_status_*`
+keys. Then new traces and PROOF files.
+
+What the Daytona proof run had to show (written before run full1, for the earlier grader; section 10.2 has the
+results): `harbor lint`;
 oracle x 10 = 1; `--ae SOLUTION=alt` = 1; nop =
 0; `--ae SOLUTION=<each of the six attempts>` = 0 (`patch_get_only`, `membership_plus_get`, `deny_most`,
 `drop_org_switching`, `hardcode_visible_orgs`, `phase_gate`); oracle with `--force-build` = 1. In
@@ -273,6 +424,48 @@ How to read the proof runs:
   trials on this task.
 
 ## 8. Gate record
+Current record (the grader fix of 2026-11-03, re-scored the same day from the Daytona proof full2, section 10.1; G30
+is "(plan)": its delivery is the commit and push of this fix, on the authors' word):
+```
+Gate record: tenant-isolation-docshare grader fix, held-back refused writes in run 2's write list plus a read-back of what they act on (2026-11-03; local KIT_LOCAL evidence; the (run) items re-scored 2026-11-03 from the Daytona proof full2, section 10.1)
+Applies to: task tenant-isolation-docshare
+G1  PASS - the change is tests/grade.py, one new attempt in solution/, two authoring scripts and docs; grading needs no network and no new file; all new randomness is seeded (RNG_SEED+6, +7)
+G2  PASS - same task (close the reported leak and its five siblings); a reward of 1 now also needs the write authorization that replay_memo leaves open
+G3  PASS - environment/ untouched
+G4  PASS (run, recorded: validation/tenant-isolation-docshare/PROOF_RESULTS_full2.md) - still a script verdict; canonical and alt 1, the original (what nop leaves) and all seven attempts 0, locally and on Daytona (canonical 10 of 10, alt and force-build 1.0; nop and the seven attempts 0.0)
+G5  PASS - still the only authorization task of the five
+G6  PASS - held-back writes are existing deny cases decided by policy.py (the second reader agrees on every cell, AGREE on 73,542 and 26,718 cells); the read-back expects only the seed state of files that no permitted write touches
+G7  PASS - unchanged
+G8  PASS - no new constraint: the instruction already requires a 4xx, no file data and no database change for every refused request; about 3,700 requests (now 3,751 checks) and 90 s runs; instruction.md unchanged
+G9  PASS - unchanged
+G10 PASS - unchanged
+G11 PASS - black-box HTTP plus run 1's database diff; run 2 now also reads back what held-back writes act on, which is the instruction's own "changes nothing"; no method, file or function name is checked
+G12 PASS (run, recorded: validation/tenant-isolation-docshare/PROOF_RESULTS_full2.md) - on Daytona replay_memo 0.0 as section 7 required: run1_failed 0, run2_fail_held_status_delete 20, run2_fail_held_status_share 9, run2_fail_held_sweep 26 and no run2_fail_noise_status_* key; phase_gate 0.0 with run1_failed 0 and both key families (noise_status rename 6, share 6, revoke 8, delete 6; held_status rename 15, share 13, revoke 20, delete 19); locally replay_memo and five memory variants score 1.0 on the earlier grader and 0.0 on this one, each through held_* checks; memo_arm_on_replay (memory armed by the first write run 1 sent) scores 0.0 here and 1.0 if the held-back writes go into run 2's read phase instead (a placement considered and rejected); memo_rename_write_then_404 is caught by held_sweep 11 (without the read-back by one incidental cascade only); the request-count and strict-first-start services 0.0; the adversarial review's nine services that skip the write authorization all 0 (section 9); the memory variants and the adversarial review's services other than replay_memo and phase_gate ran locally only; residuals in G21
+G13 PASS (run, recorded: validation/tenant-isolation-docshare/PROOF_RESULTS_full2.md) - alt (SQL scoping, 403 refusals) 1 locally and 1.0 on Daytona; four materially different valid fixes (other refusal codes, a guard in front of the original routes, an added table and column, send_file) and lenient_lists_unsorted score 1 locally (not run on Daytona); no permitted write of the list can turn a refused write into a permitted one (policy.py); the read-back skips every file the list uses
+G14 PASS - difficulty of a real fix unchanged
+G15 PASS - any 4xx still accepted; the read-back compares presence and the seed name only, as run 1's sweep; deterministic; run 2 1.01-1.12 s for canonical and alt on the Mac in the local runs of 2026-11-03 (1.0 to 1.4 s for the other valid fixes of G13, two local runs of 2026-11-03) and 1.73-2.08 s in the 12 valid Daytona trials of run full2 (section 10.1), against the 90 s cap
+G16 PASS (run, recorded: validation/tenant-isolation-docshare/PROOF_RESULTS_full2.md) - seeded: the same 264 writes in the same order every run; canonical and alt 5 of 5 in repeated local runs, with identical counts; on Daytona oracle 10 of 10 and --force-build 1.0, and each of the 20 trials equal to the local matrix on every reward.json field but grading_seconds (section 10.1); run 1 equals the earlier grader's run 1 minus the 264 held-back writes, request for request, and run 2's read phase is identical (measured); also grades the visible dev database as a seed (canonical 1)
+G17 PASS (run, recorded: validation/tenant-isolation-docshare/PROOF_RESULTS_full2.md) - grade.py stays in tests/ (verifier image only) and replay_memo in solution/; nothing new in environment/; on Daytona the separate verifier ran in 20 of 20 trials under the new digest, each with four uid-1001 staging lines and the checkpoint run as uid 1001 (rc=0) in a private loopback-only network
+G18 PASS - layout unchanged; tools/check_task.py (with harbor lint) OK on the built files (2026-11-03)
+G19 PASS - kit.py, test.sh and base/verifier_kit untouched (tools/sync_kit.py --check); no other task changed
+G20 PASS - row text stays true (section 9); its validation cell in the repository README (2026-11-03) names run full2 and its rows and says that the agent trials were graded by the grader before its fix of 2026-11-03
+G21 PASS - limitations rewritten (section 9, repository README): the replay gap closed (local matrix, adversarial review, Daytona run full2); residuals: a service that rebuilds the fixed, public, seeded plan from tests/grade.py, policy.py and hidden/seed.db (the exposure already disclosed; copying solution/canonical is simpler); 17 held-back link creations by valid callers checked by their answer only (no endpoint lists links); held-back writes on the 14 files the write list uses checked by their answer only; the read-back sees names and presence only; the service keeps the host network while graded (kit rule 8); the agent trials of 2026-10-30 were graded by the earlier grader
+G22 PASS (run, recorded: validation/tenant-isolation-docshare/PROOF_RESULTS_full2.md) - canonical 1 locally (repeats 5 of 5); oracle 10 of 10 = 1.0 and --force-build 1.0 on Daytona
+G23 PASS (run, recorded: validation/tenant-isolation-docshare/PROOF_RESULTS_full2.md) - original 0 locally; Daytona nop 0.0 (1,624 run-1 and 684 run-2 failures, 768 leaking refusals, as locally)
+G24 PASS (run, recorded: validation/tenant-isolation-docshare/PROOF_RESULTS_full2.md) - the six attempts and replay_memo 0 locally and 0.0 on Daytona, each with the same failed checks and counts as locally
+G25 PASS (run, recorded: validation/tenant-isolation-docshare/PROOF_RESULTS_full2.md) - alt 1 locally (repeats 5 of 5) and 1.0 on Daytona
+G26 PASS (run, recorded: validation/tenant-isolation-docshare/PROOF_RESULTS_full2.md) - categories held_status_<kind>, held_leak_<kind>, held_unsent, held_sweep, held_link; four count log lines; metrics held_back and held_back_sent; replay_memo ABOUT.md; one trial per row of run full2 in validation/tenant-isolation-docshare/traces/, the earlier grader's evidence in validation/tenant-isolation-docshare/first-version/
+G27 PASS - no keys, no new dependency, 127.0.0.1 only
+G28 PASS - a failure now means a missing write check or a refused write that changed data, both real gaps; no new strict comparison
+G29 PASS - nothing added only to fail agents: the same policy decisions, rescheduled, plus the instruction's own no-change rule checked in run 2
+G30 PASS (plan) - delivered by the commit and push of this fix, on the authors' word; until then the published repository (commit f5fba52) carried digest 8295aff3 and the earlier grader's traces
+Result: PASS (no FAIL, no N/A). The (run) items are proven by the recorded Daytona run full2 of 2026-11-03 (section 10.1); G30 is completed by the commit and push of this fix (on the authors' go).
+```
+
+Previous record (superseded by the one above; kept for its "(run)" evidence, which is of the grader that run
+full1 proved, section 10.2). Its G12 FAIL was closed by the grader fix of 2026-11-03, and run full2 proved the fix
+(section 10.1). Since 2026-11-03 the files it cites as `validation/tenant-isolation-docshare/PROOF_RESULTS_full1.md`
+and `validation/tenant-isolation-docshare/traces/` are in `validation/tenant-isolation-docshare/first-version/`:
 ```
 Gate record: tenant-isolation-docshare, implementation (2026-10-28, updated after the review fix; the (run) items re-scored 2026-10-29 from the recorded Daytona runs, section 10; paths from the repository root)
 Applies to: task tenant-isolation-docshare
@@ -320,8 +513,9 @@ Proposed row: capability = defensive application security (authorization in a mu
 reported cross-organisation download and every sibling so the service enforces PERMISSIONS.md, keeping share links,
 org switching and support's read-only access; success check = about 3,700 HTTP requests to the agent's service on a
 hidden database, refused and permitted ones mixed: refused ones must get a 4xx with no file data and change nothing
-(DB diff), allowed ones must answer as the untouched service does; validation = Daytona run full1 (section 10) plus the
-local matrix in section 7.
+(DB diff), allowed ones must answer as the untouched service does; validation = Daytona run full2 of 2026-11-03
+(section 10.1, the current grader) plus the local matrix in section 7; run full1 (section 10.2) and the agent trials
+of 2026-10-30 were graded by the earlier grader, before its fix of 2026-11-03.
 
 Known limitations (G21):
 - The flaw class is well known; strong agents may pass often (fine: "A low pass rate by itself is not a sign of
@@ -332,32 +526,208 @@ Known limitations (G21):
 - Thumbs must be byte-identical to today's previews; an agent that rewrites the renderer fails.
 - List order and export order are not checked (API.md states them; the instruction does not), so a fix that changes
   them still scores 1.
-- The mixing defeats a service that refuses every write in one run and allows every write in the other (`phase_gate`),
-  but not one that keeps state between the runs. Run 2's 400 mixed refusals and its noise requests repeat requests
-  run 1 already sent (`tests/grade.py`: `run_first`, `run_second`, `run_writes`), and both runs start the service from
-  the same copy of `/app`. A verification probe on 2026-11-02, `neg_replay_memo` (local KIT_LOCAL runs; the probe is
-  not in this repository), refused and recorded every rename, delete and link creation on its first start and, on
-  later starts, refused only those it had seen. It scored 1 with write authorization unfixed: delete and link creation
-  authorized as in the original, and rename writing before it refuses (0 of 2,475 run-1 and 0 of 1,231 run-2 checks
-  failed); the same code without the memory scored 0 (FACT, those local runs). INFERENCE from `phase_gate`'s Daytona
-  trace (section 10; its marker file in `/work/sub/docshare`, section 7, made run 2 its later start): the memory
-  survives between the runs on Daytona too. The comment at `tests/grade.py:14-15` ("a service cannot pass by telling
-  the runs apart") overstates for this reason; the file is inside the package digest that the shipped traces lock, so
-  it stays as shipped. A grader fix (run 2 drawing its refusals from cases run 1 never sent) would change that digest
-  and need a new Daytona proof; it was not made.
-- The agent's service has the host network during grading (kit limit); it could send the hidden data out.
-- Timings: Mac in section 6; Daytona in section 10 (slowest valid run 1 6.56 s against the 90 s cap; Harbor verifier
-  phase at most 72.6 s against 900 s).
+- The replay gap: found 2026-11-02, closed 2026-11-03 (a dated record).
+  - 2026-10-28: the mixing of the two runs (section 5, "Mixed runs") defeats a service that refuses every write in
+    one run and allows every write in the other (`phase_gate`: 0.0 in runs full1 and full2, section 10).
+  - 2026-11-02: a verification of the published package found that the mixing did not defeat a service that keeps
+    state between the runs. Run 2's refusals all repeated requests that run 1 had sent, and both runs start the
+    service from the same copy of `/app`, so its probe, which refuses and records every rename, delete and link
+    creation on its first start and later refuses only the recorded ones, scored 1 with write authorization left as
+    in the original (0 of 2,475 run-1 and 0 of 1,231 run-2 checks failed; section 5). This file had claimed the
+    opposite until then, and G12 was scored FAIL (section 8, previous record).
+  - 2026-11-03: closed by the held-back refused writes (sections 4 and 5). A seeded third of each class of refused
+    write, 264 of 793, is never sent in run 1; run 2 sends each once, mixed into the write list with the permitted
+    writes and the replayed refusals, and then reads back what those writes act on. The probe ships as the attempt
+    `replay_memo`. Locally it and five `memo_*` variants, each 1 on the earlier grader, score 0 (section 7); on
+    Daytona `replay_memo` scored 0.0 with run 1 clean and 57 of its 60 run-2 failures in the `held_*` checks (run
+    full2, section 10.1).
+  - What it defends: a memory of any kind (the code folder, `/tmp`, `/work`, the database, the network) holds nothing
+    about a held-back write, and each one arrives among permitted writes of the same kinds, so only the policy can
+    refuse it. The adversarial review of 2026-11-03 (FACT: local runs on scratch copies, not shipped) built nine
+    services that skip the write authorization and try to score 1 all the same: `replay_memo`; `memo_arm_on_replay`
+    (refuses unseen writes until a recorded write comes back, then lets them through); `phase_gate`;
+    `write_iff_can_read` (no memory: a write is allowed wherever the caller may read); `memo_read_then_write_clean`
+    (learns in run 1 where each caller may read and allows writes there in run 2); and four that key their memory of
+    run 1 on the caller's token, its `X-Org-Id` and the file's organisation, in four combinations
+    (`memo_tok_xorg_fileorg`, `memo_tok_xorg`, `memo_tok_fileorg`, `memo_fileorg`). All nine score 0. INFERENCE: a key
+    coarse enough to refuse held-back writes it never saw also matches the callers and organisations of the permitted
+    writes (the `write_*` checks fail); a key fine enough to spare the permitted writes misses the held-back ones
+    (`held_status_*`, `held_sweep`). What tells the two apart is the active organisation and the role, that is, the
+    authorization itself.
+  - What stays out of reach:
+    - The plan is fixed, seeded and public: a service that rebuilt it from `tests/grade.py`, `tests/policy.py` and
+      `tests/hidden/seed.db` could tell the held-back writes from the permitted ones. None of these files is in the
+      agent's container, but this repository is public (the repository README's limitation "The hidden tests are
+      public"): this task sets no agent network line, so the agent could fetch them while it works, and its service
+      keeps the host network while it is graded (kit rule 8, below). INFERENCE: an agent that could fetch them could
+      more simply copy `solution/canonical`.
+    - The 17 held-back link creations by callers in an org they may use are checked by their answer only: no endpoint
+      lists a file's links, so a link created behind a 4xx is not seen.
+    - Held-back writes on the 14 files that the write list also uses are checked by their answer only.
+    - The read-back sees what run 1's sweep sees, each file's presence and name (and the seed links of the files it
+      reads), so a hidden change that the API does not show is not seen in run 2, which has no database diff.
+  - The agent trials of 2026-10-30 (Harbor's `terminus-2` agent with `openai/gpt-oss-120b`, 0 of 3; traces in
+    `validation/tenant-isolation-docshare/first-version/traces/agent-r3/`) were graded by the earlier grader and have
+    not been graded again. INFERENCE: the fix would not lift their 0, since each failed at least 460 refused-read
+    checks in run 1 (their `verifier/reward.json`), whose reads the current grader sends unchanged (section 4).
+- The agent's service has the host network during grading (kit rule 8; the `network isolation: ON` of the Daytona
+  logs is for the grader's own runs as uid 1001, such as the checkpoint, not for services), so it could send out what
+  it serves, the hidden data of all four orgs. That would not raise its own score, but it would spoil the hidden data
+  for later runs.
+- Timings: Mac in section 6; Daytona in section 10 (run full2: slowest valid run 1 3.21 s against the 90 s cap,
+  Harbor verifier phase at most 39.4 s against 900 s; run full1, the earlier grader: 6.56 s and 72.6 s).
 
-## 10. Daytona proof results (2026-10-28)
-FACT: `validation/tenant-isolation-docshare/PROOF_RESULTS_full1.md` (run `full1`; the same rows are in
-`proof_results_full1.json` and `run_full1.log` in that folder). Harbor 0.25.0 (`harbor.version` in the
-`lock.json` of all 10 job folders); runner Daytona (`environment.type` "daytona" in each job's `config.json`; our
-Daytona account is on Tier 1), two trials at a time (`n_concurrent_trials` 2); `verifier_environment_mode` "separate" in 19 of 19 trial
-`result.json` files. Job folders: `jobs/tenant-isolation-docshare/tenant-isolation-docshare-<variant>-full1/` (last
-column below; raw Harbor output, git-ignored and not in this repository; one trial per variant ships under
-`validation/tenant-isolation-docshare/traces/`), run from 19:45:27 to 19:56:43 MST on 2026-10-28 (job `result.json`, Mac clock). The table is copied from
-the file:
+## 10. Daytona proof results
+Two full proof runs, one per grader (FACT: the task digest in the `lock.json` of every job folder, Harbor 0.25.0's
+content hash of the package, which its packager also computes locally; the fresh-clone run `clone2` of 2026-10-30,
+canonical and nop only, was also graded by the earlier grader): run full2 of 2026-11-03 (section 10.1) graded the
+current package, `sha256:bf647a0e542a65b1c221bad907aa47a5c4b1a37c0ad13f5a07b6c67657d05967` (96 files); run full1 of
+2026-10-28 (section 10.2) graded the package before the grader fix of 2026-11-03,
+`sha256:8295aff32904e8b26a5d2f49369b5a160473f8f5c99367ae5488799f0e87bd3b` (88 files; the fix changed
+`tests/grade.py` and added `solution/attempts/replay_memo/`). Run full2's files are in
+`validation/tenant-isolation-docshare/`. On 2026-11-03 run full1's files, with its traces, the results of the
+fresh-clone run `clone2` and the agent trials of 2026-10-30, moved to
+`validation/tenant-isolation-docshare/first-version/`.
+
+### 10.1 Run full2 (2026-11-03): the current grader
+FACT: `validation/tenant-isolation-docshare/PROOF_RESULTS_full2.md` (run `full2`; the same rows are in
+`proof_results_full2.json` and `run_full2.log` in that folder) and each trial's `result.json`, `verifier/reward.json`,
+`verifier/test-stdout.txt` and `agent/oracle.txt`. Harbor 0.25.0 (`harbor.version` in the `lock.json` of all 11 job
+folders); runner Daytona (`environment.type` "daytona" in each job's `config.json`; the authors' Daytona account is on
+Tier 1), two trials at a time (`n_concurrent_trials` 2), Harbor's wait for the environment build three-fold
+(`environment_build_timeout_multiplier` 3.0); `verifier_environment_mode` "separate" in 20 of 20 trial `result.json`
+files. 11 rows, 20 trials (19 oracle, 1 nop), run on 2026-11-03 from 03:36:31 MST (the first row's start in
+`run_full2.log`) to 03:44:49 MST (when its three files were written; the force-build job's `result.json` ends at
+03:44:47, Mac clock). Job folders:
+`jobs/tenant-isolation-docshare/tenant-isolation-docshare-<variant>-full2/` (last column below; raw Harbor output,
+git-ignored and not in this repository); one trial per variant ships under
+`validation/tenant-isolation-docshare/traces/`, for canonical `tenant-isolation-docshare__a73K54D`, the
+earliest-started of its ten. The table is copied from the file:
+
+Overall: ALL AS EXPECTED
+
+| Variant | Command | Expected | Rewards | Exceptions | Result | Job folder |
+|---|---|---|---|---|---|---|
+| canonical | `-a oracle -k 10` | 1 | [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0] | - | PASS | `jobs/tenant-isolation-docshare/tenant-isolation-docshare-canonical-full2` |
+| alt | `-a oracle --ae SOLUTION=alt` | 1 | [1.0] | - | PASS | `jobs/tenant-isolation-docshare/tenant-isolation-docshare-alt-full2` |
+| nop | `-a nop` | 0 | [0.0] | - | PASS | `jobs/tenant-isolation-docshare/tenant-isolation-docshare-nop-full2` |
+| deny_most | `-a oracle --ae SOLUTION=deny_most` | 0 | [0.0] | - | PASS | `jobs/tenant-isolation-docshare/tenant-isolation-docshare-deny_most-full2` |
+| drop_org_switching | `-a oracle --ae SOLUTION=drop_org_switching` | 0 | [0.0] | - | PASS | `jobs/tenant-isolation-docshare/tenant-isolation-docshare-drop_org_switching-full2` |
+| hardcode_visible_orgs | `-a oracle --ae SOLUTION=hardcode_visible_orgs` | 0 | [0.0] | - | PASS | `jobs/tenant-isolation-docshare/tenant-isolation-docshare-hardcode_visible_orgs-full2` |
+| membership_plus_get | `-a oracle --ae SOLUTION=membership_plus_get` | 0 | [0.0] | - | PASS | `jobs/tenant-isolation-docshare/tenant-isolation-docshare-membership_plus_get-full2` |
+| patch_get_only | `-a oracle --ae SOLUTION=patch_get_only` | 0 | [0.0] | - | PASS | `jobs/tenant-isolation-docshare/tenant-isolation-docshare-patch_get_only-full2` |
+| phase_gate | `-a oracle --ae SOLUTION=phase_gate` | 0 | [0.0] | - | PASS | `jobs/tenant-isolation-docshare/tenant-isolation-docshare-phase_gate-full2` |
+| replay_memo | `-a oracle --ae SOLUTION=replay_memo` | 0 | [0.0] | - | PASS | `jobs/tenant-isolation-docshare/tenant-isolation-docshare-replay_memo-full2` |
+| force-build | `-a oracle --force-build` | 1 | [1.0] | - | PASS | `jobs/tenant-isolation-docshare/tenant-isolation-docshare-force-build-full2` |
+
+What section 7 asked the run to show (FACT: the trials' files named above):
+- The rewards of the table, with no exception (`exception_info` null in 20 of 20 trial `result.json` files), and no
+  `grader_error` key and no `time_cap` or `held_unsent` failure in any `reward.json`.
+- In 20 of 20 trials: `[test.sh] lock ok` with `setid files left: 0`; `network isolation: ON (private namespace,
+  loopback only)`; three `service on 127.0.0.1:<port> answered` lines (after 0.20-0.21 s); four `staged ... for uid
+  1001 at /work/w<8 hex>` lines; the checkpoint line `ran [... '-I', '-c', 'import sqlite3...'] rc=0 timed_out=False`
+  (`net=private`); no `unreadable (...)`; `reward=... (killed 0 runner processes)`. All 19 oracle trials'
+  `agent/oracle.txt` show `applied <variant> to /app/docshare` (`canonical` for the canonical and force-build rows),
+  so `SOLUTION` reached `solve.sh`; the nop trial has no `agent/oracle.txt`.
+- The 12 valid trials (canonical x 10, alt, force-build): 2,211 run-1 and 1,540 run-2 checks, none failed, 0 leaking
+  refusals, `held_back` 264 and `held_back_sent` 264, and in `verifier/test-stdout.txt` the four count lines of
+  section 4 word for word (`2012 refusal cases, 402 permitted reads; 264 refused writes held back for run 2`, `write
+  list: 50 requests, with 379 refused requests and 264 held-back refused writes mixed in; 0 steps skipped`, `held
+  back from run 1: 264 refused writes; sent in run 2: 264 (264 in the write list, 0 after it)` and `held-back writes
+  read back: 41 files and 4 seed links; 14 files they act on were used by the write list and not read back`).
+- `held_back` = `held_back_sent` = 264 in all 20 trials. Seven of the eight failing trials send fewer write-list
+  requests (33 to 48, table below), so fewer batches carry held-back writes; in six of them the grader sends the rest
+  after the list (11 to 65), as section 4 describes. INFERENCE from `tests/grade.py` (`share_cycle` returns after a
+  failed link creation, `delete` after a failed delete): the requests that depend on a failed step are not sent; this
+  happens only in trials that already score 0.
+- `replay_memo`: 0.0 with `run1_failed` 0 and 60 of 1,491 run-2 checks failed: `run2_fail_held_status_delete` 20,
+  `run2_fail_held_status_share` 9, `run2_fail_held_sweep` 26, `run2_fail_held_link` 2 and one each of
+  `run2_fail_write_rename`, `run2_fail_write_create_link` and `run2_fail_write_delete`, with no
+  `run2_fail_noise_status_*` key: the condition section 7 set. INFERENCE (from these keys and its `ABOUT.md`): its
+  record of run 1 survived to its second start in the Daytona verifier (it refused every replayed refusal and let
+  held-back renames, deletes and link creations through), so the held-back writes, not a lost memory, are what failed
+  it.
+- `phase_gate`: 0.0 with `run1_failed` 0 and 139 of 1,491 run-2 checks failed, among them
+  `run2_fail_noise_status_rename` 6, `_share` 6, `_revoke` 8, `_delete` 6 and `run2_fail_held_status_rename` 15,
+  `_share` 13, `_revoke` 20, `_delete` 19 (plus `held_sweep` 32, `held_link` 4 and 10 failed write-list checks): both
+  families, as section 7 required.
+
+Per variant (FACT: each trial's `verifier/reward.json`; the last column from the `write list:` and `held back from
+run 1:` lines of its `verifier/test-stdout.txt`):
+
+| Variant | Trials | Reward | Run 1 failed | Run 2 failed | Leaking refusals | Write list: permitted / refused / held-back in it + after it |
+|---|---|---|---|---|---|---|
+| canonical | 10 | 1.0 each | 0 of 2,211 | 0 of 1,540 | 0 | 50 / 379 / 264 + 0 |
+| alt | 1 | 1.0 | 0 of 2,211 | 0 of 1,540 | 0 | 50 / 379 / 264 + 0 |
+| force-build | 1 | 1.0 | 0 of 2,211 | 0 of 1,540 | 0 | 50 / 379 / 264 + 0 |
+| nop | 1 | 0.0 | 1,624 of 2,211 | 684 of 1,412 | 768 | 33 / 268 / 199 + 65 |
+| deny_most | 1 | 0.0 | 142 of 2,211 | 152 of 1,428 | 0 | 35 / 282 / 211 + 53 |
+| drop_org_switching | 1 | 0.0 | 140 of 2,211 | 149 of 1,436 | 0 | 36 / 289 / 217 + 47 |
+| hardcode_visible_orgs | 1 | 0.0 | 517 of 2,211 | 277 of 1,540 | 249 | 50 / 379 / 264 + 0 |
+| membership_plus_get | 1 | 0.0 | 230 of 2,211 | 125 of 1,527 | 125 | 48 / 368 / 264 + 0 |
+| patch_get_only | 1 | 0.0 | 1,182 of 2,211 | 520 of 1,412 | 505 | 33 / 268 / 199 + 65 |
+| phase_gate | 1 | 0.0 | 0 of 2,211 | 139 of 1,491 | 0 | 43 / 337 / 253 + 11 |
+| replay_memo | 1 | 0.0 | 0 of 2,211 | 60 of 1,491 | 0 | 43 / 337 / 253 + 11 |
+
+Field by field against the local matrix of the fix (FACT: `docs/tenant-isolation-docshare/local_results.txt`, the
+local run of 2026-11-03 02:21:36 MST, which ran the same `tests/grade.py`; for `held_back`, `held_back_sent` and
+the full grading logs, which that file does not print, the same run's `reward.json` and grading log of each variant,
+not shipped; nop is compared with the local `original` row and force-build with canonical; timing fields left out):
+- Equal in 20 of 20 trials: every `reward.json` field but `grading_seconds`, that is `reward`, `run1_checks`,
+  `run1_failed`, `run2_checks`, `run2_failed`, `leaking_refusals`, `held_back`, `held_back_sent` and every
+  `run1_fail_<check>` and `run2_fail_<check>` count: 8 fields in each valid trial, 15 (`replay_memo`) to 108 (nop) in
+  the failing ones, 510 fields in all, none different. So each failing trial failed the same checks, with the same
+  counts, as its row in section 7.
+- Equal in 19 of 20 trials: every line of `verifier/test-stdout.txt` but the 11 about the machine (below), that
+  is the count lines, the three `service ... answered` lines, the phase lines with their counts per failed check, the
+  failure examples (up to 3 per failed check) and the reward line, with times and ports left out, against the same
+  variant's local grading log: 1,171 of the 1,173 such lines of the 20 trials are equal.
+- Different, and why:
+  - The other 2 of those lines, both in `phase_gate`'s trial: its two `write_outsider_revoke` examples name the token
+    of a link that the service created in run 2, and the service draws tokens at random (`secrets.token_urlsafe(18)`
+    in its `routes/share.py`), so they differ in every run, locally too. The check and its count (2) are equal.
+  - The 11 lines per trial about the machine, which differ by the design of the kit's local mode
+    (`base/verifier_kit/README.md`, "Local authoring"): `[test.sh] lock ok` (only Harbor runs `test.sh`; locally
+    `grade.py` is started directly); `network isolation: ON (private namespace, loopback only)` against the Mac's
+    `not available here; runs keep the host network`; the interpreter in the checkpoint line (the image's
+    `/usr/local/bin/python3` against the authoring environment's); the paths of the four staged folders, the
+    submission copy and the three service starts (under `/work` against a local scratch folder; the `w<8 hex>` names
+    are random in both).
+  - The timing fields: `grading_seconds`, the phase times and the service start times (below).
+
+Timings the run recorded (FACT: `grading_seconds` from `verifier/reward.json`; the phase lines `phase <name>: <n>
+checks, <n> failed, <s>s` from `verifier/test-stdout.txt`; the Harbor verifier phase from `verifier.started_at` to
+`verifier.finished_at` in each trial's `result.json`):
+
+| Rows | `grading_seconds` | phase original / run1 / run2 | Harbor verifier phase |
+|---|---|---|---|
+| canonical (10 trials) | 4.89-5.78 s | 0.54-0.62 / 2.49-3.21 / 1.73-2.03 s | 12.0-32.2 s |
+| alt | 5.56 s | 0.59 / 2.96 / 1.98 s | 21.4 s |
+| force-build | 5.51 s | 0.61 / 2.80 / 2.08 s | 39.4 s |
+| nop and seven attempts | 4.84-6.28 s | 0.52-0.68 / 2.69-3.29 / 1.60-2.28 s | 13.2-23.2 s |
+
+Reading: the slowest valid run 1 on Daytona took 3.21 s (canonical; 1.42 s was the slowest on the Mac, section 6, and
+6.56 s in run full1, section 10.2), under the 30 s trigger in section 7 ("How to read the proof runs"), so the 90 s
+run caps stand; the slowest Harbor verifier phase, 39.4 s (force-build), is under `verifier.timeout_sec` 900 s, which
+budgets the test run and the copy of `/logs/verifier` back (section 10.2). The caps are unchanged; a change would
+change the package and its digest. Not exercised by run full2: the 22 local-only variants of section 7 (the
+ablations, the gaps, the lenient case and the five `memo_*` variants), the adversarial review's services other than
+`replay_memo` and `phase_gate` (section 9), the image size, and what a service could send over the host network.
+
+### 10.2 Run full1 (2026-10-28): the earlier grader
+Status (2026-11-03): this run proved the grader before its fix of 2026-11-03, so its counts (2,475 run-1 and 1,231
+run-2 checks per valid trial) are that grader's; its files are now in
+`validation/tenant-isolation-docshare/first-version/` (the paths below were updated to it on 2026-11-03).
+
+FACT: `validation/tenant-isolation-docshare/first-version/PROOF_RESULTS_full1.md` (run `full1`; the same rows are in
+`proof_results_full1.json` and `run_full1.log` in that folder). Harbor 0.25.0 (`harbor.version` in the `lock.json` of
+all 10 job folders); runner Daytona (`environment.type` "daytona" in each job's `config.json`; the authors' Daytona
+account is on Tier 1), two trials at a time (`n_concurrent_trials` 2); `verifier_environment_mode` "separate" in 19
+of 19 trial `result.json` files. Job folders:
+`jobs/tenant-isolation-docshare/tenant-isolation-docshare-<variant>-full1/` (last column below; raw Harbor output,
+git-ignored and not in this repository; one trial per variant ships under
+`validation/tenant-isolation-docshare/first-version/traces/`), run from 19:45:27 to 19:56:43 MST on 2026-10-28 (job
+`result.json`, Mac clock). The table is copied from the file:
 
 Overall: ALL AS EXPECTED
 
@@ -386,7 +756,8 @@ What section 7 asked the run to show (FACT: each trial's `verifier/test-stdout.t
   `run2_fail_noise_status_rename` 8, `_share` 6, `_revoke` 17, `_delete` 11 (plus `run2_fail_write_outsider_revoke` 2,
   `run2_fail_write_link_works` 5, `run2_fail_write_create_link` 1). The `run2_fail_noise_status_*` counts are the
   condition section 7 set: the mixing, not another check, is what kills it.
-- nop: `run1_failed` 1,742, `run2_failed` 603, `leaking_refusals` 785, the same counts as the local original (section 7).
+- nop: `run1_failed` 1,742, `run2_failed` 603, `leaking_refusals` 785, the same counts as the local original of
+  2026-10-28 under the same grader (the current grader's are in section 7).
 - The line `write list: 50 requests, with 379 refused requests mixed in; 0 steps skipped` appears in 14 trials (the ten
   canonical, alt, force-build, `hardcode_visible_orgs`, `membership_plus_get`). Five failing variants show fewer
   permitted requests, all with 0 steps skipped: `deny_most` 35, `drop_org_switching` 36, `patch_get_only` and nop 38,
@@ -409,4 +780,5 @@ under the 30 s trigger in section 7 ("How to read the proof runs"), so the 90 s 
 verifier phase, 72.6 s, is under `verifier.timeout_sec` 900 s. In Harbor 0.25.0 that timeout covers only
 `verifier.verify()`, which starts after the verifier sandbox is up and the artifacts are uploaded (`trial/trial.py`
 lines 970-980, called at 1081), so it budgets the test run and the copy of `/logs/verifier` back, not the whole phase
-(FACT, read 2026-11-02). Not exercised by these runs: the 16 local-only variants of section 7 and the image size.
+(FACT, read 2026-11-02). Not exercised by these runs: the 16 local-only variants that section 7 had then, and the
+image size.

@@ -1,8 +1,8 @@
 {
-    "id": "6a5d0a07-3293-42df-b065-e8da7980b03b",
-    "started_at": "2026-10-28T19:52:10.247760",
-    "updated_at": "2026-10-28T19:52:44.509555",
-    "finished_at": "2026-10-28T19:52:44.509555",
+    "id": "2b6bbecd-e43c-43c7-ac70-df90c3c231eb",
+    "started_at": "2026-11-03T03:40:37.707849",
+    "updated_at": "2026-11-03T03:41:00.941071",
+    "finished_at": "2026-11-03T03:41:00.941071",
     "n_total_trials": 1,
     "stats": {
         "n_completed_trials": 1,
@@ -17,10 +17,12 @@
                 "n_errors": 0,
                 "metrics": [
                     {
-                        "grading_seconds": 5.73,
+                        "grading_seconds": 5.11,
+                        "held_back": 264.0,
+                        "held_back_sent": 264.0,
                         "leaking_refusals": 0.0,
                         "reward": 0.0,
-                        "run1_checks": 2475.0,
+                        "run1_checks": 2211.0,
                         "run1_fail_permitted_admin_orgs_support": 8.0,
                         "run1_fail_permitted_download": 2.0,
                         "run1_fail_permitted_download_support": 16.0,
@@ -39,7 +41,7 @@
                         "run1_fail_permitted_thumb": 2.0,
                         "run1_fail_permitted_thumb_support": 16.0,
                         "run1_failed": 140.0,
-                        "run2_checks": 1127.0,
+                        "run2_checks": 1436.0,
                         "run2_fail_permitted_admin_orgs_support": 8.0,
                         "run2_fail_permitted_download": 2.0,
                         "run2_fail_permitted_download_support": 16.0,
@@ -69,232 +71,242 @@
                 "reward_stats": {
                     "reward": {
                         "0.0": [
-                            "tenant-isolation-docshare__5pcy95D"
+                            "tenant-isolation-docshare__rEuW5DN"
                         ]
                     },
                     "run1_checks": {
-                        "2475": [
-                            "tenant-isolation-docshare__5pcy95D"
+                        "2211": [
+                            "tenant-isolation-docshare__rEuW5DN"
                         ]
                     },
                     "run1_failed": {
                         "140": [
-                            "tenant-isolation-docshare__5pcy95D"
+                            "tenant-isolation-docshare__rEuW5DN"
                         ]
                     },
                     "run2_checks": {
-                        "1127": [
-                            "tenant-isolation-docshare__5pcy95D"
+                        "1436": [
+                            "tenant-isolation-docshare__rEuW5DN"
                         ]
                     },
                     "run2_failed": {
                         "149": [
-                            "tenant-isolation-docshare__5pcy95D"
+                            "tenant-isolation-docshare__rEuW5DN"
                         ]
                     },
                     "leaking_refusals": {
                         "0": [
-                            "tenant-isolation-docshare__5pcy95D"
+                            "tenant-isolation-docshare__rEuW5DN"
+                        ]
+                    },
+                    "held_back": {
+                        "264": [
+                            "tenant-isolation-docshare__rEuW5DN"
+                        ]
+                    },
+                    "held_back_sent": {
+                        "264": [
+                            "tenant-isolation-docshare__rEuW5DN"
                         ]
                     },
                     "grading_seconds": {
-                        "5.73": [
-                            "tenant-isolation-docshare__5pcy95D"
+                        "5.11": [
+                            "tenant-isolation-docshare__rEuW5DN"
                         ]
                     },
                     "run1_fail_permitted_thumb_support": {
                         "16": [
-                            "tenant-isolation-docshare__5pcy95D"
+                            "tenant-isolation-docshare__rEuW5DN"
                         ]
                     },
                     "run1_fail_permitted_download_support": {
                         "16": [
-                            "tenant-isolation-docshare__5pcy95D"
+                            "tenant-isolation-docshare__rEuW5DN"
                         ]
                     },
                     "run1_fail_permitted_me_support": {
                         "8": [
-                            "tenant-isolation-docshare__5pcy95D"
+                            "tenant-isolation-docshare__rEuW5DN"
                         ]
                     },
                     "run1_fail_permitted_me": {
                         "2": [
-                            "tenant-isolation-docshare__5pcy95D"
+                            "tenant-isolation-docshare__rEuW5DN"
                         ]
                     },
                     "run1_fail_permitted_admin_orgs_support": {
                         "8": [
-                            "tenant-isolation-docshare__5pcy95D"
+                            "tenant-isolation-docshare__rEuW5DN"
                         ]
                     },
                     "run1_fail_permitted_list_folders_support": {
                         "8": [
-                            "tenant-isolation-docshare__5pcy95D"
+                            "tenant-isolation-docshare__rEuW5DN"
                         ]
                     },
                     "run1_fail_permitted_read_support": {
                         "16": [
-                            "tenant-isolation-docshare__5pcy95D"
+                            "tenant-isolation-docshare__rEuW5DN"
                         ]
                     },
                     "run1_fail_permitted_folder_files": {
                         "6": [
-                            "tenant-isolation-docshare__5pcy95D"
+                            "tenant-isolation-docshare__rEuW5DN"
                         ]
                     },
                     "run1_fail_permitted_folder_files_support": {
                         "24": [
-                            "tenant-isolation-docshare__5pcy95D"
+                            "tenant-isolation-docshare__rEuW5DN"
                         ]
                     },
                     "run1_fail_permitted_export": {
                         "2": [
-                            "tenant-isolation-docshare__5pcy95D"
+                            "tenant-isolation-docshare__rEuW5DN"
                         ]
                     },
                     "run1_fail_permitted_download": {
                         "2": [
-                            "tenant-isolation-docshare__5pcy95D"
+                            "tenant-isolation-docshare__rEuW5DN"
                         ]
                     },
                     "run1_fail_permitted_list_folders": {
                         "2": [
-                            "tenant-isolation-docshare__5pcy95D"
+                            "tenant-isolation-docshare__rEuW5DN"
                         ]
                     },
                     "run1_fail_permitted_list_files_support": {
                         "8": [
-                            "tenant-isolation-docshare__5pcy95D"
+                            "tenant-isolation-docshare__rEuW5DN"
                         ]
                     },
                     "run1_fail_permitted_export_support": {
                         "16": [
-                            "tenant-isolation-docshare__5pcy95D"
+                            "tenant-isolation-docshare__rEuW5DN"
                         ]
                     },
                     "run1_fail_permitted_read": {
                         "2": [
-                            "tenant-isolation-docshare__5pcy95D"
+                            "tenant-isolation-docshare__rEuW5DN"
                         ]
                     },
                     "run1_fail_permitted_thumb": {
                         "2": [
-                            "tenant-isolation-docshare__5pcy95D"
+                            "tenant-isolation-docshare__rEuW5DN"
                         ]
                     },
                     "run1_fail_permitted_list_files": {
                         "2": [
-                            "tenant-isolation-docshare__5pcy95D"
+                            "tenant-isolation-docshare__rEuW5DN"
                         ]
                     },
                     "run2_fail_permitted_export_support": {
                         "16": [
-                            "tenant-isolation-docshare__5pcy95D"
+                            "tenant-isolation-docshare__rEuW5DN"
                         ]
                     },
                     "run2_fail_permitted_me": {
                         "2": [
-                            "tenant-isolation-docshare__5pcy95D"
+                            "tenant-isolation-docshare__rEuW5DN"
                         ]
                     },
                     "run2_fail_permitted_list_folders_support": {
                         "8": [
-                            "tenant-isolation-docshare__5pcy95D"
+                            "tenant-isolation-docshare__rEuW5DN"
                         ]
                     },
                     "run2_fail_permitted_folder_files_support": {
                         "24": [
-                            "tenant-isolation-docshare__5pcy95D"
+                            "tenant-isolation-docshare__rEuW5DN"
                         ]
                     },
                     "run2_fail_permitted_thumb_support": {
                         "16": [
-                            "tenant-isolation-docshare__5pcy95D"
+                            "tenant-isolation-docshare__rEuW5DN"
                         ]
                     },
                     "run2_fail_permitted_me_support": {
                         "8": [
-                            "tenant-isolation-docshare__5pcy95D"
+                            "tenant-isolation-docshare__rEuW5DN"
                         ]
                     },
                     "run2_fail_permitted_download_support": {
                         "16": [
-                            "tenant-isolation-docshare__5pcy95D"
+                            "tenant-isolation-docshare__rEuW5DN"
                         ]
                     },
                     "run2_fail_permitted_read_support": {
                         "16": [
-                            "tenant-isolation-docshare__5pcy95D"
+                            "tenant-isolation-docshare__rEuW5DN"
                         ]
                     },
                     "run2_fail_permitted_admin_orgs_support": {
                         "8": [
-                            "tenant-isolation-docshare__5pcy95D"
+                            "tenant-isolation-docshare__rEuW5DN"
                         ]
                     },
                     "run2_fail_permitted_download": {
                         "2": [
-                            "tenant-isolation-docshare__5pcy95D"
+                            "tenant-isolation-docshare__rEuW5DN"
                         ]
                     },
                     "run2_fail_permitted_folder_files": {
                         "6": [
-                            "tenant-isolation-docshare__5pcy95D"
+                            "tenant-isolation-docshare__rEuW5DN"
                         ]
                     },
                     "run2_fail_permitted_thumb": {
                         "2": [
-                            "tenant-isolation-docshare__5pcy95D"
+                            "tenant-isolation-docshare__rEuW5DN"
                         ]
                     },
                     "run2_fail_permitted_list_files_support": {
                         "8": [
-                            "tenant-isolation-docshare__5pcy95D"
+                            "tenant-isolation-docshare__rEuW5DN"
                         ]
                     },
                     "run2_fail_permitted_list_folders": {
                         "2": [
-                            "tenant-isolation-docshare__5pcy95D"
+                            "tenant-isolation-docshare__rEuW5DN"
                         ]
                     },
                     "run2_fail_permitted_list_files": {
                         "2": [
-                            "tenant-isolation-docshare__5pcy95D"
+                            "tenant-isolation-docshare__rEuW5DN"
                         ]
                     },
                     "run2_fail_permitted_export": {
                         "2": [
-                            "tenant-isolation-docshare__5pcy95D"
+                            "tenant-isolation-docshare__rEuW5DN"
                         ]
                     },
                     "run2_fail_permitted_read": {
                         "2": [
-                            "tenant-isolation-docshare__5pcy95D"
+                            "tenant-isolation-docshare__rEuW5DN"
                         ]
                     },
                     "run2_fail_write_rename": {
                         "2": [
-                            "tenant-isolation-docshare__5pcy95D"
+                            "tenant-isolation-docshare__rEuW5DN"
                         ]
                     },
                     "run2_fail_write_read_after_rename": {
                         "2": [
-                            "tenant-isolation-docshare__5pcy95D"
+                            "tenant-isolation-docshare__rEuW5DN"
                         ]
                     },
                     "run2_fail_write_create_link": {
                         "2": [
-                            "tenant-isolation-docshare__5pcy95D"
+                            "tenant-isolation-docshare__rEuW5DN"
                         ]
                     },
                     "run2_fail_write_revoke_seed_link": {
                         "2": [
-                            "tenant-isolation-docshare__5pcy95D"
+                            "tenant-isolation-docshare__rEuW5DN"
                         ]
                     },
                     "run2_fail_write_delete": {
                         "1": [
-                            "tenant-isolation-docshare__5pcy95D"
+                            "tenant-isolation-docshare__rEuW5DN"
                         ]
                     }
                 },

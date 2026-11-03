@@ -1,8 +1,8 @@
 {
-    "id": "ee348c4f-0de2-4449-847c-4db0ca81f43b",
-    "started_at": "2026-10-28T19:53:33.789188",
-    "updated_at": "2026-10-28T19:54:41.073014",
-    "finished_at": "2026-10-28T19:54:41.073014",
+    "id": "2a3ecf58-7ae3-4b18-8dbd-73d50b4df70b",
+    "started_at": "2026-11-03T03:41:41.226943",
+    "updated_at": "2026-11-03T03:42:11.726324",
+    "finished_at": "2026-11-03T03:42:11.726324",
     "n_total_trials": 1,
     "stats": {
         "n_completed_trials": 1,
@@ -17,158 +17,194 @@
                 "n_errors": 0,
                 "metrics": [
                     {
-                        "grading_seconds": 6.6,
-                        "leaking_refusals": 130.0,
+                        "grading_seconds": 5.41,
+                        "held_back": 264.0,
+                        "held_back_sent": 264.0,
+                        "leaking_refusals": 125.0,
                         "reward": 0.0,
-                        "run1_checks": 2475.0,
+                        "run1_checks": 2211.0,
                         "run1_fail_db_changed": 1.0,
                         "run1_fail_leak_export": 52.0,
                         "run1_fail_leak_thumb": 32.0,
-                        "run1_fail_status_delete": 25.0,
+                        "run1_fail_status_delete": 20.0,
                         "run1_fail_status_export": 52.0,
-                        "run1_fail_status_share": 32.0,
+                        "run1_fail_status_share": 21.0,
                         "run1_fail_status_thumb": 32.0,
-                        "run1_fail_sweep": 25.0,
-                        "run1_failed": 251.0,
-                        "run2_checks": 1231.0,
+                        "run1_fail_sweep": 20.0,
+                        "run1_failed": 230.0,
+                        "run2_checks": 1527.0,
+                        "run2_fail_held_status_delete": 11.0,
+                        "run2_fail_held_status_share": 9.0,
+                        "run2_fail_held_sweep": 14.0,
                         "run2_fail_leak_export": 16.0,
                         "run2_fail_leak_thumb": 11.0,
-                        "run2_fail_noise_leak_export": 13.0,
-                        "run2_fail_noise_leak_thumb": 6.0,
-                        "run2_fail_noise_status_delete": 6.0,
-                        "run2_fail_noise_status_export": 13.0,
-                        "run2_fail_noise_status_share": 5.0,
-                        "run2_fail_noise_status_thumb": 6.0,
+                        "run2_fail_noise_leak_export": 7.0,
+                        "run2_fail_noise_leak_thumb": 7.0,
+                        "run2_fail_noise_status_delete": 4.0,
+                        "run2_fail_noise_status_export": 7.0,
+                        "run2_fail_noise_status_share": 4.0,
+                        "run2_fail_noise_status_thumb": 7.0,
                         "run2_fail_status_export": 16.0,
                         "run2_fail_status_thumb": 11.0,
-                        "run2_failed": 103.0
+                        "run2_fail_write_delete": 1.0,
+                        "run2_failed": 125.0
                     }
                 ],
                 "pass_at_k": {},
                 "reward_stats": {
                     "reward": {
                         "0.0": [
-                            "tenant-isolation-docshare__pACZ8Qu"
+                            "tenant-isolation-docshare__y56Ps4B"
                         ]
                     },
                     "run1_checks": {
-                        "2475": [
-                            "tenant-isolation-docshare__pACZ8Qu"
+                        "2211": [
+                            "tenant-isolation-docshare__y56Ps4B"
                         ]
                     },
                     "run1_failed": {
-                        "251": [
-                            "tenant-isolation-docshare__pACZ8Qu"
+                        "230": [
+                            "tenant-isolation-docshare__y56Ps4B"
                         ]
                     },
                     "run2_checks": {
-                        "1231": [
-                            "tenant-isolation-docshare__pACZ8Qu"
+                        "1527": [
+                            "tenant-isolation-docshare__y56Ps4B"
                         ]
                     },
                     "run2_failed": {
-                        "103": [
-                            "tenant-isolation-docshare__pACZ8Qu"
+                        "125": [
+                            "tenant-isolation-docshare__y56Ps4B"
                         ]
                     },
                     "leaking_refusals": {
-                        "130": [
-                            "tenant-isolation-docshare__pACZ8Qu"
+                        "125": [
+                            "tenant-isolation-docshare__y56Ps4B"
+                        ]
+                    },
+                    "held_back": {
+                        "264": [
+                            "tenant-isolation-docshare__y56Ps4B"
+                        ]
+                    },
+                    "held_back_sent": {
+                        "264": [
+                            "tenant-isolation-docshare__y56Ps4B"
                         ]
                     },
                     "grading_seconds": {
-                        "6.6": [
-                            "tenant-isolation-docshare__pACZ8Qu"
+                        "5.41": [
+                            "tenant-isolation-docshare__y56Ps4B"
                         ]
                     },
                     "run1_fail_status_thumb": {
                         "32": [
-                            "tenant-isolation-docshare__pACZ8Qu"
+                            "tenant-isolation-docshare__y56Ps4B"
                         ]
                     },
                     "run1_fail_leak_thumb": {
                         "32": [
-                            "tenant-isolation-docshare__pACZ8Qu"
+                            "tenant-isolation-docshare__y56Ps4B"
                         ]
                     },
                     "run1_fail_status_export": {
                         "52": [
-                            "tenant-isolation-docshare__pACZ8Qu"
+                            "tenant-isolation-docshare__y56Ps4B"
                         ]
                     },
                     "run1_fail_leak_export": {
                         "52": [
-                            "tenant-isolation-docshare__pACZ8Qu"
+                            "tenant-isolation-docshare__y56Ps4B"
                         ]
                     },
                     "run1_fail_status_share": {
-                        "32": [
-                            "tenant-isolation-docshare__pACZ8Qu"
+                        "21": [
+                            "tenant-isolation-docshare__y56Ps4B"
                         ]
                     },
                     "run1_fail_status_delete": {
-                        "25": [
-                            "tenant-isolation-docshare__pACZ8Qu"
+                        "20": [
+                            "tenant-isolation-docshare__y56Ps4B"
                         ]
                     },
                     "run1_fail_sweep": {
-                        "25": [
-                            "tenant-isolation-docshare__pACZ8Qu"
+                        "20": [
+                            "tenant-isolation-docshare__y56Ps4B"
                         ]
                     },
                     "run1_fail_db_changed": {
                         "1": [
-                            "tenant-isolation-docshare__pACZ8Qu"
+                            "tenant-isolation-docshare__y56Ps4B"
                         ]
                     },
                     "run2_fail_status_thumb": {
                         "11": [
-                            "tenant-isolation-docshare__pACZ8Qu"
+                            "tenant-isolation-docshare__y56Ps4B"
                         ]
                     },
                     "run2_fail_leak_thumb": {
                         "11": [
-                            "tenant-isolation-docshare__pACZ8Qu"
+                            "tenant-isolation-docshare__y56Ps4B"
                         ]
                     },
                     "run2_fail_status_export": {
                         "16": [
-                            "tenant-isolation-docshare__pACZ8Qu"
+                            "tenant-isolation-docshare__y56Ps4B"
                         ]
                     },
                     "run2_fail_leak_export": {
                         "16": [
-                            "tenant-isolation-docshare__pACZ8Qu"
+                            "tenant-isolation-docshare__y56Ps4B"
+                        ]
+                    },
+                    "run2_fail_held_status_delete": {
+                        "11": [
+                            "tenant-isolation-docshare__y56Ps4B"
                         ]
                     },
                     "run2_fail_noise_status_export": {
-                        "13": [
-                            "tenant-isolation-docshare__pACZ8Qu"
+                        "7": [
+                            "tenant-isolation-docshare__y56Ps4B"
                         ]
                     },
                     "run2_fail_noise_leak_export": {
-                        "13": [
-                            "tenant-isolation-docshare__pACZ8Qu"
+                        "7": [
+                            "tenant-isolation-docshare__y56Ps4B"
+                        ]
+                    },
+                    "run2_fail_held_status_share": {
+                        "9": [
+                            "tenant-isolation-docshare__y56Ps4B"
                         ]
                     },
                     "run2_fail_noise_status_share": {
-                        "5": [
-                            "tenant-isolation-docshare__pACZ8Qu"
+                        "4": [
+                            "tenant-isolation-docshare__y56Ps4B"
                         ]
                     },
                     "run2_fail_noise_status_thumb": {
-                        "6": [
-                            "tenant-isolation-docshare__pACZ8Qu"
+                        "7": [
+                            "tenant-isolation-docshare__y56Ps4B"
                         ]
                     },
                     "run2_fail_noise_leak_thumb": {
-                        "6": [
-                            "tenant-isolation-docshare__pACZ8Qu"
+                        "7": [
+                            "tenant-isolation-docshare__y56Ps4B"
                         ]
                     },
                     "run2_fail_noise_status_delete": {
-                        "6": [
-                            "tenant-isolation-docshare__pACZ8Qu"
+                        "4": [
+                            "tenant-isolation-docshare__y56Ps4B"
+                        ]
+                    },
+                    "run2_fail_write_delete": {
+                        "1": [
+                            "tenant-isolation-docshare__y56Ps4B"
+                        ]
+                    },
+                    "run2_fail_held_sweep": {
+                        "14": [
+                            "tenant-isolation-docshare__y56Ps4B"
                         ]
                     }
                 },

@@ -4,15 +4,26 @@ import sys; sys.path.insert(0, "/tests"); import kit  # noqa: E702  (python3 -I 
 # 1. The untouched original app (tests/original) answers every permitted read on its own copy of the hidden database,
 #    before any agent code runs: these answers are the reference for response fields and headers.
 # 2. Run 1: the agent's app on a fresh copy of the hidden database gets every refused read shuffled together with every
-#    permitted read, then every refused write. Each refusal must be a 4xx with no file contents and no name of a file
-#    the caller may never read; each permitted read must match the seed and the original's answer. Then every file is
-#    read once by a member of its organisation (nothing renamed or deleted), the app is stopped, and the database
-#    (copied out by uid 1001, with its -wal file) must equal the hidden seed on the named columns.
+#    permitted read, then every refused write except the held-back ones (see 3). Each refusal must be a 4xx with no file
+#    contents and no name of a file the caller may never read; each permitted read must match the seed and the
+#    original's answer. Then every file is read once by a member of its organisation (nothing renamed or deleted), the
+#    app is stopped, and the database (copied out by uid 1001, with its -wal file) must equal the hidden seed on the
+#    named columns.
 # 3. Run 2: the agent's app on another fresh copy gets the permitted reads shuffled with 400 refused reads, then a
 #    fixed list of permitted writes (rename, share and revoke, delete, including from a second organisation via
-#    X-Org-Id) whose effects are checked over HTTP, with 3-12 refused requests (reads and writes) before each one.
-# No run of agent code sees only one kind of request, so a service cannot pass by telling the runs apart; the
-# staged folder names are random for the same reason. Reward 1 only if every check passes.
+#    X-Org-Id) whose effects are checked over HTTP. Before each one come, shuffled together, 3-12 refused requests
+#    (reads and writes) that run 1 sent and, while they last, 4-8 held-back refused writes: a seeded third of each
+#    class of refused write (its kind, the caller's state and role, the file's relation to the caller) that run 1
+#    never sends. Each held-back write is sent once and must be refused; any the list did not reach is sent after it.
+#    Then each file a held-back rename, delete or revoke acts on is read back by a member of its organisation, and
+#    each of its working seed links is fetched, unless the write list used that file.
+# What this defends: a service that tells the runs apart (by folder name, by start, by request count) or that
+# remembers what run 1 sent (in its code folder, /tmp, /work, its database or over the network) meets each held-back
+# write for the first time among the permitted writes, so only the policy can tell the two apart. What it does not
+# defend: a service that rebuilds this fixed, seeded plan from grade.py, policy.py and hidden/seed.db (none of them is
+# in the agent's container); a held-back link creation carried out behind a 4xx (no endpoint lists links); and the
+# effect of a held-back write on a file that the write list also uses (only its answer is checked). The staged folder
+# names are random. Reward 1 only if every check passes.
 import base64, binascii, hashlib, http.client, json, os, random, re, secrets, socket, sqlite3, time, urllib.parse
 
 TESTS = kit.TESTS_DIR
@@ -41,6 +52,8 @@ MARKER_RE = re.compile(rb"DSM-[0-9A-F]{16}")
 WRITE_KINDS = ("rename", "share", "revoke", "delete")
 MIXED_REFUSALS = 400      # refused reads shuffled into run 2's permitted reads
 NOISE = (3, 12)           # refused requests sent before each request of run 2's write list (seeded count)
+HOLD_BACK = 3             # run 1 never sends (n + 1) // 3 of each class of n refused writes; run 2 sends them
+HELD_DEAL = (4, 8)        # held-back refused writes added before each request of run 2's write list (seeded count)
 ISO_RE = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]00:?00)")
 
 
@@ -165,6 +178,34 @@ def build_cases(seed):
     return deny, allow
 
 
+def write_file(seed, case):
+    """The id of the file a refused write acts on (for a revoke, the file behind the token)."""
+    if case["kind"] == "revoke":
+        return seed["shares"][case["path"].rsplit("/", 1)[1]]["file_id"]
+    return case["file_id"]
+
+
+def write_class(seed, case):
+    """A refused write's class: its kind, the caller's state and role, and the file's relation to the caller."""
+    state, _, role = policy.resolve(seed, case["ctx"])
+    return case["kind"], state, role or "", relation(seed, case["ctx"], seed["files"][write_file(seed, case)])
+
+
+def held_back(seed, deny):
+    """Indexes in deny of the refused writes that only run 2 sends: (n + 1) // HOLD_BACK of each class of n, seeded, so
+    every class of two or more has at least one in each run. No memory of run 1 (files, database, network) can tell
+    them from the permitted writes they are mixed with; only the policy can."""
+    rng = random.Random(RNG_SEED + 6)
+    classes = {}
+    for i, c in enumerate(deny):
+        if c["kind"] in WRITE_KINDS:
+            classes.setdefault(write_class(seed, c), []).append(i)
+    held = set()
+    for key in sorted(classes):
+        held.update(rng.sample(classes[key], (len(classes[key]) + 1) // HOLD_BACK))
+    return held
+
+
 # ---------------------------------------------------------------- running services
 def free_port():
     s = socket.socket()
@@ -265,6 +306,7 @@ def as_json(payload):
 class Phase:
     def __init__(self, name):
         self.name, self.t0, self.failures, self.count, self.cats, self.leaks = name, time.monotonic(), [], 0, {}, 0
+        self.held_sent = 0
 
     def over(self):
         return time.monotonic() - self.t0 > PHASE_CAP[self.name]
@@ -475,15 +517,32 @@ def snapshot(db_path, name):
         con.close()
 
 
-def run_first(seed, sub, deny, allow, refs):
-    """Run 1: refused and permitted reads shuffled together, then the refused writes; then the read-back sweep and
-    the database diff (only refused requests could have written, so the end state must be the seed)."""
+def read_back(seed, ph, port, fids, cat):
+    """Each file in fids is read once by a home member of its organisation: it must still be there, unrenamed."""
+    for fid in sorted(fids):
+        if ph.over():
+            ph.fail("time cap reached before every file was read back", "time_cap")
+            break
+        f = seed["files"][fid]
+        uid = next(u for u in sorted(seed["users"]) if seed["users"][u]["home_org_id"] == f["org_id"]
+                   and len(seed["roles"].get(u, {})) == 1)
+        ph.count += 1
+        status, _, payload = call(port, "GET", f"/api/files/{fid}", headers_for(seed, ("user", uid, None)))
+        obj = as_json(payload)
+        if status != 200 or not isinstance(obj, dict) or obj.get("name") != f["name"]:
+            ph.fail(f"after the refused requests, {f['name']} reads as {status} {payload[:80]!r}", cat)
+
+
+def run_first(seed, sub, deny, allow, refs, held):
+    """Run 1: refused and permitted reads shuffled together, then the refused writes except the held-back ones; then
+    the read-back sweep and the database diff (only refused requests could have written, so the end state must be the
+    seed)."""
     ph = Phase("run1")
     rng = random.Random(RNG_SEED + 2)
     plan = [("refused", c) for c in deny if c["kind"] not in WRITE_KINDS] + [("permitted", i) for i in range(len(allow))]
     rng.shuffle(plan)
     # Refused writes go last, deletes at the very end, so a wrongly allowed write cannot hide a later read leak.
-    plan += [("refused", c) for c in deny if c["kind"] in WRITE_KINDS]
+    plan += [("refused", c) for i, c in enumerate(deny) if c["kind"] in WRITE_KINDS and i not in held]
     db_path = stage_db()
     proc, port = start(sub, db_path)
     if proc is None:
@@ -499,19 +558,7 @@ def run_first(seed, sub, deny, allow, refs):
                 check_refusal(seed, ph, port, x)
             else:
                 check_permitted(seed, ph, port, allow[x], refs.get(x))
-        # nothing was renamed or deleted: each file read once by a home member of its organisation
-        for fid in sorted(seed["files"]):
-            if ph.over():
-                ph.fail("time cap reached before every file was read back", "time_cap")
-                break
-            f = seed["files"][fid]
-            uid = next(u for u in sorted(seed["users"]) if seed["users"][u]["home_org_id"] == f["org_id"]
-                       and len(seed["roles"].get(u, {})) == 1)
-            ph.count += 1
-            status, _, payload = call(port, "GET", f"/api/files/{fid}", headers_for(seed, ("user", uid, None)))
-            obj = as_json(payload)
-            if status != 200 or not isinstance(obj, dict) or obj.get("name") != f["name"]:
-                ph.fail(f"after the refused requests, {f['name']} reads as {status} {payload[:80]!r}", "sweep")
+        read_back(seed, ph, port, seed["files"], "sweep")    # nothing was renamed or deleted
     finally:
         stop(proc, port)
     ph.count += 1
@@ -525,22 +572,28 @@ def run_first(seed, sub, deny, allow, refs):
     return ph
 
 
-def run_second(seed, sub, deny, allow, refs):
+def run_second(seed, sub, deny, allow, refs, held):
     """Run 2: the permitted reads shuffled with MIXED_REFUSALS refused reads, then the permitted writes, each preceded
-    by a few refused requests (reads and writes) drawn from the rest of the refusal list."""
+    by a few refused requests (reads and writes) drawn from the rest of the refusal list and by a few of the held-back
+    refused writes; then any held-back write the list did not reach (every held-back write is sent once); then the
+    read-back of the files and seed links the held-back writes act on, where the write list did not use the file."""
     ph = Phase("run2")
     rng = random.Random(RNG_SEED + 3)
     pool = list(range(len(deny)))
     rng.shuffle(pool)
     mixed = [i for i in pool if deny[i]["kind"] not in WRITE_KINDS][:MIXED_REFUSALS]
-    chosen = set(mixed)
+    chosen = set(mixed) | held
     noise = [deny[i] for i in pool if i not in chosen]
     plan = [("refused", deny[i]) for i in mixed] + [("permitted", i) for i in range(len(allow))]
     rng.shuffle(plan)
+    hrng = random.Random(RNG_SEED + 7)        # the order of the held-back writes and how many come before each request
+    later = [deny[i] for i in sorted(held)]
+    hrng.shuffle(later)
     proc, port = start(sub, stage_db())
     if proc is None:
         ph.fail("the service did not start", "start")
         return ph
+    used = set()                              # files the write list acted on (their state may change there)
     try:
         for mode, x in plan:
             if ph.over():
@@ -552,17 +605,49 @@ def run_second(seed, sub, deny, allow, refs):
             else:
                 check_permitted(seed, ph, port, allow[x], refs.get(x))
         if not ph.over():
-            run_writes(seed, port, ph, noise)
+            used = run_writes(seed, port, ph, noise, later, hrng)
+        else:
+            ph.fail("time cap reached before the write list", "time_cap")
+        in_list = ph.held_sent
+        while later and not ph.over():        # only after a failed step, or on another seed
+            ph.count += 1
+            ph.held_sent += 1
+            check_refusal(seed, ph, port, later.pop(), "held_")
+        if ph.held_sent != len(held):
+            ph.fail(f"{len(held) - ph.held_sent} of {len(held)} held-back refused writes were not sent", "held_unsent")
+        kit.log(f"held back from run 1: {len(held)} refused writes; sent in run 2: {ph.held_sent} ({in_list} in the "
+                f"write list, {ph.held_sent - in_list} after it)")
+        # Run 2 has no database diff (its permitted writes change the database), so a held-back write carried out
+        # behind a 4xx is looked for over HTTP: what it acts on must be as in the seed, unless the write list used it.
+        acted = {write_file(seed, deny[i]) for i in held if deny[i]["kind"] != "share"}
+        files = acted - used
+        links = [t for t in sorted(seed["shares"])
+                 if seed["shares"][t]["file_id"] in files and policy.share_link_works(seed, t)]
+        read_back(seed, ph, port, files, "held_sweep")
+        for tok in links:
+            if ph.over():
+                ph.fail("time cap reached before every seed link was fetched", "time_cap")
+                break
+            ph.count += 1
+            f = seed["files"][seed["shares"][tok]["file_id"]]
+            status, _, payload = call(port, "GET", f"/s/{tok}", {})
+            if status != 200 or payload != f["content"]:
+                ph.fail(f"after the held-back refused writes, the seed link of {f['name']} answers {status}",
+                        "held_link")
+        kit.log(f"held-back writes read back: {len(files)} files and {len(links)} seed links; "
+                f"{len(acted & used)} files they act on were used by the write list and not read back")
     finally:
         stop(proc, port)
     ph.summary()
     return ph
 
 
-def run_writes(seed, port, ph, noise):
+def run_writes(seed, port, ph, noise, later, hrng):
     """Permitted writes in a fixed order, effects checked over HTTP (PERMISSIONS.md sections 2, 3, 5; API.md).
-    Before every request here, 3-12 refused requests from `noise` (a seeded count), so permitted writes never come
-    alone: a service that permits every write in this run fails the refused ones."""
+    Before every request here, 3-12 refused requests from `noise` and, while they last, 4-8 held-back refused writes
+    from `later` (seeded counts, in a seeded order), so permitted writes never come alone: a service that permits
+    every write in this run fails the refused ones, and one that refuses only what run 1 sent fails the held-back
+    ones."""
     rng = random.Random(RNG_SEED + 1)        # which files the writes use, and the new names
     nrng = random.Random(RNG_SEED + 4)       # how many refused requests come before each request
     users = sorted(seed["users"])
@@ -602,12 +687,18 @@ def run_writes(seed, port, ph, noise):
         return t, f
 
     def send(ctx, method, path, body=None):
-        for _ in range(nrng.randint(*NOISE)):
-            if not noise or ph.over():
+        batch = [("noise_", noise.pop()) for _ in range(nrng.randint(*NOISE)) if noise]
+        batch += [("held_", later.pop()) for _ in range(hrng.randint(*HELD_DEAL)) if later]
+        hrng.shuffle(batch)
+        for tag, case in batch:
+            if ph.over():
                 break
             ph.count += 1
-            sent["refused"] += 1
-            check_refusal(seed, ph, port, noise.pop(), "noise_")
+            if tag == "held_":
+                ph.held_sent += 1
+            else:
+                sent["refused"] += 1
+            check_refusal(seed, ph, port, case, tag)
         if ph.over():             # at most one request runs past the cap (DESIGN.md section 5)
             ph.fail("time cap reached during the write list", "time_cap")
             return None, {}, b"time cap reached"
@@ -755,8 +846,9 @@ def run_writes(seed, port, ph, noise):
     admin2 = next((u for u in single if "org_admin" in roles[u].values() and u != admin
                    and any(f not in used for _, f in live.get(home(u), []))), admin)
     revoke_seed_link(("user", admin2, None), home(admin2), "org_admin")
-    kit.log(f"write list: {sent['permitted']} requests, with {sent['refused']} refused requests mixed in; "
-            f"{sent['skipped']} steps skipped")
+    kit.log(f"write list: {sent['permitted']} requests, with {sent['refused']} refused requests and "
+            f"{ph.held_sent} held-back refused writes mixed in; {sent['skipped']} steps skipped")
+    return used
 
 
 # ---------------------------------------------------------------- main
@@ -782,13 +874,15 @@ def grade():
     seed = load_seed()
     SEED_SNAPSHOT.update(snapshot_seed())
     deny, allow = build_cases(seed)
-    kit.log(f"{len(deny)} refusal cases, {len(allow)} permitted reads")
+    held = held_back(seed, deny)
+    kit.log(f"{len(deny)} refusal cases, {len(allow)} permitted reads; {len(held)} refused writes held back for run 2")
     refs = run_original(seed, allow)
-    ph1 = run_first(seed, sub, deny, allow, refs)
-    ph2 = run_second(seed, sub, deny, allow, refs)
+    ph1 = run_first(seed, sub, deny, allow, refs, held)
+    ph2 = run_second(seed, sub, deny, allow, refs, held)
     ok = not ph1.failures and not ph2.failures
     metrics = {"run1_checks": ph1.count, "run1_failed": len(ph1.failures), "run2_checks": ph2.count,
                "run2_failed": len(ph2.failures), "leaking_refusals": ph1.leaks + ph2.leaks,
+               "held_back": len(held), "held_back_sent": ph2.held_sent,
                "grading_seconds": round(time.monotonic() - t0, 2)}
     metrics.update({f"run1_fail_{k}": v for k, v in ph1.cats.items()})
     metrics.update({f"run2_fail_{k}": v for k, v in ph2.cats.items()})

@@ -2,8 +2,9 @@
     "task": {
         "path": "<submission>/tasks/tenant-isolation-docshare"
     },
-    "trial_name": "tenant-isolation-docshare__5pcy95D",
-    "trials_dir": "<submission>/jobs/tenant-isolation-docshare/tenant-isolation-docshare-drop_org_switching-full1",
+    "trial_name": "tenant-isolation-docshare__rEuW5DN",
+    "trials_dir": "<submission>/jobs/tenant-isolation-docshare/tenant-isolation-docshare-drop_org_switching-full2",
+    "environment_build_timeout_multiplier": 3.0,
     "agent": {
         "name": "oracle",
         "env": {
@@ -13,5 +14,5 @@
     "environment": {
         "type": "daytona"
     },
-    "job_id": "6a5d0a07-3293-42df-b065-e8da7980b03b"
+    "job_id": "2b6bbecd-e43c-43c7-ac70-df90c3c231eb"
 }

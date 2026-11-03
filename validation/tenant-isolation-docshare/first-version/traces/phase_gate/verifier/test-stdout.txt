@@ -1,0 +1,38 @@
+[test.sh] lock ok: /logs/verifier 0:0 755, /logs 0:0 755, owner before 0:0; protected_symlinks=1 protected_hardlinks=1 protected_regular=2; setid files left: 0
+[kit] submission copied to /work/sub; removed 0 auto-run entries; skipped 0 special files
+[kit] 2012 refusal cases, 402 permitted reads
+[kit] staged /tests/original for uid 1001 at /work/w17c178fb
+[kit] staged /tests/hidden/seed.db for uid 1001 at /work/w1050c572
+[kit] service on 127.0.0.1:51633 answered after 0.20s
+[kit] service from /work/w17c178fb on port 51633: up in 0.21s
+[kit] phase original: 356 checks, 0 failed, 0.62s; failed by check: {}
+[kit] staged /tests/hidden/seed.db for uid 1001 at /work/wacc937bc
+[kit] service on 127.0.0.1:56239 answered after 1.40s
+[kit] service from /work/sub on port 56239: up in 1.41s
+[kit] network isolation: ON (private namespace, loopback only); probe rc=0 out=b'NETNS-OK' err=b''
+[kit] ran ['/usr/local/bin/python3', '-I', '-c', "import sqlite3, sys, urllib.parse\nc = sqlite3.connect('file:' + urllib.parse.quote(sys.argv[1]) + '?mode=rw', uri=True)\nr = c.execute('PRAGMA wal_checkpoint(TRUNCATE)').fetchone()\nc.close()\nsys.exit(0 if r[0] == 0 else 3)\n"]... rc=0 timed_out=False 0.038s net=private strays_killed=0
+[kit] phase run1: 2475 checks, 0 failed, 4.52s; failed by check: {}
+[kit] staged /tests/hidden/seed.db for uid 1001 at /work/w8552e556
+[kit] service on 127.0.0.1:51149 answered after 0.20s
+[kit] service from /work/sub on port 51149: up in 0.21s
+[kit] write list: 45 requests, with 351 refused requests mixed in; 0 steps skipped
+[kit] phase run2: 1198 checks, 50 failed, 1.67s; failed by check: {"noise_status_delete": 11, "noise_status_rename": 8, "noise_status_revoke": 17, "noise_status_share": 6, "write_create_link": 1, "write_link_works": 5, "write_outsider_revoke": 2}
+[kit]   FAIL run2 [noise_status_share]: POST /api/files/6bbc99a4-9945-47d1-b9b8-373447dbc6ee/shares as priya@sablepoint.example: got 201, expected a refusal (4xx)
+[kit]   FAIL run2 [noise_status_rename]: PATCH /api/files/5e96d434-2a48-4043-a622-14e99437fa3d as tomas@eriksen-it.example X-Org-Id=Northpine Dental Group: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [noise_status_revoke]: DELETE /api/shares/xDUvB0qxxDABLGuUSDnFbx9V as uma@support.docshare.example X-Org-Id=Corvane Freight: got 204, expected a refusal (4xx)
+[kit]   FAIL run2 [noise_status_rename]: PATCH /api/files/d42f27af-be43-402a-9f30-540392fac785 as uma@support.docshare.example X-Org-Id=Corvane Freight: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [noise_status_delete]: DELETE /api/files/5e96d434-2a48-4043-a622-14e99437fa3d as rosa@lindgren-advisory.example: got 204, expected a refusal (4xx)
+[kit]   FAIL run2 [noise_status_rename]: PATCH /api/files/ff553146-0ea3-460c-b263-0ea26f92c632 as quinn@sablepoint.example X-Org-Id=Sable Point Credit Union: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [noise_status_revoke]: DELETE /api/shares/ycVYVat5OaYT2IOrtO-zEw67 as uma@support.docshare.example X-Org-Id=Ilse Varga Architects: got 204, expected a refusal (4xx)
+[kit]   FAIL run2 [noise_status_delete]: DELETE /api/files/872f2cca-df0f-4657-ae4d-b9e4d88f4af6 as uma@support.docshare.example: got 204, expected a refusal (4xx)
+[kit]   FAIL run2 [noise_status_share]: POST /api/files/e7adfd78-6109-4db2-b3b4-0c4b2a895a9b/shares as quinn@sablepoint.example: got 201, expected a refusal (4xx)
+[kit]   FAIL run2 [noise_status_delete]: DELETE /api/files/3806fd78-4d6b-41f9-97ca-a0dd3e015a8f as quinn@sablepoint.example X-Org-Id=Sable Point Credit Union: got 204, expected a refusal (4xx)
+[kit]   FAIL run2 [write_outsider_revoke]: outsider revoke (member): DELETE /api/shares/FfS41YrlMu4KG0w2GJvK35jr as hugo@corvane.example got 204 b'', expected a 4xx
+[kit]   FAIL run2 [noise_status_share]: POST /api/files/ebafec01-3e45-4203-b7fa-245abea27f91/shares as tomas@eriksen-it.example: got 201, expected a refusal (4xx)
+[kit]   FAIL run2 [write_link_works]: link after a refused revoke (member): anonymous GET /s/<token> got 404, expected the file's bytes
+[kit]   FAIL run2 [noise_status_revoke]: DELETE /api/shares/Lhx8H2Y0025VujmZKs6iYzGP as rosa@lindgren-advisory.example X-Org-Id=Ilse Varga Architects: got 204, expected a refusal (4xx)
+[kit]   FAIL run2 [write_outsider_revoke]: outsider revoke (second-org): DELETE /api/shares/kJp_SCE4MhJ4FqvbysuB3JQq as uma@support.docshare.example X-Org-Id=Ilse Varga Architects got 204 b'', expected a 4xx
+[kit]   FAIL run2 [write_link_works]: link after a refused revoke (second-org): anonymous GET /s/<token> got 404, expected the file's bytes
+[kit]   FAIL run2 [write_create_link]: create link (second-org): POST /api/files/aa4f05f5-9234-4dc5-b975-f7f0af77cde4/shares as tomas@eriksen-it.example X-Org-Id=Sable Point Credit Union got 404 b'{"error":"not_found"}\n'
+[kit]   FAIL run2 [write_link_works]: seed link (second-org): anonymous GET /s/<token> got 404, expected the file's bytes
+[kit] reward=0.0 (killed 0 runner processes) metrics={'reward': 0.0, 'run1_checks': 2475, 'run1_failed': 0, 'run2_checks': 1198, 'run2_failed': 50, 'leaking_refusals': 0, 'grading_seconds': 6.84, 'run2_fail_noise_status_share': 6, 'run2_fail_noise_status_rename': 8, 'run2_fail_noise_status_revoke': 17, 'run2_fail_noise_status_delete': 11, 'run2_fail_write_outsider_revoke': 2, 'run2_fail_write_link_works': 5, 'run2_fail_write_create_link': 1}

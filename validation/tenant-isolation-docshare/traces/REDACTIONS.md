@@ -1,71 +1,70 @@
-# Redactions in this traces folder (2026-10-29; `agent-r3/` added 2026-10-31)
+# Redactions in this traces folder (2026-11-03)
 
-Every file here is a copy of a Harbor trial or job file. Machine-specific paths were replaced, and in `agent-r3/` also the URL of the model service the agents called; nothing else was changed (no reward, count or timing). The copy script checked this: each JSON file parses to the original with only the path strings replaced and identical numbers, and each text file differs from the original only on lines that held one of these paths.
+Every file here is a copy of a Harbor trial or job file of the Daytona proof run `full2`, one trial per variant.
+Machine-specific paths were replaced; nothing else was changed (no reward, count or timing). A comparison of every
+file here with its original in the job folders (2026-11-03) found each changed JSON file equal to its original once
+the path strings are replaced (the numbers identical, the bytes too), each changed text file equal to its original
+with the paths replaced and one line added at the top, and every other file equal to its original byte for byte. A
+scan of the copies (2026-11-03) found no sandbox provider's key, no other path of the authoring Mac and no account
+name in any file.
+
+The earlier grader's traces, with the agent trials of 2026-10-30, are in `../first-version/traces/`, which has its
+own `REDACTIONS.md`.
 
 | Placeholder | What it replaces |
 |---|---|
 | `<submission>` | the absolute path of the `submission/` folder on the authoring Mac (also its URL-encoded form in `trial_uri`) |
-| `<home>` | other paths under the author's home folder (for example the Harbor tool install in a traceback) |
-| `<local-scratch>` | the session scratch folder of the authoring tool (a temporary folder on the Mac) |
-| `<model-endpoint>` | the URL of the OpenAI-compatible model service the agents of `agent-r3/` called |
 
-Text files that changed carry one extra first line saying so. JSON files cannot carry a comment, so they are listed here.
-
-In each `agent-r3/<trial>/agent/` (`recording.cast`, `terminus_2.pane`, `trajectory.json`), the shell prompt in the terminal records shows the sandbox's host name (a Daytona sandbox id); it is not a credential and was left as is.
+Text files that changed carry one extra first line saying so. That line begins "# Redacted 2026-11-03:", the day these
+copies were made (04:17 MST) from the run of that day. It also defines `<home>`, `<local-scratch>` and
+`<model-endpoint>`; none of the three replaced anything in this folder's files (they appear only in that line). JSON
+files cannot carry a comment, so they are listed here, with the text files.
 
 | File | Replacements |
 |---|---|
 | `alt/config.json` | `<submission>` x2 |
-| `alt/job_lock.json` | `<submission>` x1 |
-| `alt/result.json` | `<submission>` x3, `<submission>` (URL-encoded form) x1 |
+| `alt/result.json` | `<submission>` (URL-encoded form) x1, `<submission>` x3 |
 | `alt/trial.log` (text; first line added) | `<submission>` x2 |
+| `alt/job_lock.json` | `<submission>` x1 |
 | `canonical/config.json` | `<submission>` x2 |
-| `canonical/job_lock.json` | `<submission>` x10 |
-| `canonical/result.json` | `<submission>` x3, `<submission>` (URL-encoded form) x1 |
+| `canonical/result.json` | `<submission>` (URL-encoded form) x1, `<submission>` x3 |
 | `canonical/trial.log` (text; first line added) | `<submission>` x2 |
+| `canonical/job_lock.json` | `<submission>` x10 |
 | `deny_most/config.json` | `<submission>` x2 |
-| `deny_most/job_lock.json` | `<submission>` x1 |
-| `deny_most/result.json` | `<submission>` x3, `<submission>` (URL-encoded form) x1 |
+| `deny_most/result.json` | `<submission>` (URL-encoded form) x1, `<submission>` x3 |
 | `deny_most/trial.log` (text; first line added) | `<submission>` x2 |
+| `deny_most/job_lock.json` | `<submission>` x1 |
 | `drop_org_switching/config.json` | `<submission>` x2 |
-| `drop_org_switching/job_lock.json` | `<submission>` x1 |
-| `drop_org_switching/result.json` | `<submission>` x3, `<submission>` (URL-encoded form) x1 |
+| `drop_org_switching/result.json` | `<submission>` (URL-encoded form) x1, `<submission>` x3 |
 | `drop_org_switching/trial.log` (text; first line added) | `<submission>` x2 |
+| `drop_org_switching/job_lock.json` | `<submission>` x1 |
 | `force-build/config.json` | `<submission>` x2 |
-| `force-build/job_lock.json` | `<submission>` x1 |
-| `force-build/result.json` | `<submission>` x3, `<submission>` (URL-encoded form) x1 |
+| `force-build/result.json` | `<submission>` (URL-encoded form) x1, `<submission>` x3 |
 | `force-build/trial.log` (text; first line added) | `<submission>` x2 |
+| `force-build/job_lock.json` | `<submission>` x1 |
 | `hardcode_visible_orgs/config.json` | `<submission>` x2 |
-| `hardcode_visible_orgs/job_lock.json` | `<submission>` x1 |
-| `hardcode_visible_orgs/result.json` | `<submission>` x3, `<submission>` (URL-encoded form) x1 |
+| `hardcode_visible_orgs/result.json` | `<submission>` (URL-encoded form) x1, `<submission>` x3 |
 | `hardcode_visible_orgs/trial.log` (text; first line added) | `<submission>` x2 |
+| `hardcode_visible_orgs/job_lock.json` | `<submission>` x1 |
 | `membership_plus_get/config.json` | `<submission>` x2 |
-| `membership_plus_get/job_lock.json` | `<submission>` x1 |
-| `membership_plus_get/result.json` | `<submission>` x3, `<submission>` (URL-encoded form) x1 |
+| `membership_plus_get/result.json` | `<submission>` (URL-encoded form) x1, `<submission>` x3 |
 | `membership_plus_get/trial.log` (text; first line added) | `<submission>` x2 |
+| `membership_plus_get/job_lock.json` | `<submission>` x1 |
 | `nop/config.json` | `<submission>` x2 |
-| `nop/job_lock.json` | `<submission>` x1 |
-| `nop/result.json` | `<submission>` x3, `<submission>` (URL-encoded form) x1 |
+| `nop/result.json` | `<submission>` (URL-encoded form) x1, `<submission>` x3 |
 | `nop/trial.log` (text; first line added) | `<submission>` x2 |
+| `nop/job_lock.json` | `<submission>` x1 |
 | `patch_get_only/config.json` | `<submission>` x2 |
-| `patch_get_only/job_lock.json` | `<submission>` x1 |
-| `patch_get_only/result.json` | `<submission>` x3, `<submission>` (URL-encoded form) x1 |
+| `patch_get_only/result.json` | `<submission>` (URL-encoded form) x1, `<submission>` x3 |
 | `patch_get_only/trial.log` (text; first line added) | `<submission>` x2 |
+| `patch_get_only/job_lock.json` | `<submission>` x1 |
 | `phase_gate/config.json` | `<submission>` x2 |
-| `phase_gate/job_lock.json` | `<submission>` x1 |
-| `phase_gate/result.json` | `<submission>` x3, `<submission>` (URL-encoded form) x1 |
+| `phase_gate/result.json` | `<submission>` (URL-encoded form) x1, `<submission>` x3 |
 | `phase_gate/trial.log` (text; first line added) | `<submission>` x2 |
-| `agent-r3/tenant-isolation-docshare__5JS5qnC/config.json` | `<model-endpoint>` x1 |
-| `agent-r3/tenant-isolation-docshare__5JS5qnC/result.json` | `<submission>` (URL-encoded form) x1, `<model-endpoint>` x1 |
-| `agent-r3/tenant-isolation-docshare__5JS5qnC/trial.log` (text; first line added) | `<submission>` x2 |
-| `agent-r3/tenant-isolation-docshare__5JS5qnC/job_lock.json` | `<model-endpoint>` x3 |
-| `agent-r3/tenant-isolation-docshare__9n7yLqH/config.json` | `<model-endpoint>` x1 |
-| `agent-r3/tenant-isolation-docshare__9n7yLqH/result.json` | `<submission>` (URL-encoded form) x1, `<model-endpoint>` x1 |
-| `agent-r3/tenant-isolation-docshare__9n7yLqH/trial.log` (text; first line added) | `<submission>` x2 |
-| `agent-r3/tenant-isolation-docshare__9n7yLqH/job_lock.json` | `<model-endpoint>` x3 |
-| `agent-r3/tenant-isolation-docshare__U5her8X/config.json` | `<model-endpoint>` x1 |
-| `agent-r3/tenant-isolation-docshare__U5her8X/result.json` | `<submission>` (URL-encoded form) x1, `<model-endpoint>` x1 |
-| `agent-r3/tenant-isolation-docshare__U5her8X/trial.log` (text; first line added) | `<submission>` x2 |
-| `agent-r3/tenant-isolation-docshare__U5her8X/job_lock.json` | `<model-endpoint>` x3 |
+| `phase_gate/job_lock.json` | `<submission>` x1 |
+| `replay_memo/config.json` | `<submission>` x2 |
+| `replay_memo/result.json` | `<submission>` (URL-encoded form) x1, `<submission>` x3 |
+| `replay_memo/trial.log` (text; first line added) | `<submission>` x2 |
+| `replay_memo/job_lock.json` | `<submission>` x1 |
 
-Files with no machine-specific path or model URL (copied byte for byte): 83 (59, plus 24 in `agent-r3/`).
+Files with no machine-specific path (copied byte for byte): 65.

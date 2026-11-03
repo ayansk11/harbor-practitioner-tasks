@@ -1,8 +1,8 @@
 {
-    "id": "a92e06e8-3dc6-4f5a-b11a-66f1c4af3718",
-    "started_at": "2026-10-28T19:45:27.776108",
-    "updated_at": "2026-10-28T19:50:10.146574",
-    "finished_at": "2026-10-28T19:50:10.146574",
+    "id": "f48ff984-a627-4ed3-83c7-8fbeb161fdb2",
+    "started_at": "2026-11-03T03:36:33.148866",
+    "updated_at": "2026-11-03T03:38:57.787340",
+    "finished_at": "2026-11-03T03:38:57.787340",
     "n_total_trials": 10,
     "stats": {
         "n_completed_trials": 10,
@@ -17,12 +17,14 @@
                 "n_errors": 0,
                 "metrics": [
                     {
-                        "grading_seconds": 7.037999999999999,
+                        "grading_seconds": 5.2219999999999995,
+                        "held_back": 264.0,
+                        "held_back_sent": 264.0,
                         "leaking_refusals": 0.0,
                         "reward": 1.0,
-                        "run1_checks": 2475.0,
+                        "run1_checks": 2211.0,
                         "run1_failed": 0.0,
-                        "run2_checks": 1231.0,
+                        "run2_checks": 1540.0,
                         "run2_failed": 0.0
                     }
                 ],
@@ -30,118 +32,144 @@
                 "reward_stats": {
                     "reward": {
                         "1.0": [
-                            "tenant-isolation-docshare__rCxcLLy",
-                            "tenant-isolation-docshare__kxS7LFM",
-                            "tenant-isolation-docshare__UxmQzvc",
-                            "tenant-isolation-docshare__GzddaLy",
-                            "tenant-isolation-docshare__oxV3RaA",
-                            "tenant-isolation-docshare__mj9Ha2D",
-                            "tenant-isolation-docshare__ttkjxDq",
-                            "tenant-isolation-docshare__hzjERpR",
-                            "tenant-isolation-docshare__9FbF79B",
-                            "tenant-isolation-docshare__gA4EeKu"
+                            "tenant-isolation-docshare__a73K54D",
+                            "tenant-isolation-docshare__cNW7qG4",
+                            "tenant-isolation-docshare__aXMgnvU",
+                            "tenant-isolation-docshare__xaVbUZn",
+                            "tenant-isolation-docshare__xguGeE7",
+                            "tenant-isolation-docshare__6t6krxS",
+                            "tenant-isolation-docshare__V763p6n",
+                            "tenant-isolation-docshare__kWQGDUV",
+                            "tenant-isolation-docshare__aTkgThy",
+                            "tenant-isolation-docshare__moVKPgc"
                         ]
                     },
                     "run1_checks": {
-                        "2475": [
-                            "tenant-isolation-docshare__rCxcLLy",
-                            "tenant-isolation-docshare__kxS7LFM",
-                            "tenant-isolation-docshare__UxmQzvc",
-                            "tenant-isolation-docshare__GzddaLy",
-                            "tenant-isolation-docshare__oxV3RaA",
-                            "tenant-isolation-docshare__mj9Ha2D",
-                            "tenant-isolation-docshare__ttkjxDq",
-                            "tenant-isolation-docshare__hzjERpR",
-                            "tenant-isolation-docshare__9FbF79B",
-                            "tenant-isolation-docshare__gA4EeKu"
+                        "2211": [
+                            "tenant-isolation-docshare__a73K54D",
+                            "tenant-isolation-docshare__cNW7qG4",
+                            "tenant-isolation-docshare__aXMgnvU",
+                            "tenant-isolation-docshare__xaVbUZn",
+                            "tenant-isolation-docshare__xguGeE7",
+                            "tenant-isolation-docshare__6t6krxS",
+                            "tenant-isolation-docshare__V763p6n",
+                            "tenant-isolation-docshare__kWQGDUV",
+                            "tenant-isolation-docshare__aTkgThy",
+                            "tenant-isolation-docshare__moVKPgc"
                         ]
                     },
                     "run1_failed": {
                         "0": [
-                            "tenant-isolation-docshare__rCxcLLy",
-                            "tenant-isolation-docshare__kxS7LFM",
-                            "tenant-isolation-docshare__UxmQzvc",
-                            "tenant-isolation-docshare__GzddaLy",
-                            "tenant-isolation-docshare__oxV3RaA",
-                            "tenant-isolation-docshare__mj9Ha2D",
-                            "tenant-isolation-docshare__ttkjxDq",
-                            "tenant-isolation-docshare__hzjERpR",
-                            "tenant-isolation-docshare__9FbF79B",
-                            "tenant-isolation-docshare__gA4EeKu"
+                            "tenant-isolation-docshare__a73K54D",
+                            "tenant-isolation-docshare__cNW7qG4",
+                            "tenant-isolation-docshare__aXMgnvU",
+                            "tenant-isolation-docshare__xaVbUZn",
+                            "tenant-isolation-docshare__xguGeE7",
+                            "tenant-isolation-docshare__6t6krxS",
+                            "tenant-isolation-docshare__V763p6n",
+                            "tenant-isolation-docshare__kWQGDUV",
+                            "tenant-isolation-docshare__aTkgThy",
+                            "tenant-isolation-docshare__moVKPgc"
                         ]
                     },
                     "run2_checks": {
-                        "1231": [
-                            "tenant-isolation-docshare__rCxcLLy",
-                            "tenant-isolation-docshare__kxS7LFM",
-                            "tenant-isolation-docshare__UxmQzvc",
-                            "tenant-isolation-docshare__GzddaLy",
-                            "tenant-isolation-docshare__oxV3RaA",
-                            "tenant-isolation-docshare__mj9Ha2D",
-                            "tenant-isolation-docshare__ttkjxDq",
-                            "tenant-isolation-docshare__hzjERpR",
-                            "tenant-isolation-docshare__9FbF79B",
-                            "tenant-isolation-docshare__gA4EeKu"
+                        "1540": [
+                            "tenant-isolation-docshare__a73K54D",
+                            "tenant-isolation-docshare__cNW7qG4",
+                            "tenant-isolation-docshare__aXMgnvU",
+                            "tenant-isolation-docshare__xaVbUZn",
+                            "tenant-isolation-docshare__xguGeE7",
+                            "tenant-isolation-docshare__6t6krxS",
+                            "tenant-isolation-docshare__V763p6n",
+                            "tenant-isolation-docshare__kWQGDUV",
+                            "tenant-isolation-docshare__aTkgThy",
+                            "tenant-isolation-docshare__moVKPgc"
                         ]
                     },
                     "run2_failed": {
                         "0": [
-                            "tenant-isolation-docshare__rCxcLLy",
-                            "tenant-isolation-docshare__kxS7LFM",
-                            "tenant-isolation-docshare__UxmQzvc",
-                            "tenant-isolation-docshare__GzddaLy",
-                            "tenant-isolation-docshare__oxV3RaA",
-                            "tenant-isolation-docshare__mj9Ha2D",
-                            "tenant-isolation-docshare__ttkjxDq",
-                            "tenant-isolation-docshare__hzjERpR",
-                            "tenant-isolation-docshare__9FbF79B",
-                            "tenant-isolation-docshare__gA4EeKu"
+                            "tenant-isolation-docshare__a73K54D",
+                            "tenant-isolation-docshare__cNW7qG4",
+                            "tenant-isolation-docshare__aXMgnvU",
+                            "tenant-isolation-docshare__xaVbUZn",
+                            "tenant-isolation-docshare__xguGeE7",
+                            "tenant-isolation-docshare__6t6krxS",
+                            "tenant-isolation-docshare__V763p6n",
+                            "tenant-isolation-docshare__kWQGDUV",
+                            "tenant-isolation-docshare__aTkgThy",
+                            "tenant-isolation-docshare__moVKPgc"
                         ]
                     },
                     "leaking_refusals": {
                         "0": [
-                            "tenant-isolation-docshare__rCxcLLy",
-                            "tenant-isolation-docshare__kxS7LFM",
-                            "tenant-isolation-docshare__UxmQzvc",
-                            "tenant-isolation-docshare__GzddaLy",
-                            "tenant-isolation-docshare__oxV3RaA",
-                            "tenant-isolation-docshare__mj9Ha2D",
-                            "tenant-isolation-docshare__ttkjxDq",
-                            "tenant-isolation-docshare__hzjERpR",
-                            "tenant-isolation-docshare__9FbF79B",
-                            "tenant-isolation-docshare__gA4EeKu"
+                            "tenant-isolation-docshare__a73K54D",
+                            "tenant-isolation-docshare__cNW7qG4",
+                            "tenant-isolation-docshare__aXMgnvU",
+                            "tenant-isolation-docshare__xaVbUZn",
+                            "tenant-isolation-docshare__xguGeE7",
+                            "tenant-isolation-docshare__6t6krxS",
+                            "tenant-isolation-docshare__V763p6n",
+                            "tenant-isolation-docshare__kWQGDUV",
+                            "tenant-isolation-docshare__aTkgThy",
+                            "tenant-isolation-docshare__moVKPgc"
+                        ]
+                    },
+                    "held_back": {
+                        "264": [
+                            "tenant-isolation-docshare__a73K54D",
+                            "tenant-isolation-docshare__cNW7qG4",
+                            "tenant-isolation-docshare__aXMgnvU",
+                            "tenant-isolation-docshare__xaVbUZn",
+                            "tenant-isolation-docshare__xguGeE7",
+                            "tenant-isolation-docshare__6t6krxS",
+                            "tenant-isolation-docshare__V763p6n",
+                            "tenant-isolation-docshare__kWQGDUV",
+                            "tenant-isolation-docshare__aTkgThy",
+                            "tenant-isolation-docshare__moVKPgc"
+                        ]
+                    },
+                    "held_back_sent": {
+                        "264": [
+                            "tenant-isolation-docshare__a73K54D",
+                            "tenant-isolation-docshare__cNW7qG4",
+                            "tenant-isolation-docshare__aXMgnvU",
+                            "tenant-isolation-docshare__xaVbUZn",
+                            "tenant-isolation-docshare__xguGeE7",
+                            "tenant-isolation-docshare__6t6krxS",
+                            "tenant-isolation-docshare__V763p6n",
+                            "tenant-isolation-docshare__kWQGDUV",
+                            "tenant-isolation-docshare__aTkgThy",
+                            "tenant-isolation-docshare__moVKPgc"
                         ]
                     },
                     "grading_seconds": {
-                        "8.58": [
-                            "tenant-isolation-docshare__rCxcLLy"
+                        "5.58": [
+                            "tenant-isolation-docshare__a73K54D"
                         ],
-                        "7.02": [
-                            "tenant-isolation-docshare__kxS7LFM"
+                        "4.96": [
+                            "tenant-isolation-docshare__cNW7qG4",
+                            "tenant-isolation-docshare__aXMgnvU"
                         ],
-                        "11.28": [
-                            "tenant-isolation-docshare__UxmQzvc"
+                        "5.02": [
+                            "tenant-isolation-docshare__xaVbUZn"
+                        ],
+                        "4.99": [
+                            "tenant-isolation-docshare__xguGeE7"
+                        ],
+                        "5.25": [
+                            "tenant-isolation-docshare__6t6krxS"
+                        ],
+                        "5.78": [
+                            "tenant-isolation-docshare__V763p6n"
+                        ],
+                        "4.89": [
+                            "tenant-isolation-docshare__kWQGDUV"
+                        ],
+                        "5.14": [
+                            "tenant-isolation-docshare__aTkgThy"
                         ],
                         "5.65": [
-                            "tenant-isolation-docshare__GzddaLy"
-                        ],
-                        "5.52": [
-                            "tenant-isolation-docshare__oxV3RaA"
-                        ],
-                        "7.19": [
-                            "tenant-isolation-docshare__mj9Ha2D"
-                        ],
-                        "5.63": [
-                            "tenant-isolation-docshare__ttkjxDq"
-                        ],
-                        "6.71": [
-                            "tenant-isolation-docshare__hzjERpR"
-                        ],
-                        "6.97": [
-                            "tenant-isolation-docshare__9FbF79B"
-                        ],
-                        "5.83": [
-                            "tenant-isolation-docshare__gA4EeKu"
+                            "tenant-isolation-docshare__moVKPgc"
                         ]
                     }
                 },

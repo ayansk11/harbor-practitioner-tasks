@@ -1,0 +1,17 @@
+{
+    "task": {
+        "path": "<submission>/tasks/tenant-isolation-docshare"
+    },
+    "trial_name": "tenant-isolation-docshare__B4rtEHL",
+    "trials_dir": "<submission>/jobs/tenant-isolation-docshare/tenant-isolation-docshare-deny_most-full1",
+    "agent": {
+        "name": "oracle",
+        "env": {
+            "SOLUTION": "deny_most"
+        }
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "ba68cad6-cfa9-4668-9488-a3a55516880c"
+}

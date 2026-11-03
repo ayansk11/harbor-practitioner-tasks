@@ -1,8 +1,8 @@
 {
-    "id": "b1955281-2508-47c9-90e5-70b2a8ff89e1",
-    "started_at": "2026-10-28T19:50:15.118666",
-    "updated_at": "2026-10-28T19:50:53.475530",
-    "finished_at": "2026-10-28T19:50:53.475530",
+    "id": "a28ad1b7-ae6d-42e6-9abb-7bd81c80b0d0",
+    "started_at": "2026-11-03T03:39:01.707610",
+    "updated_at": "2026-11-03T03:39:30.901584",
+    "finished_at": "2026-11-03T03:39:30.901584",
     "n_total_trials": 1,
     "stats": {
         "n_completed_trials": 1,
@@ -17,12 +17,14 @@
                 "n_errors": 0,
                 "metrics": [
                     {
-                        "grading_seconds": 5.98,
+                        "grading_seconds": 5.56,
+                        "held_back": 264.0,
+                        "held_back_sent": 264.0,
                         "leaking_refusals": 0.0,
                         "reward": 1.0,
-                        "run1_checks": 2475.0,
+                        "run1_checks": 2211.0,
                         "run1_failed": 0.0,
-                        "run2_checks": 1231.0,
+                        "run2_checks": 1540.0,
                         "run2_failed": 0.0
                     }
                 ],
@@ -30,37 +32,47 @@
                 "reward_stats": {
                     "reward": {
                         "1.0": [
-                            "tenant-isolation-docshare__e9qFx96"
+                            "tenant-isolation-docshare__rBry9aP"
                         ]
                     },
                     "run1_checks": {
-                        "2475": [
-                            "tenant-isolation-docshare__e9qFx96"
+                        "2211": [
+                            "tenant-isolation-docshare__rBry9aP"
                         ]
                     },
                     "run1_failed": {
                         "0": [
-                            "tenant-isolation-docshare__e9qFx96"
+                            "tenant-isolation-docshare__rBry9aP"
                         ]
                     },
                     "run2_checks": {
-                        "1231": [
-                            "tenant-isolation-docshare__e9qFx96"
+                        "1540": [
+                            "tenant-isolation-docshare__rBry9aP"
                         ]
                     },
                     "run2_failed": {
                         "0": [
-                            "tenant-isolation-docshare__e9qFx96"
+                            "tenant-isolation-docshare__rBry9aP"
                         ]
                     },
                     "leaking_refusals": {
                         "0": [
-                            "tenant-isolation-docshare__e9qFx96"
+                            "tenant-isolation-docshare__rBry9aP"
+                        ]
+                    },
+                    "held_back": {
+                        "264": [
+                            "tenant-isolation-docshare__rBry9aP"
+                        ]
+                    },
+                    "held_back_sent": {
+                        "264": [
+                            "tenant-isolation-docshare__rBry9aP"
                         ]
                     },
                     "grading_seconds": {
-                        "5.98": [
-                            "tenant-isolation-docshare__e9qFx96"
+                        "5.56": [
+                            "tenant-isolation-docshare__rBry9aP"
                         ]
                     }
                 },

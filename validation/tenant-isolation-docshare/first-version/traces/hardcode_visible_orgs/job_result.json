@@ -1,0 +1,369 @@
+{
+    "id": "59f7fea8-6c44-4a9e-ab22-b149395f5eee",
+    "started_at": "2026-10-28T19:52:49.168172",
+    "updated_at": "2026-10-28T19:53:29.671546",
+    "finished_at": "2026-10-28T19:53:29.671546",
+    "n_total_trials": 1,
+    "stats": {
+        "n_completed_trials": 1,
+        "n_errored_trials": 0,
+        "n_running_trials": 0,
+        "n_pending_trials": 0,
+        "n_cancelled_trials": 0,
+        "n_retries": 0,
+        "evals": {
+            "oracle__adhoc": {
+                "n_trials": 1,
+                "n_errors": 0,
+                "metrics": [
+                    {
+                        "grading_seconds": 7.77,
+                        "leaking_refusals": 246.0,
+                        "reward": 0.0,
+                        "run1_checks": 2475.0,
+                        "run1_fail_db_changed": 1.0,
+                        "run1_fail_leak_download_bad_x_org_id": 34.0,
+                        "run1_fail_leak_export_bad_x_org_id": 12.0,
+                        "run1_fail_leak_folder_files_bad_x_org_id": 17.0,
+                        "run1_fail_leak_list_files_bad_x_org_id": 34.0,
+                        "run1_fail_leak_read_bad_x_org_id": 34.0,
+                        "run1_fail_leak_thumb_bad_x_org_id": 34.0,
+                        "run1_fail_status_download_bad_x_org_id": 34.0,
+                        "run1_fail_status_export_bad_x_org_id": 12.0,
+                        "run1_fail_status_folder_files_bad_x_org_id": 17.0,
+                        "run1_fail_status_list_files_bad_x_org_id": 46.0,
+                        "run1_fail_status_list_folders_bad_x_org_id": 46.0,
+                        "run1_fail_status_me_bad_x_org_id": 46.0,
+                        "run1_fail_status_read_bad_x_org_id": 34.0,
+                        "run1_fail_status_rename_bad_x_org_id": 34.0,
+                        "run1_fail_status_revoke_bad_x_org_id": 27.0,
+                        "run1_fail_status_share_bad_x_org_id": 34.0,
+                        "run1_fail_status_thumb_bad_x_org_id": 34.0,
+                        "run1_fail_sweep": 25.0,
+                        "run1_failed": 555.0,
+                        "run2_checks": 1231.0,
+                        "run2_fail_leak_download_bad_x_org_id": 11.0,
+                        "run2_fail_leak_export_bad_x_org_id": 4.0,
+                        "run2_fail_leak_folder_files_bad_x_org_id": 3.0,
+                        "run2_fail_leak_list_files_bad_x_org_id": 12.0,
+                        "run2_fail_leak_read_bad_x_org_id": 12.0,
+                        "run2_fail_leak_thumb_bad_x_org_id": 9.0,
+                        "run2_fail_noise_leak_download_bad_x_org_id": 5.0,
+                        "run2_fail_noise_leak_folder_files_bad_x_org_id": 6.0,
+                        "run2_fail_noise_leak_list_files_bad_x_org_id": 7.0,
+                        "run2_fail_noise_leak_read_bad_x_org_id": 1.0,
+                        "run2_fail_noise_leak_thumb_bad_x_org_id": 11.0,
+                        "run2_fail_noise_status_download_bad_x_org_id": 5.0,
+                        "run2_fail_noise_status_folder_files_bad_x_org_id": 6.0,
+                        "run2_fail_noise_status_list_files_bad_x_org_id": 9.0,
+                        "run2_fail_noise_status_list_folders_bad_x_org_id": 8.0,
+                        "run2_fail_noise_status_me_bad_x_org_id": 5.0,
+                        "run2_fail_noise_status_read_bad_x_org_id": 2.0,
+                        "run2_fail_noise_status_rename_bad_x_org_id": 4.0,
+                        "run2_fail_noise_status_revoke_bad_x_org_id": 5.0,
+                        "run2_fail_noise_status_share_bad_x_org_id": 5.0,
+                        "run2_fail_noise_status_thumb_bad_x_org_id": 11.0,
+                        "run2_fail_status_download_bad_x_org_id": 11.0,
+                        "run2_fail_status_export_bad_x_org_id": 4.0,
+                        "run2_fail_status_folder_files_bad_x_org_id": 3.0,
+                        "run2_fail_status_list_files_bad_x_org_id": 15.0,
+                        "run2_fail_status_list_folders_bad_x_org_id": 15.0,
+                        "run2_fail_status_me_bad_x_org_id": 17.0,
+                        "run2_fail_status_read_bad_x_org_id": 12.0,
+                        "run2_fail_status_thumb_bad_x_org_id": 9.0,
+                        "run2_fail_write_link_works": 2.0,
+                        "run2_failed": 229.0
+                    }
+                ],
+                "pass_at_k": {},
+                "reward_stats": {
+                    "reward": {
+                        "0.0": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run1_checks": {
+                        "2475": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run1_failed": {
+                        "555": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run2_checks": {
+                        "1231": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run2_failed": {
+                        "229": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "leaking_refusals": {
+                        "246": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "grading_seconds": {
+                        "7.77": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run1_fail_status_list_files_bad_x_org_id": {
+                        "46": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run1_fail_leak_list_files_bad_x_org_id": {
+                        "34": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run1_fail_status_me_bad_x_org_id": {
+                        "46": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run1_fail_status_thumb_bad_x_org_id": {
+                        "34": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run1_fail_leak_thumb_bad_x_org_id": {
+                        "34": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run1_fail_status_download_bad_x_org_id": {
+                        "34": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run1_fail_leak_download_bad_x_org_id": {
+                        "34": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run1_fail_status_export_bad_x_org_id": {
+                        "12": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run1_fail_leak_export_bad_x_org_id": {
+                        "12": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run1_fail_status_list_folders_bad_x_org_id": {
+                        "46": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run1_fail_status_read_bad_x_org_id": {
+                        "34": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run1_fail_leak_read_bad_x_org_id": {
+                        "34": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run1_fail_status_folder_files_bad_x_org_id": {
+                        "17": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run1_fail_leak_folder_files_bad_x_org_id": {
+                        "17": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run1_fail_status_rename_bad_x_org_id": {
+                        "34": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run1_fail_status_share_bad_x_org_id": {
+                        "34": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run1_fail_status_revoke_bad_x_org_id": {
+                        "27": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run1_fail_sweep": {
+                        "25": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run1_fail_db_changed": {
+                        "1": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run2_fail_status_thumb_bad_x_org_id": {
+                        "9": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run2_fail_leak_thumb_bad_x_org_id": {
+                        "9": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run2_fail_status_list_folders_bad_x_org_id": {
+                        "15": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run2_fail_status_list_files_bad_x_org_id": {
+                        "15": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run2_fail_leak_list_files_bad_x_org_id": {
+                        "12": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run2_fail_status_read_bad_x_org_id": {
+                        "12": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run2_fail_leak_read_bad_x_org_id": {
+                        "12": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run2_fail_status_me_bad_x_org_id": {
+                        "17": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run2_fail_status_export_bad_x_org_id": {
+                        "4": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run2_fail_leak_export_bad_x_org_id": {
+                        "4": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run2_fail_status_download_bad_x_org_id": {
+                        "11": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run2_fail_leak_download_bad_x_org_id": {
+                        "11": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run2_fail_status_folder_files_bad_x_org_id": {
+                        "3": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run2_fail_leak_folder_files_bad_x_org_id": {
+                        "3": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run2_fail_noise_status_list_files_bad_x_org_id": {
+                        "9": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run2_fail_noise_leak_list_files_bad_x_org_id": {
+                        "7": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run2_fail_noise_status_list_folders_bad_x_org_id": {
+                        "8": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run2_fail_noise_status_me_bad_x_org_id": {
+                        "5": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run2_fail_noise_status_revoke_bad_x_org_id": {
+                        "5": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run2_fail_noise_status_thumb_bad_x_org_id": {
+                        "11": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run2_fail_noise_leak_thumb_bad_x_org_id": {
+                        "11": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run2_fail_noise_status_folder_files_bad_x_org_id": {
+                        "6": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run2_fail_noise_leak_folder_files_bad_x_org_id": {
+                        "6": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run2_fail_noise_status_download_bad_x_org_id": {
+                        "5": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run2_fail_noise_leak_download_bad_x_org_id": {
+                        "5": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run2_fail_noise_status_rename_bad_x_org_id": {
+                        "4": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run2_fail_noise_status_share_bad_x_org_id": {
+                        "5": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run2_fail_noise_status_read_bad_x_org_id": {
+                        "2": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run2_fail_noise_leak_read_bad_x_org_id": {
+                        "1": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    },
+                    "run2_fail_write_link_works": {
+                        "2": [
+                            "tenant-isolation-docshare__NDb4Y6o"
+                        ]
+                    }
+                },
+                "exception_stats": {}
+            }
+        },
+        "n_input_tokens": null,
+        "n_cache_tokens": null,
+        "n_output_tokens": null,
+        "cost_usd": null
+    }
+}

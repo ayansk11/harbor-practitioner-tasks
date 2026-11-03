@@ -1,0 +1,17 @@
+{
+    "task": {
+        "path": "<submission>/tasks/tenant-isolation-docshare"
+    },
+    "trial_name": "tenant-isolation-docshare__NDb4Y6o",
+    "trials_dir": "<submission>/jobs/tenant-isolation-docshare/tenant-isolation-docshare-hardcode_visible_orgs-full1",
+    "agent": {
+        "name": "oracle",
+        "env": {
+            "SOLUTION": "hardcode_visible_orgs"
+        }
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "59f7fea8-6c44-4a9e-ab22-b149395f5eee"
+}

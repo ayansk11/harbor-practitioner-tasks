@@ -1,4 +1,4 @@
-"""Write solution/attempts/<name>/ for tenant-isolation-docshare: six wrong or shortcut fixes, each must score 0.
+"""Write solution/attempts/<name>/ for tenant-isolation-docshare: seven wrong or shortcut fixes, each must score 0.
 
 Each attempt is a set of replacement files under docshare/ (solve.sh copies them over /app/docshare) plus ABOUT.md.
 They are made from the shipped app (environment/app/docshare) or the canonical fix (solution/canonical/docshare) by
@@ -33,6 +33,48 @@ def canon_tree(**changes):
     files = {p.relative_to(CANON).as_posix(): p.read_text() for p in CANON.rglob("*.py")}
     files.update(changes)
     return files
+
+
+# The guard of attempt 7 (replay_memo): on the first start of this copy of the code it refuses and records every
+# rename, delete and link creation; on later starts it refuses only the ones it recorded.
+MEMO_APP_OLD = '''def create_app(db_path):
+    app = Flask(__name__)
+    app.config["DB_PATH"] = db_path'''
+MEMO_APP_NEW = '''import hashlib as _hl, os as _os
+from flask import request as _rq
+_DIR = _os.path.dirname(_os.path.abspath(__file__))
+_MARK, _SEEN = _os.path.join(_DIR, ".started"), _os.path.join(_DIR, ".seen_writes")
+_FIRST = not _os.path.exists(_MARK)
+if _FIRST:
+    open(_MARK, "w").close()
+    _seen = set()
+else:
+    try:
+        _seen = set(open(_SEEN).read().split())
+    except OSError:
+        _seen = set()
+
+
+def _memo_guard():
+    p, m = _rq.path, _rq.method
+    if not ((m in ("PATCH", "DELETE") and p.startswith("/api/files/")) or (m == "POST" and p.endswith("/shares"))):
+        return None
+    h = _hl.sha256()
+    for part in (m, p, _rq.headers.get("Authorization", ""), _rq.headers.get("X-Org-Id", ""),
+                 _rq.get_data(as_text=True)):
+        h.update(part.encode() + b"\\0")
+    s = h.hexdigest()
+    if _FIRST:
+        with open(_SEEN, "a") as fh:
+            fh.write(s + "\\n")
+        return jsonify(error="not_found"), 404
+    return (jsonify(error="not_found"), 404) if s in _seen else None
+
+
+def create_app(db_path):
+    app = Flask(__name__)
+    app.config["DB_PATH"] = db_path
+    app.before_request(_memo_guard)'''
 
 
 def main():
@@ -171,6 +213,34 @@ later start every write is allowed. It models a service that learned "the first 
 It scored 1 on the first version of the grader, whose two runs each held one kind of request. Expected: 0 (in run 2,
 refused writes are mixed in with the permitted ones and get 2xx).
 """, canon_tree(**{"access.py": c}))
+    # 7. Remember what the first grading run sent instead of checking writes: rename, delete and link creation keep
+    #    the original's role-only checks, behind a guard that refuses and records every such write on the first start
+    #    of this copy of the code and, on later starts, refuses only the writes it recorded.
+    app = sub((ORIG / "app.py").read_text(), MEMO_APP_OLD, MEMO_APP_NEW)
+    f = (CANON / "routes/files.py").read_text()
+    f = sub(f, '    row = load_file(file_id, "rename")\n',
+            '    if g.identity.role not in ("member", "org_admin"):\n        abort(403)\n    row = _raw(file_id)\n')
+    f = sub(f, '    row = load_file(file_id, "delete")\n', '    row = _raw(file_id)\n')
+    f = sub(f, "from flask import Blueprint, Response, abort, jsonify, request",
+            "from flask import Blueprint, Response, abort, g, jsonify, request\n\n\ndef _raw(file_id):\n"
+            "    from .. import db as _db\n"
+            "    row = _db.query_one(f\"SELECT {_db.FILE_COLUMNS}, content FROM files WHERE id = ?\", (file_id,))\n"
+            "    if row is None:\n        abort(404)\n    return row")
+    s = (CANON / "routes/share.py").read_text()
+    s = sub(s, '    row = load_file(file_id, "share", "id")\n',
+            '    if g.identity.role not in ("member", "org_admin"):\n        abort(403)\n'
+            '    row = db.query_one("SELECT id FROM files WHERE id = ?", (file_id,))\n    if row is None:\n'
+            '        abort(404)\n')
+    write("replay_memo", """
+# replay_memo (shortcut: remember what the first run sent instead of checking writes)
+The canonical fix for reads, for X-Org-Id and for revoking links, but rename, delete and link creation are back to
+the original's role-only checks (any file id, in any organisation). A guard in `app.py` stands in front of them: on
+the first start of this copy of the code (no `.started` marker next to `app.py`) it refuses every rename, delete and
+link creation and records a hash of each request in `.seen_writes`; on every later start it refuses exactly the
+requests it recorded and lets every other write through. It scored 1 on the previous version of the grader, whose
+second run sent only refused requests that the first run had already sent. Expected: 0 (in run 2, refused writes
+that run 1 never sent come mixed in with the permitted ones: they get 2xx, or change files that are then read back).
+""", canon_tree(**{"app.py": app, "routes/files.py": f, "routes/share.py": s}))
     print("attempts:", ", ".join(sorted(p.name for p in OUT.iterdir())))
 
 

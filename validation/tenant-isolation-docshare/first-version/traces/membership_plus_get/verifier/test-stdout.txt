@@ -1,0 +1,72 @@
+[test.sh] lock ok: /logs/verifier 0:0 755, /logs 0:0 755, owner before 0:0; protected_symlinks=1 protected_hardlinks=1 protected_regular=2; setid files left: 0
+[kit] submission copied to /work/sub; removed 0 auto-run entries; skipped 0 special files
+[kit] 2012 refusal cases, 402 permitted reads
+[kit] staged /tests/original for uid 1001 at /work/we6d378ba
+[kit] staged /tests/hidden/seed.db for uid 1001 at /work/w22b689ac
+[kit] service on 127.0.0.1:45675 answered after 0.20s
+[kit] service from /work/we6d378ba on port 45675: up in 0.21s
+[kit] phase original: 356 checks, 0 failed, 0.61s; failed by check: {}
+[kit] staged /tests/hidden/seed.db for uid 1001 at /work/wcfecaf99
+[kit] service on 127.0.0.1:56837 answered after 0.60s
+[kit] service from /work/sub on port 56837: up in 0.61s
+[kit] network isolation: ON (private namespace, loopback only); probe rc=0 out=b'NETNS-OK' err=b''
+[kit] ran ['/usr/local/bin/python3', '-I', '-c', "import sqlite3, sys, urllib.parse\nc = sqlite3.connect('file:' + urllib.parse.quote(sys.argv[1]) + '?mode=rw', uri=True)\nr = c.execute('PRAGMA wal_checkpoint(TRUNCATE)').fetchone()\nc.close()\nsys.exit(0 if r[0] == 0 else 3)\n"]... rc=0 timed_out=False 0.038s net=private strays_killed=0
+[kit] phase run1: 2475 checks, 251 failed, 3.88s; failed by check: {"db_changed": 1, "leak_export": 52, "leak_thumb": 32, "status_delete": 25, "status_export": 52, "status_share": 32, "status_thumb": 32, "sweep": 25}
+[kit]   FAIL run1 [status_thumb]: GET /api/files/fafe26f1-3fdd-4a78-9eff-92c87bdb51a0/thumb as quinn@sablepoint.example: got 200, expected a refusal (4xx)
+[kit]   FAIL run1 [leak_thumb]: GET /api/files/fafe26f1-3fdd-4a78-9eff-92c87bdb51a0/thumb as quinn@sablepoint.example: refusal holds contents of pricing-proposal-1967.txt
+[kit]   FAIL run1 [status_thumb]: GET /api/files/3c113334-f1a1-4535-9a33-5577754ac9f6/thumb as lena@ilsevarga.example: got 200, expected a refusal (4xx)
+[kit]   FAIL run1 [leak_thumb]: GET /api/files/3c113334-f1a1-4535-9a33-5577754ac9f6/thumb as lena@ilsevarga.example: refusal holds contents of payroll-summary-19f3.txt
+[kit]   FAIL run1 [status_thumb]: GET /api/files/6ce99987-648c-4817-a5db-ababb19bf181/thumb as nadia@northpine.example: got 200, expected a refusal (4xx)
+[kit]   FAIL run1 [leak_thumb]: GET /api/files/6ce99987-648c-4817-a5db-ababb19bf181/thumb as nadia@northpine.example: refusal holds contents of travel-policy-5d94.md
+[kit]   FAIL run1 [status_export]: POST /api/export as quinn@sablepoint.example: got 200, expected a refusal (4xx)
+[kit]   FAIL run1 [leak_export]: POST /api/export as quinn@sablepoint.example: refusal holds contents of grant-application-06fb.txt, contents of maintenance-schedule-5dd1.txt
+[kit]   FAIL run1 [status_export]: POST /api/export as priya@sablepoint.example X-Org-Id=Sable Point Credit Union: got 200, expected a refusal (4xx)
+[kit]   FAIL run1 [leak_export]: POST /api/export as priya@sablepoint.example X-Org-Id=Sable Point Credit Union: refusal holds contents of board-minutes-c0cf.txt, contents of firmware-release-notes-8b31.md, contents of settlement-draft-4178.txt
+[kit]   FAIL run1 [status_export]: POST /api/export as ines@corvane.example X-Org-Id=Corvane Freight: got 200, expected a refusal (4xx)
+[kit]   FAIL run1 [leak_export]: POST /api/export as ines@corvane.example X-Org-Id=Corvane Freight: refusal holds contents of capacity-plan-c2a0.csv, contents of data-retention-policy-7e02.csv, contents of customer-escalation-log-c115.md
+[kit]   FAIL run1 [status_share]: POST /api/files/3c113334-f1a1-4535-9a33-5577754ac9f6/shares as lena@ilsevarga.example: got 201, expected a refusal (4xx)
+[kit]   FAIL run1 [status_share]: POST /api/files/0eb95fbc-855f-4218-b8a1-e509430707a7/shares as lena@ilsevarga.example X-Org-Id=Ilse Varga Architects: got 201, expected a refusal (4xx)
+[kit]   FAIL run1 [status_share]: POST /api/files/0b8f3770-a530-40a9-8a7a-a2814fcfe5ce/shares as kiri@ilsevarga.example: got 201, expected a refusal (4xx)
+[kit]   FAIL run1 [status_delete]: DELETE /api/files/ebafec01-3e45-4203-b7fa-245abea27f91 as lena@ilsevarga.example: got 204, expected a refusal (4xx)
+[kit]   FAIL run1 [status_delete]: DELETE /api/files/bf969b30-5997-4952-9aa9-5eb926395ba8 as lena@ilsevarga.example X-Org-Id=Ilse Varga Architects: got 204, expected a refusal (4xx)
+[kit]   FAIL run1 [status_delete]: DELETE /api/files/872f2cca-df0f-4657-ae4d-b9e4d88f4af6 as uma@support.docshare.example: got 204, expected a refusal (4xx)
+[kit]   FAIL run1 [sweep]: after the refused requests, settlement-draft-9f38.md reads as 404 b'{"error":"not_found"}\n'
+[kit]   FAIL run1 [sweep]: after the refused requests, offsite-agenda-d976.md reads as 404 b'{"error":"not_found"}\n'
+[kit]   FAIL run1 [sweep]: after the refused requests, project-charter-1b31.csv reads as 404 b'{"error":"not_found"}\n'
+[kit]   FAIL run1 [db_changed]: database changed by refused requests: files, shares
+[kit] staged /tests/hidden/seed.db for uid 1001 at /work/w479edd93
+[kit] service on 127.0.0.1:46157 answered after 0.20s
+[kit] service from /work/sub on port 46157: up in 0.20s
+[kit] write list: 50 requests, with 379 refused requests mixed in; 0 steps skipped
+[kit] phase run2: 1231 checks, 103 failed, 2.07s; failed by check: {"leak_export": 16, "leak_thumb": 11, "noise_leak_export": 13, "noise_leak_thumb": 6, "noise_status_delete": 6, "noise_status_export": 13, "noise_status_share": 5, "noise_status_thumb": 6, "status_export": 16, "status_thumb": 11}
+[kit]   FAIL run2 [status_thumb]: GET /api/files/6ce99987-648c-4817-a5db-ababb19bf181/thumb as hugo@corvane.example X-Org-Id=Corvane Freight: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [leak_thumb]: GET /api/files/6ce99987-648c-4817-a5db-ababb19bf181/thumb as hugo@corvane.example X-Org-Id=Corvane Freight: refusal holds contents of travel-policy-5d94.md
+[kit]   FAIL run2 [status_export]: POST /api/export as marco@ilsevarga.example: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [leak_export]: POST /api/export as marco@ilsevarga.example: refusal holds contents of board-minutes-c0cf.txt, contents of vendor-contract-739c.csv
+[kit]   FAIL run2 [status_thumb]: GET /api/files/74625690-aef2-4ed9-9d3e-e5ca06166f40/thumb as priya@sablepoint.example X-Org-Id=Sable Point Credit Union: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [leak_thumb]: GET /api/files/74625690-aef2-4ed9-9d3e-e5ca06166f40/thumb as priya@sablepoint.example X-Org-Id=Sable Point Credit Union: refusal holds contents of insurance-certificate-8359.md
+[kit]   FAIL run2 [status_thumb]: GET /api/files/9c498e66-d600-46fa-9a59-03577d1d48e9/thumb as hugo@corvane.example: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [leak_thumb]: GET /api/files/9c498e66-d600-46fa-9a59-03577d1d48e9/thumb as hugo@corvane.example: refusal holds contents of capacity-plan-24f2.md
+[kit]   FAIL run2 [status_export]: POST /api/export as omar@northpine.example X-Org-Id=Northpine Dental Group: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [leak_export]: POST /api/export as omar@northpine.example X-Org-Id=Northpine Dental Group: refusal holds contents of board-minutes-c0cf.txt, contents of customer-escalation-log-31b5.md
+[kit]   FAIL run2 [status_export]: POST /api/export as lena@ilsevarga.example: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [leak_export]: POST /api/export as lena@ilsevarga.example: refusal holds contents of patient-intake-checklist-3386.md, contents of lease-renewal-2978.md
+[kit]   FAIL run2 [noise_status_export]: POST /api/export as tomas@eriksen-it.example: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [noise_leak_export]: POST /api/export as tomas@eriksen-it.example: refusal holds contents of budget-variance-2825.md, contents of lease-renewal-2978.md
+[kit]   FAIL run2 [noise_status_export]: POST /api/export as marco@ilsevarga.example X-Org-Id=Ilse Varga Architects: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [noise_leak_export]: POST /api/export as marco@ilsevarga.example X-Org-Id=Ilse Varga Architects: refusal holds contents of training-records-3026.md, contents of vendor-contract-739c.csv, contents of firmware-release-notes-954a.txt
+[kit]   FAIL run2 [noise_status_export]: POST /api/export as nadia@northpine.example X-Org-Id=Northpine Dental Group: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [noise_leak_export]: POST /api/export as nadia@northpine.example X-Org-Id=Northpine Dental Group: refusal holds contents of data-retention-policy-fa63.txt, contents of travel-policy-4ef4.md, contents of severance-terms-e22c.txt
+[kit]   FAIL run2 [noise_status_share]: POST /api/files/6bbc99a4-9945-47d1-b9b8-373447dbc6ee/shares as priya@sablepoint.example: got 201, expected a refusal (4xx)
+[kit]   FAIL run2 [noise_status_thumb]: GET /api/files/2b530ddf-4a6d-4df6-9db3-e308d6ca10de/thumb as jonas@corvane.example X-Org-Id=Corvane Freight: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [noise_leak_thumb]: GET /api/files/2b530ddf-4a6d-4df6-9db3-e308d6ca10de/thumb as jonas@corvane.example X-Org-Id=Corvane Freight: refusal holds contents of expense-report-df63.txt
+[kit]   FAIL run2 [noise_status_thumb]: GET /api/files/e4772f41-fa3d-41c2-b016-29152ec596a5/thumb as rosa@lindgren-advisory.example X-Org-Id=Corvane Freight: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [noise_leak_thumb]: GET /api/files/e4772f41-fa3d-41c2-b016-29152ec596a5/thumb as rosa@lindgren-advisory.example X-Org-Id=Corvane Freight: refusal holds contents of offsite-agenda-e931.csv
+[kit]   FAIL run2 [noise_status_delete]: DELETE /api/files/872f2cca-df0f-4657-ae4d-b9e4d88f4af6 as uma@support.docshare.example: got 204, expected a refusal (4xx)
+[kit]   FAIL run2 [noise_status_share]: POST /api/files/e7adfd78-6109-4db2-b3b4-0c4b2a895a9b/shares as quinn@sablepoint.example: got 201, expected a refusal (4xx)
+[kit]   FAIL run2 [noise_status_share]: POST /api/files/ebafec01-3e45-4203-b7fa-245abea27f91/shares as tomas@eriksen-it.example: got 201, expected a refusal (4xx)
+[kit]   FAIL run2 [noise_status_delete]: DELETE /api/files/a0e2d96c-b23a-4481-804a-218c5af7c4a5 as uma@support.docshare.example X-Org-Id=Northpine Dental Group: got 204, expected a refusal (4xx)
+[kit]   FAIL run2 [noise_status_delete]: DELETE /api/files/cc75967e-7b8a-4e11-af27-4cb7f61dff2c as uma@support.docshare.example X-Org-Id=Sable Point Credit Union: got 204, expected a refusal (4xx)
+[kit]   FAIL run2 [noise_status_thumb]: GET /api/files/d714080c-52e3-473f-b82b-eb5cec182f8a/thumb as omar@northpine.example X-Org-Id=Northpine Dental Group: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [noise_leak_thumb]: GET /api/files/d714080c-52e3-473f-b82b-eb5cec182f8a/thumb as omar@northpine.example X-Org-Id=Northpine Dental Group: refusal holds contents of expense-report-45e4.md
+[kit] reward=0.0 (killed 0 runner processes) metrics={'reward': 0.0, 'run1_checks': 2475, 'run1_failed': 251, 'run2_checks': 1231, 'run2_failed': 103, 'leaking_refusals': 130, 'grading_seconds': 6.6, 'run1_fail_status_thumb': 32, 'run1_fail_leak_thumb': 32, 'run1_fail_status_export': 52, 'run1_fail_leak_export': 52, 'run1_fail_status_share': 32, 'run1_fail_status_delete': 25, 'run1_fail_sweep': 25, 'run1_fail_db_changed': 1, 'run2_fail_status_thumb': 11, 'run2_fail_leak_thumb': 11, 'run2_fail_status_export': 16, 'run2_fail_leak_export': 16, 'run2_fail_noise_status_export': 13, 'run2_fail_noise_leak_export': 13, 'run2_fail_noise_status_share': 5, 'run2_fail_noise_status_thumb': 6, 'run2_fail_noise_leak_thumb': 6, 'run2_fail_noise_status_delete': 6}

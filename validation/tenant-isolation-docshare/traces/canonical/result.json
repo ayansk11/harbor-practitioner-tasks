@@ -1,13 +1,13 @@
 {
-    "id": "6862c8f0-a12b-4b41-bc2e-d22a010c7b6a",
+    "id": "01e706ae-6d52-4d92-b19e-8209f1cc098a",
     "task_name": "diffuse-labs/tenant-isolation-docshare",
-    "trial_name": "tenant-isolation-docshare__rCxcLLy",
-    "trial_uri": "file://<submission>/jobs/tenant-isolation-docshare/tenant-isolation-docshare-canonical-full1/tenant-isolation-docshare__rCxcLLy",
+    "trial_name": "tenant-isolation-docshare__a73K54D",
+    "trial_uri": "file://<submission>/jobs/tenant-isolation-docshare/tenant-isolation-docshare-canonical-full2/tenant-isolation-docshare__a73K54D",
     "task_id": {
         "path": "<submission>/tasks/tenant-isolation-docshare"
     },
     "source": null,
-    "task_checksum": "f120fc0dfaa8023a32217cb2992e6372b3f12458c54e530d8d162084e1f9663f",
+    "task_checksum": "998eb650aed0821084d4db603d067cbed81ff6210396dfbc48cc65517526c1c0",
     "config": {
         "task": {
             "path": "<submission>/tasks/tenant-isolation-docshare",
@@ -19,14 +19,14 @@
             "download_dir": null,
             "source": null
         },
-        "trial_name": "tenant-isolation-docshare__rCxcLLy",
-        "trials_dir": "<submission>/jobs/tenant-isolation-docshare/tenant-isolation-docshare-canonical-full1",
+        "trial_name": "tenant-isolation-docshare__a73K54D",
+        "trials_dir": "<submission>/jobs/tenant-isolation-docshare/tenant-isolation-docshare-canonical-full2",
         "install_only": false,
         "timeout_multiplier": 1.0,
         "agent_timeout_multiplier": null,
         "verifier_timeout_multiplier": null,
         "agent_setup_timeout_multiplier": null,
-        "environment_build_timeout_multiplier": null,
+        "environment_build_timeout_multiplier": 3.0,
         "agent": {
             "name": "oracle",
             "import_path": null,
@@ -74,7 +74,7 @@
         "artifacts": [],
         "extra_instruction_paths": [],
         "extra_instructions": [],
-        "job_id": "a92e06e8-3dc6-4f5a-b11a-66f1c4af3718",
+        "job_id": "f48ff984-a627-4ed3-83c7-8fbeb161fdb2",
         "source_trial": null
     },
     "agent_info": {
@@ -94,33 +94,35 @@
     "verifier_result": {
         "rewards": {
             "reward": 1.0,
-            "run1_checks": 2475,
+            "run1_checks": 2211,
             "run1_failed": 0,
-            "run2_checks": 1231,
+            "run2_checks": 1540,
             "run2_failed": 0,
             "leaking_refusals": 0,
-            "grading_seconds": 8.58
+            "held_back": 264,
+            "held_back_sent": 264,
+            "grading_seconds": 5.58
         }
     },
     "verifier_environment_mode": "separate",
     "exception_info": null,
-    "started_at": "2026-10-29T02:45:28.158363Z",
-    "finished_at": "2026-10-29T02:47:42.009487Z",
+    "started_at": "2026-11-03T10:36:33.534182Z",
+    "finished_at": "2026-11-03T10:37:22.170060Z",
     "environment_setup": {
-        "started_at": "2026-10-29T02:45:28.289795Z",
-        "finished_at": "2026-10-29T02:46:20.837929Z"
+        "started_at": "2026-11-03T10:36:33.665833Z",
+        "finished_at": "2026-11-03T10:36:44.403331Z"
     },
     "agent_setup": {
-        "started_at": "2026-10-29T02:46:20.837953Z",
-        "finished_at": "2026-10-29T02:46:20.837988Z"
+        "started_at": "2026-11-03T10:36:44.403368Z",
+        "finished_at": "2026-11-03T10:36:44.403403Z"
     },
     "agent_execution": {
-        "started_at": "2026-10-29T02:46:20.838074Z",
-        "finished_at": "2026-10-29T02:46:23.961575Z"
+        "started_at": "2026-11-03T10:36:44.403464Z",
+        "finished_at": "2026-11-03T10:36:46.126856Z"
     },
     "verifier": {
-        "started_at": "2026-10-29T02:46:29.410052Z",
-        "finished_at": "2026-10-29T02:47:42.009450Z"
+        "started_at": "2026-11-03T10:36:49.939714Z",
+        "finished_at": "2026-11-03T10:37:22.170032Z"
     },
     "step_results": null
 }

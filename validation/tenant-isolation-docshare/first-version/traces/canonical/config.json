@@ -1,0 +1,11 @@
+{
+    "task": {
+        "path": "<submission>/tasks/tenant-isolation-docshare"
+    },
+    "trial_name": "tenant-isolation-docshare__rCxcLLy",
+    "trials_dir": "<submission>/jobs/tenant-isolation-docshare/tenant-isolation-docshare-canonical-full1",
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "a92e06e8-3dc6-4f5a-b11a-66f1c4af3718"
+}

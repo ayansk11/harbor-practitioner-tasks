@@ -1,17 +1,17 @@
 [test.sh] lock ok: /logs/verifier 0:0 755, /logs 0:0 755, owner before 0:0; protected_symlinks=1 protected_hardlinks=1 protected_regular=2; setid files left: 0
 [kit] submission copied to /work/sub; removed 0 auto-run entries; skipped 0 special files
-[kit] 2012 refusal cases, 402 permitted reads
-[kit] staged /tests/original for uid 1001 at /work/w0ce4d6e2
-[kit] staged /tests/hidden/seed.db for uid 1001 at /work/w846d4ad2
-[kit] service on 127.0.0.1:40495 answered after 0.20s
-[kit] service from /work/w0ce4d6e2 on port 40495: up in 0.21s
-[kit] phase original: 356 checks, 0 failed, 0.64s; failed by check: {}
-[kit] staged /tests/hidden/seed.db for uid 1001 at /work/wb77e30dd
-[kit] service on 127.0.0.1:45527 answered after 0.40s
-[kit] service from /work/sub on port 45527: up in 0.41s
+[kit] 2012 refusal cases, 402 permitted reads; 264 refused writes held back for run 2
+[kit] staged /tests/original for uid 1001 at /work/wfa190d3b
+[kit] staged /tests/hidden/seed.db for uid 1001 at /work/w5d668bf0
+[kit] service on 127.0.0.1:43419 answered after 0.20s
+[kit] service from /work/wfa190d3b on port 43419: up in 0.21s
+[kit] phase original: 356 checks, 0 failed, 0.52s; failed by check: {}
+[kit] staged /tests/hidden/seed.db for uid 1001 at /work/w538ff8a7
+[kit] service on 127.0.0.1:34315 answered after 0.20s
+[kit] service from /work/sub on port 34315: up in 0.21s
 [kit] network isolation: ON (private namespace, loopback only); probe rc=0 out=b'NETNS-OK' err=b''
-[kit] ran ['/usr/local/bin/python3', '-I', '-c', "import sqlite3, sys, urllib.parse\nc = sqlite3.connect('file:' + urllib.parse.quote(sys.argv[1]) + '?mode=rw', uri=True)\nr = c.execute('PRAGMA wal_checkpoint(TRUNCATE)').fetchone()\nc.close()\nsys.exit(0 if r[0] == 0 else 3)\n"]... rc=0 timed_out=False 0.039s net=private strays_killed=0
-[kit] phase run1: 2475 checks, 142 failed, 3.39s; failed by check: {"permitted_admin_orgs_support": 10, "permitted_download_support": 18, "permitted_export_support": 20, "permitted_folder_files_support": 24, "permitted_list_files_support": 8, "permitted_list_folders_support": 8, "permitted_me_support": 10, "permitted_read_support": 18, "permitted_share_link": 8, "permitted_thumb_support": 18}
+[kit] ran ['/usr/local/bin/python3', '-I', '-c', "import sqlite3, sys, urllib.parse\nc = sqlite3.connect('file:' + urllib.parse.quote(sys.argv[1]) + '?mode=rw', uri=True)\nr = c.execute('PRAGMA wal_checkpoint(TRUNCATE)').fetchone()\nc.close()\nsys.exit(0 if r[0] == 0 else 3)\n"]... rc=0 timed_out=False 0.035s net=private strays_killed=0
+[kit] phase run1: 2211 checks, 142 failed, 2.69s; failed by check: {"permitted_admin_orgs_support": 10, "permitted_download_support": 18, "permitted_export_support": 20, "permitted_folder_files_support": 24, "permitted_list_files_support": 8, "permitted_list_folders_support": 8, "permitted_me_support": 10, "permitted_read_support": 18, "permitted_share_link": 8, "permitted_thumb_support": 18}
 [kit]   FAIL run1 [permitted_thumb_support]: GET /api/files/1713cbfb-3ba5-4008-b546-1db5a1eb3655/thumb as uma@support.docshare.example X-Org-Id=Ilse Varga Architects: status 403, expected 200
 [kit]   FAIL run1 [permitted_download_support]: GET /api/files/0b8f3770-a530-40a9-8a7a-a2814fcfe5ce/download as uma@support.docshare.example X-Org-Id=Corvane Freight: status 403, expected 200
 [kit]   FAIL run1 [permitted_me_support]: GET /api/me as victor@support.docshare.example X-Org-Id=Sable Point Credit Union: status 403, expected 200
@@ -42,11 +42,13 @@
 [kit]   FAIL run1 [permitted_export_support]: POST /api/export as victor@support.docshare.example X-Org-Id=Sable Point Credit Union: status 403, expected 200
 [kit]   FAIL run1 [permitted_admin_orgs_support]: GET /api/admin/orgs as uma@support.docshare.example X-Org-Id=Ilse Varga Architects: status 403, expected 200
 [kit]   FAIL run1 [permitted_admin_orgs_support]: GET /api/admin/orgs as victor@support.docshare.example: status 403, expected 200
-[kit] staged /tests/hidden/seed.db for uid 1001 at /work/wbef863d7
-[kit] service on 127.0.0.1:41295 answered after 0.20s
-[kit] service from /work/sub on port 41295: up in 0.21s
-[kit] write list: 35 requests, with 282 refused requests mixed in; 0 steps skipped
-[kit] phase run2: 1119 checks, 148 failed, 3.47s; failed by check: {"permitted_admin_orgs_support": 10, "permitted_download_support": 18, "permitted_export_support": 20, "permitted_folder_files_support": 24, "permitted_list_files_support": 8, "permitted_list_folders_support": 8, "permitted_me_support": 10, "permitted_read_support": 18, "permitted_share_link": 8, "permitted_thumb_support": 18, "write_create_link": 3, "write_link_works": 3}
+[kit] staged /tests/hidden/seed.db for uid 1001 at /work/waf19d81f
+[kit] service on 127.0.0.1:37027 answered after 0.20s
+[kit] service from /work/sub on port 37027: up in 0.21s
+[kit] write list: 35 requests, with 282 refused requests and 211 held-back refused writes mixed in; 0 steps skipped
+[kit] held back from run 1: 264 refused writes; sent in run 2: 264 (211 in the write list, 53 after it)
+[kit] held-back writes read back: 41 files and 4 seed links; 14 files they act on were used by the write list and not read back
+[kit] phase run2: 1428 checks, 152 failed, 1.60s; failed by check: {"held_link": 4, "permitted_admin_orgs_support": 10, "permitted_download_support": 18, "permitted_export_support": 20, "permitted_folder_files_support": 24, "permitted_list_files_support": 8, "permitted_list_folders_support": 8, "permitted_me_support": 10, "permitted_read_support": 18, "permitted_share_link": 8, "permitted_thumb_support": 18, "write_create_link": 3, "write_link_works": 3}
 [kit]   FAIL run2 [permitted_export_support]: POST /api/export as uma@support.docshare.example X-Org-Id=Ilse Varga Architects: status 403, expected 200
 [kit]   FAIL run2 [permitted_list_folders_support]: GET /api/folders as uma@support.docshare.example X-Org-Id=Sable Point Credit Union: status 403, expected 200
 [kit]   FAIL run2 [permitted_folder_files_support]: GET /api/folders/fbe38fc8-d1ea-4253-b498-4c1cc6b1e0bf/files as uma@support.docshare.example X-Org-Id=Corvane Freight: status 403, expected 200
@@ -83,4 +85,7 @@
 [kit]   FAIL run2 [write_link_works]: seed link (second-org): anonymous GET /s/<token> got 404, expected the file's bytes
 [kit]   FAIL run2 [write_link_works]: seed link (second-org): anonymous GET /s/<token> got 404, expected the file's bytes
 [kit]   FAIL run2 [write_link_works]: seed link (org_admin): anonymous GET /s/<token> got 404, expected the file's bytes
-[kit] reward=0.0 (killed 0 runner processes) metrics={'reward': 0.0, 'run1_checks': 2475, 'run1_failed': 142, 'run2_checks': 1119, 'run2_failed': 148, 'leaking_refusals': 0, 'grading_seconds': 7.55, 'run1_fail_permitted_thumb_support': 18, 'run1_fail_permitted_download_support': 18, 'run1_fail_permitted_me_support': 10, 'run1_fail_permitted_admin_orgs_support': 10, 'run1_fail_permitted_list_folders_support': 8, 'run1_fail_permitted_share_link': 8, 'run1_fail_permitted_read_support': 18, 'run1_fail_permitted_export_support': 20, 'run1_fail_permitted_folder_files_support': 24, 'run1_fail_permitted_list_files_support': 8, 'run2_fail_permitted_export_support': 20, 'run2_fail_permitted_list_folders_support': 8, 'run2_fail_permitted_folder_files_support': 24, 'run2_fail_permitted_thumb_support': 18, 'run2_fail_permitted_me_support': 10, 'run2_fail_permitted_download_support': 18, 'run2_fail_permitted_read_support': 18, 'run2_fail_permitted_admin_orgs_support': 10, 'run2_fail_permitted_list_files_support': 8, 'run2_fail_permitted_share_link': 8, 'run2_fail_write_create_link': 3, 'run2_fail_write_link_works': 3}
+[kit]   FAIL run2 [held_link]: after the held-back refused writes, the seed link of training-records-d1ae.md answers 404
+[kit]   FAIL run2 [held_link]: after the held-back refused writes, the seed link of patient-intake-checklist-4215.csv answers 404
+[kit]   FAIL run2 [held_link]: after the held-back refused writes, the seed link of board-minutes-c0cf.txt answers 404
+[kit] reward=0.0 (killed 0 runner processes) metrics={'reward': 0.0, 'run1_checks': 2211, 'run1_failed': 142, 'run2_checks': 1428, 'run2_failed': 152, 'leaking_refusals': 0, 'held_back': 264, 'held_back_sent': 264, 'grading_seconds': 4.84, 'run1_fail_permitted_thumb_support': 18, 'run1_fail_permitted_download_support': 18, 'run1_fail_permitted_me_support': 10, 'run1_fail_permitted_admin_orgs_support': 10, 'run1_fail_permitted_list_folders_support': 8, 'run1_fail_permitted_share_link': 8, 'run1_fail_permitted_read_support': 18, 'run1_fail_permitted_export_support': 20, 'run1_fail_permitted_folder_files_support': 24, 'run1_fail_permitted_list_files_support': 8, 'run2_fail_permitted_export_support': 20, 'run2_fail_permitted_list_folders_support': 8, 'run2_fail_permitted_folder_files_support': 24, 'run2_fail_permitted_thumb_support': 18, 'run2_fail_permitted_me_support': 10, 'run2_fail_permitted_download_support': 18, 'run2_fail_permitted_read_support': 18, 'run2_fail_permitted_admin_orgs_support': 10, 'run2_fail_permitted_list_files_support': 8, 'run2_fail_permitted_share_link': 8, 'run2_fail_write_create_link': 3, 'run2_fail_write_link_works': 3, 'run2_fail_held_link': 4}

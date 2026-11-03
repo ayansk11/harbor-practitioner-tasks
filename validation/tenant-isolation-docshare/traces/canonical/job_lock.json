@@ -1,6 +1,6 @@
 {
     "schema_version": 3,
-    "created_at": "2026-10-29T02:45:28.023127Z",
+    "created_at": "2026-11-03T10:36:33.386267Z",
     "harbor": {
         "version": "0.25.0",
         "is_editable": false
@@ -9,16 +9,16 @@
     "retry": {
         "max_retries": 0,
         "exclude_exceptions": [
-            "AgentAuthenticationError",
             "UnsupportedModelParametersError",
-            "VerifierOutputParseError",
-            "AgentTimeoutError",
-            "AgentSafetyRefusalError",
-            "RewardFileNotFoundError",
-            "RewardFileEmptyError",
-            "ModelNotFoundError",
+            "VerifierTimeoutError",
             "ApiUsageLimitError",
-            "VerifierTimeoutError"
+            "ModelNotFoundError",
+            "VerifierOutputParseError",
+            "RewardFileNotFoundError",
+            "AgentTimeoutError",
+            "AgentAuthenticationError",
+            "AgentSafetyRefusalError",
+            "RewardFileEmptyError"
         ],
         "wait_multiplier": 1.0,
         "min_wait_sec": 1.0,
@@ -30,11 +30,12 @@
             "task": {
                 "name": "tenant-isolation-docshare",
                 "type": "local",
-                "digest": "sha256:8295aff32904e8b26a5d2f49369b5a160473f8f5c99367ae5488799f0e87bd3b",
+                "digest": "sha256:bf647a0e542a65b1c221bad907aa47a5c4b1a37c0ad13f5a07b6c67657d05967",
                 "path": "<submission>/tasks/tenant-isolation-docshare"
             },
             "install_only": false,
             "timeout_multiplier": 1.0,
+            "environment_build_timeout_multiplier": 3.0,
             "agent": {
                 "name": "oracle",
                 "skip_model_parsing": false,
@@ -67,11 +68,12 @@
             "task": {
                 "name": "tenant-isolation-docshare",
                 "type": "local",
-                "digest": "sha256:8295aff32904e8b26a5d2f49369b5a160473f8f5c99367ae5488799f0e87bd3b",
+                "digest": "sha256:bf647a0e542a65b1c221bad907aa47a5c4b1a37c0ad13f5a07b6c67657d05967",
                 "path": "<submission>/tasks/tenant-isolation-docshare"
             },
             "install_only": false,
             "timeout_multiplier": 1.0,
+            "environment_build_timeout_multiplier": 3.0,
             "agent": {
                 "name": "oracle",
                 "skip_model_parsing": false,
@@ -104,11 +106,12 @@
             "task": {
                 "name": "tenant-isolation-docshare",
                 "type": "local",
-                "digest": "sha256:8295aff32904e8b26a5d2f49369b5a160473f8f5c99367ae5488799f0e87bd3b",
+                "digest": "sha256:bf647a0e542a65b1c221bad907aa47a5c4b1a37c0ad13f5a07b6c67657d05967",
                 "path": "<submission>/tasks/tenant-isolation-docshare"
             },
             "install_only": false,
             "timeout_multiplier": 1.0,
+            "environment_build_timeout_multiplier": 3.0,
             "agent": {
                 "name": "oracle",
                 "skip_model_parsing": false,
@@ -141,11 +144,12 @@
             "task": {
                 "name": "tenant-isolation-docshare",
                 "type": "local",
-                "digest": "sha256:8295aff32904e8b26a5d2f49369b5a160473f8f5c99367ae5488799f0e87bd3b",
+                "digest": "sha256:bf647a0e542a65b1c221bad907aa47a5c4b1a37c0ad13f5a07b6c67657d05967",
                 "path": "<submission>/tasks/tenant-isolation-docshare"
             },
             "install_only": false,
             "timeout_multiplier": 1.0,
+            "environment_build_timeout_multiplier": 3.0,
             "agent": {
                 "name": "oracle",
                 "skip_model_parsing": false,
@@ -178,11 +182,12 @@
             "task": {
                 "name": "tenant-isolation-docshare",
                 "type": "local",
-                "digest": "sha256:8295aff32904e8b26a5d2f49369b5a160473f8f5c99367ae5488799f0e87bd3b",
+                "digest": "sha256:bf647a0e542a65b1c221bad907aa47a5c4b1a37c0ad13f5a07b6c67657d05967",
                 "path": "<submission>/tasks/tenant-isolation-docshare"
             },
             "install_only": false,
             "timeout_multiplier": 1.0,
+            "environment_build_timeout_multiplier": 3.0,
             "agent": {
                 "name": "oracle",
                 "skip_model_parsing": false,
@@ -215,11 +220,12 @@
             "task": {
                 "name": "tenant-isolation-docshare",
                 "type": "local",
-                "digest": "sha256:8295aff32904e8b26a5d2f49369b5a160473f8f5c99367ae5488799f0e87bd3b",
+                "digest": "sha256:bf647a0e542a65b1c221bad907aa47a5c4b1a37c0ad13f5a07b6c67657d05967",
                 "path": "<submission>/tasks/tenant-isolation-docshare"
             },
             "install_only": false,
             "timeout_multiplier": 1.0,
+            "environment_build_timeout_multiplier": 3.0,
             "agent": {
                 "name": "oracle",
                 "skip_model_parsing": false,
@@ -252,11 +258,12 @@
             "task": {
                 "name": "tenant-isolation-docshare",
                 "type": "local",
-                "digest": "sha256:8295aff32904e8b26a5d2f49369b5a160473f8f5c99367ae5488799f0e87bd3b",
+                "digest": "sha256:bf647a0e542a65b1c221bad907aa47a5c4b1a37c0ad13f5a07b6c67657d05967",
                 "path": "<submission>/tasks/tenant-isolation-docshare"
             },
             "install_only": false,
             "timeout_multiplier": 1.0,
+            "environment_build_timeout_multiplier": 3.0,
             "agent": {
                 "name": "oracle",
                 "skip_model_parsing": false,
@@ -289,11 +296,12 @@
             "task": {
                 "name": "tenant-isolation-docshare",
                 "type": "local",
-                "digest": "sha256:8295aff32904e8b26a5d2f49369b5a160473f8f5c99367ae5488799f0e87bd3b",
+                "digest": "sha256:bf647a0e542a65b1c221bad907aa47a5c4b1a37c0ad13f5a07b6c67657d05967",
                 "path": "<submission>/tasks/tenant-isolation-docshare"
             },
             "install_only": false,
             "timeout_multiplier": 1.0,
+            "environment_build_timeout_multiplier": 3.0,
             "agent": {
                 "name": "oracle",
                 "skip_model_parsing": false,
@@ -326,11 +334,12 @@
             "task": {
                 "name": "tenant-isolation-docshare",
                 "type": "local",
-                "digest": "sha256:8295aff32904e8b26a5d2f49369b5a160473f8f5c99367ae5488799f0e87bd3b",
+                "digest": "sha256:bf647a0e542a65b1c221bad907aa47a5c4b1a37c0ad13f5a07b6c67657d05967",
                 "path": "<submission>/tasks/tenant-isolation-docshare"
             },
             "install_only": false,
             "timeout_multiplier": 1.0,
+            "environment_build_timeout_multiplier": 3.0,
             "agent": {
                 "name": "oracle",
                 "skip_model_parsing": false,
@@ -363,11 +372,12 @@
             "task": {
                 "name": "tenant-isolation-docshare",
                 "type": "local",
-                "digest": "sha256:8295aff32904e8b26a5d2f49369b5a160473f8f5c99367ae5488799f0e87bd3b",
+                "digest": "sha256:bf647a0e542a65b1c221bad907aa47a5c4b1a37c0ad13f5a07b6c67657d05967",
                 "path": "<submission>/tasks/tenant-isolation-docshare"
             },
             "install_only": false,
             "timeout_multiplier": 1.0,
+            "environment_build_timeout_multiplier": 3.0,
             "agent": {
                 "name": "oracle",
                 "skip_model_parsing": false,

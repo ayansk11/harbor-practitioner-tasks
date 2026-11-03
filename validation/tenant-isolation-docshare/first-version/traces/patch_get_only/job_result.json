@@ -1,0 +1,525 @@
+{
+    "id": "1d797886-be12-4fcd-b39a-1c7b31cd73c5",
+    "started_at": "2026-10-28T19:54:45.252436",
+    "updated_at": "2026-10-28T19:55:19.701570",
+    "finished_at": "2026-10-28T19:55:19.701570",
+    "n_total_trials": 1,
+    "stats": {
+        "n_completed_trials": 1,
+        "n_errored_trials": 0,
+        "n_running_trials": 0,
+        "n_pending_trials": 0,
+        "n_cancelled_trials": 0,
+        "n_retries": 0,
+        "evals": {
+            "oracle__adhoc": {
+                "n_trials": 1,
+                "n_errors": 0,
+                "metrics": [
+                    {
+                        "grading_seconds": 6.28,
+                        "leaking_refusals": 516.0,
+                        "reward": 0.0,
+                        "run1_checks": 2475.0,
+                        "run1_fail_db_changed": 1.0,
+                        "run1_fail_leak_download_bad_x_org_id": 36.0,
+                        "run1_fail_leak_export": 52.0,
+                        "run1_fail_leak_export_bad_x_org_id": 29.0,
+                        "run1_fail_leak_folder_files_bad_x_org_id": 17.0,
+                        "run1_fail_leak_list_files_bad_x_org_id": 34.0,
+                        "run1_fail_leak_read_bad_x_org_id": 34.0,
+                        "run1_fail_leak_thumb": 32.0,
+                        "run1_fail_leak_thumb_bad_x_org_id": 128.0,
+                        "run1_fail_status_admin_orgs_bad_x_org_id": 2.0,
+                        "run1_fail_status_delete": 18.0,
+                        "run1_fail_status_delete_bad_x_org_id": 40.0,
+                        "run1_fail_status_download_bad_x_org_id": 36.0,
+                        "run1_fail_status_export": 52.0,
+                        "run1_fail_status_export_bad_x_org_id": 29.0,
+                        "run1_fail_status_folder_files_bad_x_org_id": 17.0,
+                        "run1_fail_status_list_files_bad_x_org_id": 48.0,
+                        "run1_fail_status_list_folders_bad_x_org_id": 48.0,
+                        "run1_fail_status_me_bad_x_org_id": 48.0,
+                        "run1_fail_status_read_bad_x_org_id": 36.0,
+                        "run1_fail_status_rename": 32.0,
+                        "run1_fail_status_rename_bad_x_org_id": 126.0,
+                        "run1_fail_status_revoke_bad_x_org_id": 27.0,
+                        "run1_fail_status_share": 32.0,
+                        "run1_fail_status_share_bad_x_org_id": 126.0,
+                        "run1_fail_status_thumb": 32.0,
+                        "run1_fail_status_thumb_bad_x_org_id": 128.0,
+                        "run1_fail_sweep": 60.0,
+                        "run1_failed": 1300.0,
+                        "run2_checks": 1139.0,
+                        "run2_fail_leak_download_bad_x_org_id": 13.0,
+                        "run2_fail_leak_export": 16.0,
+                        "run2_fail_leak_export_bad_x_org_id": 7.0,
+                        "run2_fail_leak_folder_files_bad_x_org_id": 3.0,
+                        "run2_fail_leak_list_files_bad_x_org_id": 12.0,
+                        "run2_fail_leak_read_bad_x_org_id": 12.0,
+                        "run2_fail_leak_thumb": 11.0,
+                        "run2_fail_leak_thumb_bad_x_org_id": 33.0,
+                        "run2_fail_noise_leak_download_bad_x_org_id": 4.0,
+                        "run2_fail_noise_leak_export": 9.0,
+                        "run2_fail_noise_leak_export_bad_x_org_id": 3.0,
+                        "run2_fail_noise_leak_folder_files_bad_x_org_id": 4.0,
+                        "run2_fail_noise_leak_list_files_bad_x_org_id": 4.0,
+                        "run2_fail_noise_leak_read_bad_x_org_id": 1.0,
+                        "run2_fail_noise_leak_thumb": 3.0,
+                        "run2_fail_noise_leak_thumb_bad_x_org_id": 19.0,
+                        "run2_fail_noise_status_delete": 7.0,
+                        "run2_fail_noise_status_delete_bad_x_org_id": 19.0,
+                        "run2_fail_noise_status_download_bad_x_org_id": 4.0,
+                        "run2_fail_noise_status_export": 9.0,
+                        "run2_fail_noise_status_export_bad_x_org_id": 3.0,
+                        "run2_fail_noise_status_folder_files_bad_x_org_id": 4.0,
+                        "run2_fail_noise_status_list_files_bad_x_org_id": 6.0,
+                        "run2_fail_noise_status_list_folders_bad_x_org_id": 6.0,
+                        "run2_fail_noise_status_me_bad_x_org_id": 4.0,
+                        "run2_fail_noise_status_read_bad_x_org_id": 2.0,
+                        "run2_fail_noise_status_rename": 4.0,
+                        "run2_fail_noise_status_rename_bad_x_org_id": 12.0,
+                        "run2_fail_noise_status_revoke_bad_x_org_id": 1.0,
+                        "run2_fail_noise_status_share": 3.0,
+                        "run2_fail_noise_status_share_bad_x_org_id": 15.0,
+                        "run2_fail_noise_status_thumb": 3.0,
+                        "run2_fail_noise_status_thumb_bad_x_org_id": 19.0,
+                        "run2_fail_status_admin_orgs_bad_x_org_id": 1.0,
+                        "run2_fail_status_download_bad_x_org_id": 13.0,
+                        "run2_fail_status_export": 16.0,
+                        "run2_fail_status_export_bad_x_org_id": 7.0,
+                        "run2_fail_status_folder_files_bad_x_org_id": 3.0,
+                        "run2_fail_status_list_files_bad_x_org_id": 15.0,
+                        "run2_fail_status_list_folders_bad_x_org_id": 16.0,
+                        "run2_fail_status_me_bad_x_org_id": 18.0,
+                        "run2_fail_status_read_bad_x_org_id": 13.0,
+                        "run2_fail_status_thumb": 11.0,
+                        "run2_fail_status_thumb_bad_x_org_id": 33.0,
+                        "run2_fail_write_create_link": 2.0,
+                        "run2_fail_write_link_works": 2.0,
+                        "run2_fail_write_revoke_seed_link": 2.0,
+                        "run2_failed": 427.0
+                    }
+                ],
+                "pass_at_k": {},
+                "reward_stats": {
+                    "reward": {
+                        "0.0": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run1_checks": {
+                        "2475": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run1_failed": {
+                        "1300": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_checks": {
+                        "1139": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_failed": {
+                        "427": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "leaking_refusals": {
+                        "516": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "grading_seconds": {
+                        "6.28": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run1_fail_status_list_files_bad_x_org_id": {
+                        "48": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run1_fail_leak_list_files_bad_x_org_id": {
+                        "34": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run1_fail_status_thumb": {
+                        "32": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run1_fail_leak_thumb": {
+                        "32": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run1_fail_status_me_bad_x_org_id": {
+                        "48": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run1_fail_status_thumb_bad_x_org_id": {
+                        "128": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run1_fail_leak_thumb_bad_x_org_id": {
+                        "128": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run1_fail_status_download_bad_x_org_id": {
+                        "36": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run1_fail_leak_download_bad_x_org_id": {
+                        "36": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run1_fail_status_export_bad_x_org_id": {
+                        "29": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run1_fail_leak_export_bad_x_org_id": {
+                        "29": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run1_fail_status_export": {
+                        "52": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run1_fail_leak_export": {
+                        "52": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run1_fail_status_list_folders_bad_x_org_id": {
+                        "48": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run1_fail_status_read_bad_x_org_id": {
+                        "36": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run1_fail_leak_read_bad_x_org_id": {
+                        "34": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run1_fail_status_folder_files_bad_x_org_id": {
+                        "17": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run1_fail_leak_folder_files_bad_x_org_id": {
+                        "17": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run1_fail_status_admin_orgs_bad_x_org_id": {
+                        "2": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run1_fail_status_rename": {
+                        "32": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run1_fail_status_rename_bad_x_org_id": {
+                        "126": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run1_fail_status_share": {
+                        "32": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run1_fail_status_share_bad_x_org_id": {
+                        "126": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run1_fail_status_revoke_bad_x_org_id": {
+                        "27": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run1_fail_status_delete": {
+                        "18": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run1_fail_status_delete_bad_x_org_id": {
+                        "40": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run1_fail_sweep": {
+                        "60": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run1_fail_db_changed": {
+                        "1": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_fail_status_thumb_bad_x_org_id": {
+                        "33": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_fail_leak_thumb_bad_x_org_id": {
+                        "33": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_fail_status_list_folders_bad_x_org_id": {
+                        "16": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_fail_status_thumb": {
+                        "11": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_fail_leak_thumb": {
+                        "11": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_fail_status_export": {
+                        "16": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_fail_leak_export": {
+                        "16": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_fail_status_list_files_bad_x_org_id": {
+                        "15": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_fail_leak_list_files_bad_x_org_id": {
+                        "12": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_fail_status_read_bad_x_org_id": {
+                        "13": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_fail_leak_read_bad_x_org_id": {
+                        "12": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_fail_status_me_bad_x_org_id": {
+                        "18": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_fail_status_export_bad_x_org_id": {
+                        "7": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_fail_leak_export_bad_x_org_id": {
+                        "7": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_fail_status_download_bad_x_org_id": {
+                        "13": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_fail_leak_download_bad_x_org_id": {
+                        "13": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_fail_status_folder_files_bad_x_org_id": {
+                        "3": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_fail_leak_folder_files_bad_x_org_id": {
+                        "3": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_fail_status_admin_orgs_bad_x_org_id": {
+                        "1": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_fail_noise_status_export": {
+                        "9": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_fail_noise_leak_export": {
+                        "9": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_fail_noise_status_share_bad_x_org_id": {
+                        "15": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_fail_noise_status_list_files_bad_x_org_id": {
+                        "6": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_fail_noise_leak_list_files_bad_x_org_id": {
+                        "4": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_fail_noise_status_list_folders_bad_x_org_id": {
+                        "6": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_fail_noise_status_rename_bad_x_org_id": {
+                        "12": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_fail_noise_status_delete_bad_x_org_id": {
+                        "19": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_fail_noise_status_share": {
+                        "3": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_fail_noise_status_me_bad_x_org_id": {
+                        "4": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_fail_noise_status_thumb": {
+                        "3": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_fail_noise_leak_thumb": {
+                        "3": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_fail_noise_status_thumb_bad_x_org_id": {
+                        "19": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_fail_noise_leak_thumb_bad_x_org_id": {
+                        "19": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_fail_noise_status_export_bad_x_org_id": {
+                        "3": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_fail_noise_leak_export_bad_x_org_id": {
+                        "3": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_fail_noise_status_rename": {
+                        "4": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_fail_noise_status_folder_files_bad_x_org_id": {
+                        "4": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_fail_noise_leak_folder_files_bad_x_org_id": {
+                        "4": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_fail_noise_status_delete": {
+                        "7": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_fail_write_create_link": {
+                        "2": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_fail_noise_status_download_bad_x_org_id": {
+                        "4": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_fail_noise_leak_download_bad_x_org_id": {
+                        "4": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_fail_noise_status_read_bad_x_org_id": {
+                        "2": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_fail_noise_status_revoke_bad_x_org_id": {
+                        "1": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_fail_noise_leak_read_bad_x_org_id": {
+                        "1": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_fail_write_link_works": {
+                        "2": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    },
+                    "run2_fail_write_revoke_seed_link": {
+                        "2": [
+                            "tenant-isolation-docshare__MLvAmEf"
+                        ]
+                    }
+                },
+                "exception_stats": {}
+            }
+        },
+        "n_input_tokens": null,
+        "n_cache_tokens": null,
+        "n_output_tokens": null,
+        "cost_usd": null
+    }
+}

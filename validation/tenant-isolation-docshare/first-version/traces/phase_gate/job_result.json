@@ -1,0 +1,117 @@
+{
+    "id": "4445b162-9fc0-4778-81eb-231850809e8e",
+    "started_at": "2026-10-28T19:55:24.006281",
+    "updated_at": "2026-10-28T19:56:03.962635",
+    "finished_at": "2026-10-28T19:56:03.962635",
+    "n_total_trials": 1,
+    "stats": {
+        "n_completed_trials": 1,
+        "n_errored_trials": 0,
+        "n_running_trials": 0,
+        "n_pending_trials": 0,
+        "n_cancelled_trials": 0,
+        "n_retries": 0,
+        "evals": {
+            "oracle__adhoc": {
+                "n_trials": 1,
+                "n_errors": 0,
+                "metrics": [
+                    {
+                        "grading_seconds": 6.84,
+                        "leaking_refusals": 0.0,
+                        "reward": 0.0,
+                        "run1_checks": 2475.0,
+                        "run1_failed": 0.0,
+                        "run2_checks": 1198.0,
+                        "run2_fail_noise_status_delete": 11.0,
+                        "run2_fail_noise_status_rename": 8.0,
+                        "run2_fail_noise_status_revoke": 17.0,
+                        "run2_fail_noise_status_share": 6.0,
+                        "run2_fail_write_create_link": 1.0,
+                        "run2_fail_write_link_works": 5.0,
+                        "run2_fail_write_outsider_revoke": 2.0,
+                        "run2_failed": 50.0
+                    }
+                ],
+                "pass_at_k": {},
+                "reward_stats": {
+                    "reward": {
+                        "0.0": [
+                            "tenant-isolation-docshare__G9e8F8p"
+                        ]
+                    },
+                    "run1_checks": {
+                        "2475": [
+                            "tenant-isolation-docshare__G9e8F8p"
+                        ]
+                    },
+                    "run1_failed": {
+                        "0": [
+                            "tenant-isolation-docshare__G9e8F8p"
+                        ]
+                    },
+                    "run2_checks": {
+                        "1198": [
+                            "tenant-isolation-docshare__G9e8F8p"
+                        ]
+                    },
+                    "run2_failed": {
+                        "50": [
+                            "tenant-isolation-docshare__G9e8F8p"
+                        ]
+                    },
+                    "leaking_refusals": {
+                        "0": [
+                            "tenant-isolation-docshare__G9e8F8p"
+                        ]
+                    },
+                    "grading_seconds": {
+                        "6.84": [
+                            "tenant-isolation-docshare__G9e8F8p"
+                        ]
+                    },
+                    "run2_fail_noise_status_share": {
+                        "6": [
+                            "tenant-isolation-docshare__G9e8F8p"
+                        ]
+                    },
+                    "run2_fail_noise_status_rename": {
+                        "8": [
+                            "tenant-isolation-docshare__G9e8F8p"
+                        ]
+                    },
+                    "run2_fail_noise_status_revoke": {
+                        "17": [
+                            "tenant-isolation-docshare__G9e8F8p"
+                        ]
+                    },
+                    "run2_fail_noise_status_delete": {
+                        "11": [
+                            "tenant-isolation-docshare__G9e8F8p"
+                        ]
+                    },
+                    "run2_fail_write_outsider_revoke": {
+                        "2": [
+                            "tenant-isolation-docshare__G9e8F8p"
+                        ]
+                    },
+                    "run2_fail_write_link_works": {
+                        "5": [
+                            "tenant-isolation-docshare__G9e8F8p"
+                        ]
+                    },
+                    "run2_fail_write_create_link": {
+                        "1": [
+                            "tenant-isolation-docshare__G9e8F8p"
+                        ]
+                    }
+                },
+                "exception_stats": {}
+            }
+        },
+        "n_input_tokens": null,
+        "n_cache_tokens": null,
+        "n_output_tokens": null,
+        "cost_usd": null
+    }
+}
