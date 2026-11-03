@@ -6,7 +6,12 @@ G1 to G30), the Daytona proof results and the known limitations. Paths are relat
 `submission/` in a command is that root as it was named on the authoring Mac. Short names such as `tests/grade.py`
 are inside the task folder `tasks/tenant-isolation-docshare/`.
 
-Last updated: 2026-10-29 (Mac clock, MST): wording edited for outside readers and pointers fixed (no measurement,
+Last updated: 2026-11-02 (Mac clock, MST): section 9 corrects the claim that mixing the grader's two runs defeats
+services that tell the runs apart (a service that keeps state between the runs passes; a verification probe of
+2026-11-02), sections 4 and 5 point to that gap, the G12 record and the result line (section 8) score it FAIL, the
+timings limitation now points to section 10, section 10 says what `verifier.timeout_sec` covers (Harbor's source),
+and six multiplication signs are now ASCII `x`.
+Before that, 2026-10-29 (Mac clock, MST): wording edited for outside readers and pointers fixed (no measurement,
 verdict or limitation changed). Before that, also 2026-10-29: section 10 adds the Daytona proof results of 2026-10-28 and the gate record
 (section 8) is re-scored from them; the Daytona notes of sections 5, 7 and 9 predate that run. Before that: 2026-10-28
 19:36 MST. Built from our design brief for this task and the verifier rules shared by all five tasks, both written and
@@ -76,7 +81,7 @@ after the quality-gate check, section 8, found it unstated).
 **Second reader (FACT, `local_results.txt` line 7).** `matrix_from_permissions.py` was written from PERMISSIONS.md
 alone, before `policy.py`, in a different style: it parses the section 3 table at run time and codes the prose rules of
 sections 1, 2, 4 and 5. `diff_matrices.py` compares it with `policy.py` on every cell: 73,542 cells on the hidden
-database and 26,718 on the visible one (every context × action × target, plus 400 random export sets), 0
+database and 26,718 on the visible one (every context x action x target, plus 400 random export sets), 0
 disagreements. Mutation test: changing one table cell (member may delete) makes 305 cells disagree, so the second reader
 really reads the document. Limit (honest): both were written by the same author in the same build session, so the diff catches
 transcription errors, not a shared misreading. A second reader written independently, by another author, would make
@@ -88,7 +93,7 @@ canonical grading log, lines `2012 refusal cases, 402 permitted reads` and `writ
 requests mixed in; 0 steps skipped`):
 1. Checks SHA256SUMS; `kit.prepare_submission()`; loads the hidden seed (root's own file, opened `immutable=1`);
    builds a deterministic case list (seed 20261028) from `policy.py`: 2,012 refused requests and 402 permitted reads.
-   The refused list holds, per context (anonymous, bad token, and each of 14 users × {no header, each org, an unknown
+   The refused list holds, per context (anonymous, bad token, and each of 14 users x {no header, each org, an unknown
    org}) and per action, one file from each relation class (active org, the user's other org, a foreign org; for a
    refused context: the named org, home, other), an unknown id, three link revocations, export sets (`[own, foreign]`,
    `[foreign, own]`, `[foreign]`, `[own, own, foreign]`, `[own, unknown]`), the list endpoints (including the 8
@@ -129,7 +134,8 @@ requests mixed in; 0 steps skipped`):
 
 Why the runs are mixed (G12): no run of agent code sees only one kind of request, and the staged folder names are
 random (`w<8 hex>`), so a service that guesses "this run only sends requests to refuse" and refuses everything (or
-allows every write) fails. Section 5 "Mixed runs" has the history and the evidence.
+allows every write) fails. A service that remembers run 1's refused writes and refuses only those in run 2 is not
+defeated (section 9). Section 5 "Mixed runs" has the history and the evidence.
 
 Leniency (G13, G15): any 4xx counts as a refusal (the docs say 403 or 404, 401, 400); permitted writes accept 200, 201
 or 204; a bad name or malformed body accepts any 4xx (API.md says 400); only API.md fields are compared, so added
@@ -163,19 +169,20 @@ database out over the network; that would not raise its own score, but it would 
   permitted ones; permitted revokes now include seed links, and a refused revoke of a new link was added (before, all
   refused revokes used seed tokens and the only permitted ones used new tokens). All three services now score 0
   (section 7). A fresh `/work/sub` per run alone would not have been enough (the request-count service keeps no state
-  on disk); the mixing is the fix.
+  on disk); the mixing is the fix for services that expect each run to send one kind of request; one that keeps state
+  between the runs and replays run 1's refusals is not defeated (section 9).
 - **More permitted behaviour checked (fix after the review).** The review found six variants that broke a permitted
   behaviour and still scored 1 (FACT: `old_grader_check.txt`): revoking via `X-Org-Id`, deleting a file that has
   links (the foreign key makes it a 500 if the links are not removed), support listing without `X-Org-Id` answering
   200, the link-creation response with only `token`, renames without the name check, downloads without Content-Type
   and Content-Disposition. Section 4's write list and header checks now cover each; all six score 0 (section 7). The
   `400` decisions of `policy.can_list` were dropped by the case builder before; they are now refusal cases.
-- **Time caps.** The shared verifier rules give each run of agent code a cap of 3 × the slowest valid solution, and
+- **Time caps.** The shared verifier rules give each run of agent code a cap of 3 x the slowest valid solution, and
   set `verifier.timeout_sec` = the sum of the caps + the measured grading time + 50%. The slowest
   valid run measured on the Mac is 2.92 s (alt, run 1), which gives under 9 s; Mac timings do not transfer to a 1-vCPU
   Daytona sandbox (UNVERIFIED speed), and before the keep-alive fix below a loaded Mac stretched a phase to 19 s. So
   each run has a 90 s cap (stated in the instruction), each request 10 s plus one retry, each start 30 s; at most one
-  request runs past a cap. `verifier.timeout_sec` = that formula on those caps: 3 × (30 start + 90 run + 20.5
+  request runs past a cap. `verifier.timeout_sec` = that formula on those caps: 3 x (30 start + 90 run + 20.5
   overshoot) + 30 checkpoint + 120 copy-out + 15 stops = 587 s, + 6 s measured grading (5.79 s, section 6), + 50% =
   890 s, rounded to 900 s. A slow service scores 0 through the cap, not `verifier_failed` (shown by
   `ablate_slow_service`, section 7). The Daytona proof run should record the run times; the caps can be tightened
@@ -242,7 +249,8 @@ FACT (`old_grader_check.txt`): `phase_gate`, both phase ablations and the six `g
 before the fix. `tools/check_task.py tasks/tenant-isolation-docshare` prints `OK tenant-isolation-docshare` (it runs
 `harbor lint`, clean), after `tools/sync_kit.py` (kit unchanged).
 
-What the Daytona proof run had to show (written before the run; section 10 has the results): `harbor lint`; oracle × 10 = 1; `--ae SOLUTION=alt` = 1; nop =
+What the Daytona proof run had to show (written before the run; section 10 has the results): `harbor lint`;
+oracle x 10 = 1; `--ae SOLUTION=alt` = 1; nop =
 0; `--ae SOLUTION=<each of the six attempts>` = 0 (`patch_get_only`, `membership_plus_get`, `deny_most`,
 `drop_org_switching`, `hardcode_visible_orgs`, `phase_gate`); oracle with `--force-build` = 1. In
 `verifier/test-stdout.txt`: the kit lock lines, `network isolation: ...`, three `service on 127.0.0.1:<port> answered`,
@@ -279,7 +287,7 @@ G8  PASS - instruction states the start command, the refusal codes of PERMISSION
 G9  PASS - report, policy table, org switching, support console make sense to a security engineer
 G10 PASS - a fixed service
 G11 PASS - black-box HTTP; the DB read is of named columns the instruction names; the six permitted behaviours the review found unchecked are now checked (section 5)
-G12 PASS (run, recorded: validation/tenant-isolation-docshare/PROOF_RESULTS_full1.md) - FAIL found by the review (the two runs could be told apart; 3 services with no write checks scored 1, old_grader_check.txt) and fixed by mixing (section 5); the original, 6 attempts and 16 local variants score 0 locally, each through named checks (section 7); on Daytona nop and the 6 attempts score 0.0, phase_gate through run2_fail_noise_status_* as required (section 10); the 16 local variants were not run on Daytona
+G12 FAIL, found 2026-11-02 after publication: a service that keeps state between the two runs and replays run 1's refusals in run 2 scores 1 with write authorization unfixed (section 9); before that, PASS (run, recorded: validation/tenant-isolation-docshare/PROOF_RESULTS_full1.md) - FAIL found by the review (the two runs could be told apart; 3 services with no write checks scored 1, old_grader_check.txt) and fixed by mixing (section 5); the original, 6 attempts and 16 local variants score 0 locally, each through named checks (section 7); on Daytona nop and the 6 attempts score 0.0, phase_gate through run2_fail_noise_status_* as required (section 10); the 16 local variants were not run on Daytona
 G13 PASS (run, recorded: validation/tenant-isolation-docshare/PROOF_RESULTS_full1.md) - alt (SQL scoping, 403 refusals) scores 1 locally and 1.0 on Daytona; any 4xx, set comparison, API fields only, media type and attachment name only
 G14 PASS - difficulty is completeness across six code paths and the identity layer while three legitimate cross-tenant paths stay open
 G15 PASS - no unstated rule (refusal codes and API.md rules now stated as checked); lenient comparisons; flake found and fixed (keep-alive); repeats saved: 5/5 canonical, 5/5 alt; thumbs byte-exact is the one strict comparison, stated as "the same previews"
@@ -298,11 +306,12 @@ G27 PASS (plan) - no keys; 127.0.0.1 only
 G28 PASS - a failure means an incomplete audit, over-blocking or a broken permitted feature, all real gaps
 G29 PASS - every check is a sentence of PERMISSIONS.md or API.md; nothing added only to fail agents
 G30 PASS (plan) - delivery as a GitHub repository on the author's go
-Result: PASS (no FAIL open); the (run) items are proven by the recorded Daytona runs of 2026-10-28 (section 10). Fixed
-during the build: G8/G15 (support naming an unknown org was enforced but unstated;
-now stated in PERMISSIONS.md section 2), G15/G16 (grader flake from ephemeral ports; keep-alive), G13 (two visible
-tests pinned a refusal code; now accept 403 or 404). Fixed after the review: G12 FAIL (runs could be told apart; now
-mixed), G11 (six permitted behaviours unchecked; now checked), G8/G15 (refusal-code wording; now matches what is
+Result: one FAIL open, G12, found 2026-11-02 after publication (the replay gap, section 9); before that PASS;
+the (run) items are proven by the recorded
+Daytona runs of 2026-10-28 (section 10). Fixed during the build: G8/G15 (support naming an unknown org was enforced but
+unstated; now stated in PERMISSIONS.md section 2), G15/G16 (grader flake from ephemeral ports; keep-alive), G13 (two
+visible tests pinned a refusal code; now accept 403 or 404). Fixed after the review: G12 FAIL (runs could be told apart;
+now mixed), G11 (six permitted behaviours unchecked; now checked), G8/G15 (refusal-code wording; now matches what is
 checked).
 ```
 
@@ -323,11 +332,22 @@ Known limitations (G21):
 - Thumbs must be byte-identical to today's previews; an agent that rewrites the renderer fails.
 - List order and export order are not checked (API.md states them; the instruction does not), so a fix that changes
   them still scores 1.
-- The mixing defeats services that guess which run they are in. A service that recognised single permitted requests
-  from the grader's request pattern would need the grader's source, which is in the 0700 tests image; the noise
-  count before each permitted write is random for that reason. INFERENCE, not tested beyond section 7's variants.
+- The mixing defeats a service that refuses every write in one run and allows every write in the other (`phase_gate`),
+  but not one that keeps state between the runs. Run 2's 400 mixed refusals and its noise requests repeat requests
+  run 1 already sent (`tests/grade.py`: `run_first`, `run_second`, `run_writes`), and both runs start the service from
+  the same copy of `/app`. A verification probe on 2026-11-02, `neg_replay_memo` (local KIT_LOCAL runs; the probe is
+  not in this repository), refused and recorded every rename, delete and link creation on its first start and, on
+  later starts, refused only those it had seen. It scored 1 with write authorization unfixed: delete and link creation
+  authorized as in the original, and rename writing before it refuses (0 of 2,475 run-1 and 0 of 1,231 run-2 checks
+  failed); the same code without the memory scored 0 (FACT, those local runs). INFERENCE from `phase_gate`'s Daytona
+  trace (section 10; its marker file in `/work/sub/docshare`, section 7, made run 2 its later start): the memory
+  survives between the runs on Daytona too. The comment at `tests/grade.py:14-15` ("a service cannot pass by telling
+  the runs apart") overstates for this reason; the file is inside the package digest that the shipped traces lock, so
+  it stays as shipped. A grader fix (run 2 drawing its refusals from cases run 1 never sent) would change that digest
+  and need a new Daytona proof; it was not made.
 - The agent's service has the host network during grading (kit limit); it could send the hidden data out.
-- All timings are from the Mac; Daytona speed is UNVERIFIED until the proof run.
+- Timings: Mac in section 6; Daytona in section 10 (slowest valid run 1 6.56 s against the 90 s cap; Harbor verifier
+  phase at most 72.6 s against 900 s).
 
 ## 10. Daytona proof results (2026-10-28)
 FACT: `validation/tenant-isolation-docshare/PROOF_RESULTS_full1.md` (run `full1`; the same rows are in
@@ -386,5 +406,7 @@ checks, <n> failed, <s>s` from `verifier/test-stdout.txt`; the Harbor verifier p
 
 Reading: the slowest valid run 1 on Daytona took 6.56 s (canonical; 2.92 s was the slowest on the Mac, section 6),
 under the 30 s trigger in section 7 ("How to read the proof runs"), so the 90 s run caps stand. The slowest Harbor
-verifier phase, 72.6 s, is under `verifier.timeout_sec` 900 s (whether that timeout covers the whole phase or only
-`test.sh` is UNVERIFIED). Not exercised by these runs: the 16 local-only variants of section 7 and the image size.
+verifier phase, 72.6 s, is under `verifier.timeout_sec` 900 s. In Harbor 0.25.0 that timeout covers only
+`verifier.verify()`, which starts after the verifier sandbox is up and the artifacts are uploaded (`trial/trial.py`
+lines 970-980, called at 1081), so it budgets the test run and the copy of `/logs/verifier` back, not the whole phase
+(FACT, read 2026-11-02). Not exercised by these runs: the 16 local-only variants of section 7 and the image size.

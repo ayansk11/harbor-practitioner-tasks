@@ -58,7 +58,11 @@ tests of this repository; the verifier keeps Harbor's default (public) network (
 itself, see "How the tasks are graded"). Where Harbor 0.25.0 applies the line, it still lets an installed agent such
 as `claude-code` reach its own model service and turns the agent's native web tools off (Harbor's source:
 `trial/trial.py` lines 305-361 and 692-697, `trial/network_policy.py` lines 40-44, `agents/base.py` lines 197-245);
-no run here used that allowlist. Where the line cannot be applied, the trial fails before the agent runs:
+no run here used that allowlist. If Harbor cannot determine or estimate an installed agent's model endpoint, it adds
+no host and only warns that inference requests may be blocked; then pass the host with `--allow-agent-host <host>` on
+`harbor run`, naming every host the agent needs, since such a list replaces the hosts Harbor would add (`cli/jobs.py`
+lines 709-718; `trial/trial.py` lines 305-310 and 329-347). Where the line cannot be applied, the trial fails before
+the agent runs:
 - On an environment that cannot switch a running sandbox's network, Harbor refuses the trial while setting it up,
   before the task's sandbox starts (`environments/base.py` lines 280-300). In Harbor 0.25.0 that is every environment
   whose `dynamic_network_policy` capability is false, the default (`environments/capabilities.py` line 46): for example
@@ -128,6 +132,13 @@ base/verifier_kit/     the shared grading kit
 tools/                 proof_matrix.py, check_task.py, sync_kit.py, BASE_IMAGE_DIGEST, dev-requirements.in / .lock
 ```
 
+A path that starts with `submission/` in a comment or docstring of a task file, or in an authoring script, means this
+repository's root, as the folder was named on the authoring Mac (for example `submission/base/verifier_kit` is
+`base/verifier_kit`). The local checks `authoring/<slug>/local_check.py` are not part of grading and expect a `.venv`
+at the repository root built from `tools/dev-requirements.lock` (macOS arm64); those of orders, docshare and churn call
+its `bin/python` by path and fail without it, while those of ab-test and et0 run with the interpreter that
+starts them.
+
 ## Known limitations
 
 All five tasks:
@@ -168,6 +179,14 @@ All five tasks:
 - **Kit rules the instructions do not spell out:** the graded copy loses `conftest.py`, `sitecustomize`/`usercustomize`,
   `*.pth`, `*.pyc` and `__pycache__`; a copy over 2 GiB or 200,000 entries scores 0; written files are capped at 1 GiB,
   run output at 64 MiB, uid 1001 at 512 processes and threads. No sane solution needs any of these.
+- **Symbolic links under `/app`.** Harbor 0.25.0 packs `/app` in the agent's sandbox and unpacks it on the machine
+  running Harbor with Python's tar `data` filter, which stops at the first symbolic link to an absolute path or out of
+  `/app`; only the files unpacked before it reach the verifier (Harbor's `environments/base.py` lines 69-82 and
+  1219-1220, `trial/artifact_handler.py` lines 205-246 and 332-379). The et0 attempt `symlink_output` shows the stop:
+  `tarfile.AbsoluteLinkError` in `validation/et0-station-ingest/traces/symlink_output/trial.log` (line 39), and `/app`
+  with status `failed` in its `artifacts/manifest.json`. The instructions do not mention this, so a solution that
+  leaves such a link under `/app` can lose files in grading. A virtual environment made with `python -m venv` holds
+  one (its interpreter link is absolute); one named `.venv` is safe, since folders of that name are not carried over.
 - In the two HTTP tasks a hostile service could send the hidden data out over the host network; it cannot raise its
   own score that way (the expected answers stay in `/tests`).
 - **Run traces:** one Harbor trial per variant of each final run, under `validation/<slug>/traces/<variant>/` (reward,
@@ -190,7 +209,11 @@ Per task:
   passing agent trials refuse such ids ([agent trials](validation/orders-export-missing-rows/README.md#agent-trials)).
 - **tenant-isolation-docshare:** the flaw class is well known. "Act in one active organisation" is a policy choice,
   stated in `PERMISSIONS.md` section 2. Thumbnails must be byte-identical to today's; list and export order are not
-  checked.
+  checked. The grader's second run repeats refused requests from its first, and both runs start the same copy of
+  `/app`, so a service that remembers run 1's refused writes and refuses only those in run 2 scores 1 with the
+  authorization of rename, delete and link creation left as in the original (a local probe of 2026-11-02;
+  [design](docs/tenant-isolation-docshare/DESIGN.md) section 9; the comment at lines 14-15 of the task's
+  `tests/grade.py` overstates). Closing it changes the package digest and needs a new proof.
 - **ab-test-reanalysis:** Claude Code with `claude-opus-5-5` passed 3 of 3 trials, so the `hard` in `task.toml`, written
   before any trial, overstates the task for this agent (INFERENCE; an edit to `task.toml` would change the proven
   package's digest). The plan states every graded rule; neither the instruction nor the plan names the hand-assigned

@@ -1,6 +1,7 @@
 # Validation: tenant-isolation-docshare
 
-Last updated: 2026-10-31 (Mac clock, MST).
+Last updated: 2026-11-02 (Mac clock, MST): the `phase_gate` note points to the replay gap in DESIGN.md section 9.
+Before that, 2026-10-31 (Mac clock, MST).
 
 **Final run: `full1`.** Harbor 0.25.0 on Daytona, 2026-10-28 from 19:45:27 to 19:56:43 (Mac clock, MST; job `result.json`). Overall: ALL AS EXPECTED (`PROOF_RESULTS_full1.md`).
 
@@ -109,5 +110,7 @@ trials, is the SVG namespace string of the thumbnail code those agents rewrote, 
 
 - Every oracle trial's `agent/oracle.txt` says `applied <variant> to /app/docshare`, so the `SOLUTION` variable reached `solve.sh` on Daytona.
 - `phase_gate` passes the grader's first run (`run1_failed` 0) and fails only the second run, where refused requests are mixed into the write list (the `run2_fail_noise_status_*` counts in its `reward.json`). That second run is what kills it.
+  A service that keeps state between the runs and replays run 1's refusals in run 2 is not stopped this way
+  (`../../docs/tenant-isolation-docshare/DESIGN.md` section 9).
 - The verifier log (`verifier/test-stdout.txt`) of every trial shows the lock line, `network isolation: ON` and `killed 0 runner processes`. Design and local results: `../../docs/tenant-isolation-docshare/DESIGN.md` sections 7 and 10.
 - Three agent (model) trials were run for this task, outside the matrix (section "Agent trials"); the matrix uses Harbor's `oracle` and `nop` agents only.

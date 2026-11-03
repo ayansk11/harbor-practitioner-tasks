@@ -13,7 +13,11 @@ Result: all as expected (`PROOF_RESULTS_full1.md`). What each grader-attack atte
   file. Harbor documents this sanitising (outside-pointing symlinks are skipped; Harbor docs, "Sanitize artifacts" on
   https://docs.harborframework.com/tasks/separate-verifier). The grader's `read_as_runner` defence was therefore not
   exercised on Daytona; it remains a second layer.
+  (Added 2026-11-02: in this trial the link was refused when Harbor extracted the `/app` download
+  (`traces/symlink_output/trial.log` lines 5 and 39), which stopped the extraction there; the upload-stage skip
+  described above was not the step that dropped it.)
 
 Edited 2026-10-29: the source pointer in the last bullet now names the Harbor documentation page instead of a planning
 note that is not in this repository, and the first bullet gained a dated note marking its cause as an INFERENCE.
 Nothing else changed.
+Edited 2026-11-02: the last bullet gained a dated note on where Harbor dropped the link. Nothing else changed.

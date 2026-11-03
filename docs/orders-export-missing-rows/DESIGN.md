@@ -7,7 +7,9 @@ relative to the repository root unless they start with `submission/` (the reposi
 short names such as `tests/grade.py` are inside the task folder `tasks/orders-export-missing-rows/`, and the service's
 own files (`tools/export_orders.py`, `logs/`, `tests/test_api.py`, `INCIDENT.md`) inside its `environment/app/`.
 
-Last updated: 2026-10-29 (Mac clock, MST): wording edited for outside readers, pointers fixed, and one stale figure
+Last updated: 2026-11-02 (Mac clock, MST): section 12 now says what `verifier.timeout_sec` covers (Harbor's source),
+and two multiplication signs are now ASCII `x`.
+Before that, 2026-10-29 (Mac clock, MST): wording edited for outside readers, pointers fixed, and one stale figure
 corrected (the verifier timeout of the 120 s-budget alternative in section 8: near 1,200 s, not 500 s); no verdict
 changed. Before that, also 2026-10-29: section 12 adds the Daytona proof results of 2026-10-28 and the gate record
 (section 11) is re-scored from them; the "Daytona: pending" notes in sections 9 and 10 predate that run. Before that:
@@ -189,7 +191,7 @@ before the build (not shipped). Where a rule matters below, its wording is given
   database, 2026-10-28),
   so a correct fix that leaves parsing alone keeps them.
 - **One budget for the agent phase** instead of per-run caps. The shared cap rule says: "Each run of agent code has a
-  `grade.py` cap of 3 × the measured slowest valid solution (usually the alt); `verifier.timeout_sec` = sum of the
+  `grade.py` cap of 3 x the measured slowest valid solution (usually the alt); `verifier.timeout_sec` = sum of the
   caps + measured grading time + 50%". Here all requests go to one live service, so there is one budget.
   Timings and the derivation are in section 8.
 - **Runtime.** 1 CPU and 2048 MB as designed. "Verifier under 2 min" in the brief is the expected run time (3.3 s on
@@ -310,7 +312,7 @@ by the old 240 s budget) (FACT, the first build's local_check.py runs; not saved
   local-only ablation (`ablations.py`), so the planned proof matrix never measures it. Running it once on Daytona
   (apply the ablation by hand to a copy) would show whether 900 s holds.
 - (Written before the Daytona run; superseded by section 12, 2026-10-29: every row as expected, J, K and L 0.0.) Not
-  run on Daytona yet: the "(run)" gate items wait for the proof matrix (oracle × 10, alt, nop, the twelve
+  run on Daytona yet: the "(run)" gate items wait for the proof matrix (oracle x 10, alt, nop, the twelve
   attempts, oracle with `--force-build`). J, K and L matter most there: with the grader as first built they scored 1,
   so G12 rests on their Daytona result. Each attempt run must show `applied <attempt> to /app` in
   `agent/oracle.txt`; otherwise the variable did not reach `solve.sh` and the run proves nothing. The proof run must show in test-stdout: `[kit] python 3.12.x, sqlite <version>`,
@@ -426,7 +428,9 @@ Harbor verifier phase from `verifier.started_at` to `verifier.finished_at` in ea
 | twelve attempts | 0.64-10.84 s | 1.41-11.65 s | 10.0-22.8 s |
 
 The agent phase stayed at or under 10.84 s against the 900 s budget, and the Harbor verifier phase at or under 51.0 s
-against `verifier.timeout_sec` 2,400 s (whether that timeout covers the whole phase or only `test.sh` is UNVERIFIED).
+against `verifier.timeout_sec` 2,400 s. In Harbor 0.25.0 that timeout covers only `verifier.verify()`, which starts
+after the verifier sandbox is up and the artifacts are uploaded (`trial/trial.py` lines 970-980, called at 1081), so it
+budgets the test run and the copy of `/logs/verifier` back, not the whole phase (FACT, read 2026-11-02).
 INFERENCE: the canonical's agent phase took 2.5-3.1 x its Mac time (2.07 s, section 8); at that ratio the naive
 full-load fix (210.83 s on the Mac) would need about 536-658 s, inside the budget. It was not run on Daytona, so the
 open issue of section 9 stands. Also not exercised by these runs: the other local-only ablations of section 5 and the

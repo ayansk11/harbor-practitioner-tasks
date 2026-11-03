@@ -5,7 +5,8 @@ from the plan and why, the local checks, the quality-gate record against `docs/Q
 Daytona proof results and the known limitations. Paths are relative to the repository root; short names such as
 `tests/grade.py` are inside the task folder `tasks/et0-station-ingest/`.
 
-Last updated: 2026-10-31 (Mac clock, MST): limitation 2 (section 11) now records the two agent trials of 2026-10-30.
+Last updated: 2026-11-02 (Mac clock, MST): section 13 now says what `verifier.timeout_sec` covers (Harbor's source).
+Before that, 2026-10-31 (Mac clock, MST): limitation 2 (section 11) now records the two agent trials of 2026-10-30.
 Before that, 2026-10-30 (Mac clock, MST): limitation 2 (section 11) now records the agent pilot. Before that, 2026-10-29 (Mac clock, MST): wording edited for outside readers and pointers fixed (no number, verdict
 or limitation changed; a byte count added to section 2). Before that, also 2026-10-29: section 13 adds the Daytona proof results of 2026-10-28 and the gate record
 (section 10) is re-scored from them; the Daytona UNVERIFIED notes of sections 8, 9, 10 and 11 predate that run. Before
@@ -498,6 +499,8 @@ writes; the Harbor verifier phase from `verifier.started_at` to `verifier.finish
 | nine attempts | 0.317-0.318 s | 18.7-23.2 s |
 
 Reading: the hidden pipeline run is under 1% of the 60 s cap (section 8 measured 0.33-0.786 s for the canonical on the
-Mac). The slowest Harbor verifier phase, 53.6 s, is under `verifier.timeout_sec` 120 s; whether that timeout covers the
-whole phase or only `test.sh` is UNVERIFIED, and if it covers the whole phase that trial used 45% of it. Not exercised
-by these runs: the grader's symlink defence (above), the image size, and agent trials (limitation 2).
+Mac). The slowest Harbor verifier phase, 53.6 s, is under `verifier.timeout_sec` 120 s. In Harbor 0.25.0 that timeout
+covers only `verifier.verify()`, which starts after the verifier sandbox is up and the artifacts are uploaded
+(`trial/trial.py` lines 970-980, called at 1081), so it budgets the test run and the copy of `/logs/verifier` back,
+not the whole phase (FACT, read 2026-11-02). Not exercised by these runs: the grader's symlink defence (above), the
+image size, and agent trials (limitation 2).

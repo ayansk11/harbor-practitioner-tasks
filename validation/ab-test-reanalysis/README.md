@@ -1,6 +1,14 @@
 # Validation: ab-test-reanalysis
 
-Last updated: 2026-10-31, 23:03 MST (Mac clock): fixes after a pre-commit check: Daytona Tier 2 marked as not tried. Before that, 2026-10-31, 15:01 MST (Mac clock): wording fixed after an independent check (the expected failure of the shipped package on Daytona Tier 1 and the 4 GiB figure marked INFERENCE, the Claude Code trace folders' file list, the first version's evidence in `first-version/`). Before that, 2026-10-31, 13:50 MST: rewritten for the revised task (the Daytona proof `rev1`, three Claude Code trials, and the first version's evidence moved to `first-version/`). Before that, 2026-10-29 (Mac clock, MST): the first version's proof run `full2`.
+Last updated: 2026-11-02, 17:05 MST (Mac clock): the note on `agent/oracle.txt` under "What the proof shows"
+corrected (three of the 14 oracle trials print no full readout), after a verification of the published commit.
+Before that, 2026-10-31, 23:03 MST (Mac clock): fixes after a pre-commit check: Daytona Tier 2 marked as not tried.
+Before that, 2026-10-31, 15:01 MST (Mac clock): wording fixed after an independent check (the expected failure of the
+shipped package on Daytona Tier 1 and the 4 GiB figure marked INFERENCE, the Claude Code trace folders' file list, the
+first version's evidence in `first-version/`).
+Before that, 2026-10-31, 13:50 MST: rewritten for the revised task (the Daytona proof `rev1`, three Claude Code trials,
+and the first version's evidence moved to `first-version/`).
+Before that, 2026-10-29 (Mac clock, MST): the first version's proof run `full2`.
 
 **Final run: `rev1`.** Harbor 0.25.0 on Daytona, 2026-10-31 from 01:37:54 to 01:51:53 (Mac clock, MST; the first row's `started` in `proof_results_rev1.json`, and the time the run's three files were written; in the shipped traces, the canonical job's `started_at` is 01:37:56 and the force-build job's `finished_at` 01:51:51, each in `job_result.json`). Overall: ALL AS EXPECTED, 15 variants and 24 trials (`PROOF_RESULTS_rev1.md`).
 
@@ -47,7 +55,11 @@ Read in all 24 trials of the run (each trial's `verifier/reward.json` and `verif
 - The verifier's limits: `res_cgroup_cpus=1` and `res_cgroup_mem_mib=2048` in every trial, as `task.toml` sets (`[verifier.environment]`, 1 CPU and 2,048 MB); `res_os_cpu_count=48` is the host's count, not the limit.
 - Times: the slowest hidden run took 2.731 s (`alt_time` on h_null) against the 120 s cap per run; the verifier phases took 14.9 to 44.2 s against the 1,000 s verifier timeout.
 - The attempts: each 0-expected trial exited 0 on all five hidden runs and failed exactly the sets of the local matrix, with the same problem counts (design record, section 9; `authoring/ab-test-reanalysis/local_results.json`, image mode).
-- `agent/oracle.txt` shows the readout each variant wrote for the visible export (`decision`, `diff`, `ci`, `srm_p`); canonical wrote `decision=no_ship diff=+0.00096 ci=[-0.00432, +0.00624] srm_p=0.469`. The nop trial writes no `agent/oracle.txt`.
+- `agent/oracle.txt` shows what `solution/solve.sh` printed: for canonical, force-build and nine of the ten attempts,
+  the readout it wrote for the visible export (`decision`, `diff`, `ci`, `srm_p`); canonical wrote
+  `decision=no_ship diff=+0.00096 ci=[-0.00432, +0.00624] srm_p=0.469`. `alt_recount` and `alt_time` print
+  `decision=no_ship` only, and `fix_visible_only` prints a note that a one-off script rewrote `output/result.json`
+  and the pipeline is unchanged. The nop trial writes no `agent/oracle.txt`.
 
 ## How to reproduce
 
