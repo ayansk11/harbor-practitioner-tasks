@@ -1,12 +1,14 @@
-# Redactions in this traces folder (2026-10-31)
+# Redactions in this traces folder (2026-10-31; `agent-m1/` added 2026-11-03)
 
-Every file here is a copy of a Harbor trial or job file of task v3: its Daytona proof run `v3` (one trial per variant)
-and its three Claude Code trials (`agent-claude-code/`). Machine-specific paths were replaced; nothing else was changed
-(no reward, count or timing). A comparison of every file here with its original in the job folders (2026-10-31) found
-each changed JSON file equal to its original once the path strings are replaced (the numbers identical), each changed
-text file equal to its original with the paths replaced and one line added at the top, and every other file equal to
-its original byte for byte. A scan of the copies (2026-10-31) found no model service's key and no sandbox provider's
-key in any file.
+Every file here outside `agent-m1/` is a copy of a Harbor trial or job file of task v3: its Daytona proof run `v3`
+(one trial per variant) and its three Claude Code trials (`agent-claude-code/`). Machine-specific paths were replaced;
+nothing else was changed (no reward, count or timing). A comparison of every file here with its original in the job
+folders (2026-10-31) found each changed JSON file equal to its original once the path strings are replaced (the
+numbers identical), each changed text file equal to its original with the paths replaced and one line added at the
+top, and every other file equal to its original byte for byte. A scan of the copies (2026-10-31) found no model
+service's key and no sandbox provider's key in any file.
+
+The agent trials of run m1 (2026-11-03) are in `agent-m1/`, which has its own `REDACTIONS.md`.
 
 The Claude Code trial folders (`agent-claude-code/`) hold the trajectory Harbor wrote (`agent/trajectory.json`) and
 Claude Code's own stream output (`agent/claude-code.txt`). Claude Code's raw session folder (`agent/sessions/`), which
@@ -143,4 +145,5 @@ appear only in that line). JSON files cannot carry a comment, so they are listed
 | `agent-claude-code/feature-leakage-churn__qthVz4g/trial.log` (text; first line added) | `<submission>` x2 |
 | `agent-claude-code/feature-leakage-churn__qthVz4g/job_lock.json` | `<submission>` x3 |
 
-Files with no machine-specific path (copied byte for byte): 182 (161, plus 21 in `agent-claude-code/`).
+Files with no machine-specific path (copied byte for byte): 182 (161, plus 21 in `agent-claude-code/`), not counting
+`agent-m1/`, whose own `REDACTIONS.md` counts 64.

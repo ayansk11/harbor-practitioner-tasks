@@ -1,0 +1,441 @@
+{
+    "id": "4972635e-e8e7-41dc-97e9-904904500ac4",
+    "started_at": "2026-11-03T08:51:56.720286",
+    "updated_at": "2026-11-03T08:55:21.587289",
+    "finished_at": "2026-11-03T08:55:21.587289",
+    "n_total_trials": 1,
+    "stats": {
+        "n_completed_trials": 1,
+        "n_errored_trials": 0,
+        "n_running_trials": 0,
+        "n_pending_trials": 0,
+        "n_cancelled_trials": 0,
+        "n_retries": 0,
+        "evals": {
+            "terminus-2__gpt-oss-120b__adhoc": {
+                "n_trials": 1,
+                "n_errors": 0,
+                "metrics": [
+                    {
+                        "grading_seconds": 5.07,
+                        "held_back": 264.0,
+                        "held_back_sent": 264.0,
+                        "leaking_refusals": 214.0,
+                        "reward": 0.0,
+                        "run1_checks": 2211.0,
+                        "run1_fail_db_changed": 1.0,
+                        "run1_fail_leak_download": 32.0,
+                        "run1_fail_leak_download_bad_x_org_id": 2.0,
+                        "run1_fail_leak_export": 52.0,
+                        "run1_fail_leak_export_bad_x_org_id": 4.0,
+                        "run1_fail_leak_read": 26.0,
+                        "run1_fail_leak_thumb": 32.0,
+                        "run1_fail_leak_thumb_bad_x_org_id": 2.0,
+                        "run1_fail_status_admin_orgs_bad_x_org_id": 2.0,
+                        "run1_fail_status_delete": 36.0,
+                        "run1_fail_status_delete_bad_x_org_id": 1.0,
+                        "run1_fail_status_download": 32.0,
+                        "run1_fail_status_download_bad_x_org_id": 2.0,
+                        "run1_fail_status_export": 52.0,
+                        "run1_fail_status_export_bad_x_org_id": 4.0,
+                        "run1_fail_status_me_bad_x_org_id": 2.0,
+                        "run1_fail_status_read": 32.0,
+                        "run1_fail_status_read_bad_x_org_id": 2.0,
+                        "run1_fail_status_rename": 21.0,
+                        "run1_fail_status_share": 21.0,
+                        "run1_fail_status_thumb": 32.0,
+                        "run1_fail_status_thumb_bad_x_org_id": 2.0,
+                        "run1_fail_sweep": 43.0,
+                        "run1_failed": 435.0,
+                        "run2_checks": 1491.0,
+                        "run2_fail_held_link": 2.0,
+                        "run2_fail_held_status_delete": 19.0,
+                        "run2_fail_held_status_rename": 10.0,
+                        "run2_fail_held_status_share": 8.0,
+                        "run2_fail_held_sweep": 30.0,
+                        "run2_fail_leak_download": 9.0,
+                        "run2_fail_leak_download_bad_x_org_id": 2.0,
+                        "run2_fail_leak_export": 16.0,
+                        "run2_fail_leak_read": 8.0,
+                        "run2_fail_leak_thumb": 11.0,
+                        "run2_fail_leak_thumb_bad_x_org_id": 1.0,
+                        "run2_fail_noise_leak_download": 4.0,
+                        "run2_fail_noise_leak_export": 5.0,
+                        "run2_fail_noise_leak_export_bad_x_org_id": 2.0,
+                        "run2_fail_noise_leak_read": 2.0,
+                        "run2_fail_noise_leak_thumb": 4.0,
+                        "run2_fail_noise_status_delete": 6.0,
+                        "run2_fail_noise_status_download": 4.0,
+                        "run2_fail_noise_status_export": 5.0,
+                        "run2_fail_noise_status_export_bad_x_org_id": 2.0,
+                        "run2_fail_noise_status_read": 2.0,
+                        "run2_fail_noise_status_rename": 3.0,
+                        "run2_fail_noise_status_share": 3.0,
+                        "run2_fail_noise_status_thumb": 4.0,
+                        "run2_fail_status_admin_orgs_bad_x_org_id": 1.0,
+                        "run2_fail_status_download": 9.0,
+                        "run2_fail_status_download_bad_x_org_id": 2.0,
+                        "run2_fail_status_export": 16.0,
+                        "run2_fail_status_me_bad_x_org_id": 1.0,
+                        "run2_fail_status_read": 11.0,
+                        "run2_fail_status_read_bad_x_org_id": 1.0,
+                        "run2_fail_status_thumb": 11.0,
+                        "run2_fail_status_thumb_bad_x_org_id": 1.0,
+                        "run2_fail_write_create_link": 1.0,
+                        "run2_fail_write_delete": 1.0,
+                        "run2_fail_write_rename": 1.0,
+                        "run2_failed": 218.0
+                    }
+                ],
+                "pass_at_k": {},
+                "reward_stats": {
+                    "reward": {
+                        "0.0": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run1_checks": {
+                        "2211": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run1_failed": {
+                        "435": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run2_checks": {
+                        "1491": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run2_failed": {
+                        "218": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "leaking_refusals": {
+                        "214": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "held_back": {
+                        "264": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "held_back_sent": {
+                        "264": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "grading_seconds": {
+                        "5.07": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run1_fail_status_download": {
+                        "32": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run1_fail_leak_download": {
+                        "32": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run1_fail_status_thumb": {
+                        "32": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run1_fail_leak_thumb": {
+                        "32": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run1_fail_status_export": {
+                        "52": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run1_fail_leak_export": {
+                        "52": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run1_fail_status_read": {
+                        "32": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run1_fail_leak_read": {
+                        "26": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run1_fail_status_export_bad_x_org_id": {
+                        "4": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run1_fail_leak_export_bad_x_org_id": {
+                        "4": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run1_fail_status_download_bad_x_org_id": {
+                        "2": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run1_fail_leak_download_bad_x_org_id": {
+                        "2": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run1_fail_status_admin_orgs_bad_x_org_id": {
+                        "2": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run1_fail_status_read_bad_x_org_id": {
+                        "2": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run1_fail_status_me_bad_x_org_id": {
+                        "2": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run1_fail_status_thumb_bad_x_org_id": {
+                        "2": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run1_fail_leak_thumb_bad_x_org_id": {
+                        "2": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run1_fail_status_rename": {
+                        "21": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run1_fail_status_share": {
+                        "21": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run1_fail_status_delete": {
+                        "36": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run1_fail_status_delete_bad_x_org_id": {
+                        "1": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run1_fail_sweep": {
+                        "43": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run1_fail_db_changed": {
+                        "1": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run2_fail_status_thumb": {
+                        "11": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run2_fail_leak_thumb": {
+                        "11": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run2_fail_status_download": {
+                        "9": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run2_fail_leak_download": {
+                        "9": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run2_fail_status_export": {
+                        "16": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run2_fail_leak_export": {
+                        "16": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run2_fail_status_read": {
+                        "11": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run2_fail_leak_read": {
+                        "8": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run2_fail_status_read_bad_x_org_id": {
+                        "1": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run2_fail_status_download_bad_x_org_id": {
+                        "2": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run2_fail_leak_download_bad_x_org_id": {
+                        "2": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run2_fail_status_admin_orgs_bad_x_org_id": {
+                        "1": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run2_fail_status_me_bad_x_org_id": {
+                        "1": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run2_fail_status_thumb_bad_x_org_id": {
+                        "1": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run2_fail_leak_thumb_bad_x_org_id": {
+                        "1": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run2_fail_held_status_delete": {
+                        "19": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run2_fail_noise_status_export": {
+                        "5": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run2_fail_noise_leak_export": {
+                        "5": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run2_fail_held_status_share": {
+                        "8": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run2_fail_noise_status_share": {
+                        "3": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run2_fail_noise_status_thumb": {
+                        "4": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run2_fail_noise_leak_thumb": {
+                        "4": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run2_fail_held_status_rename": {
+                        "10": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run2_fail_noise_status_read": {
+                        "2": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run2_fail_noise_leak_read": {
+                        "2": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run2_fail_noise_status_rename": {
+                        "3": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run2_fail_write_rename": {
+                        "1": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run2_fail_noise_status_export_bad_x_org_id": {
+                        "2": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run2_fail_noise_leak_export_bad_x_org_id": {
+                        "2": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run2_fail_noise_status_delete": {
+                        "6": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run2_fail_noise_status_download": {
+                        "4": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run2_fail_noise_leak_download": {
+                        "4": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run2_fail_write_create_link": {
+                        "1": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run2_fail_write_delete": {
+                        "1": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run2_fail_held_sweep": {
+                        "30": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    },
+                    "run2_fail_held_link": {
+                        "2": [
+                            "tenant-isolation-docshare__futjyTA"
+                        ]
+                    }
+                },
+                "exception_stats": {}
+            }
+        },
+        "n_input_tokens": 133438,
+        "n_cache_tokens": 0,
+        "n_output_tokens": 10431,
+        "cost_usd": null
+    }
+}

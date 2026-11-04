@@ -1,0 +1,25 @@
+{
+    "task": {
+        "path": "<submission>/jobs/feature-leakage-churn/package-v3/feature-leakage-churn"
+    },
+    "trial_name": "feature-leakage-churn__koFPMV7",
+    "trials_dir": "<submission>/jobs/agent-trials/feature-leakage-churn-terminus2-gptoss120b-m1-1",
+    "environment_build_timeout_multiplier": 3.0,
+    "agent": {
+        "name": "terminus-2",
+        "model_name": "openai/gpt-oss-120b",
+        "kwargs": {
+            "model_info": {
+                "max_input_tokens": 131072,
+                "max_output_tokens": 32768,
+                "input_cost_per_token": 0,
+                "output_cost_per_token": 0
+            },
+            "api_base": "<model-endpoint>"
+        }
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "e3842841-3721-4291-b22c-a7010d4fa329"
+}

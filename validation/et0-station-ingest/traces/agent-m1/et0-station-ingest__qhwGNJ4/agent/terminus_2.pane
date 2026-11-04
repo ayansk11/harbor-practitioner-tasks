@@ -1,0 +1,2957 @@
+[?2004hroot@98254c38-6d92-484a-af3d-75f7f6376daa:/app# asciinema rec --stdin /logs/agent/recording.cast
+[?2004l[0;32masciinema: recording asciicast to /logs/agent/recording.cast[0m
+[0;32masciinema: press <ctrl-d> or type "exit" when you're done[0m
+[?2004hroot@98254c38-6d92-484a-af3d-75f7f6376daa:/app# clear
+[?2004l[H[J[3J[?2004hroot@98254c38-6d92-484a-af3d-75f7f6376daa:/app# pwd && find . -maxdepth 3 -type f -not -path './.venv/*' -not -path './__pycache__/*' | sort
+[?2004l/app
+./README.md
+./config/stations.yaml
+./data/raw/ARN.csv
+./data/raw/CDB.csv
+./data/raw/HLT.csv
+./data/raw/LGN.csv
+./data/raw/MRS.csv
+./data/raw/PAL.csv
+./data/raw/RSD.csv
+./data/raw/VNT.csv
+./docs/METHOD.md
+./et0/__init__.py
+./et0/fao56.py
+./et0/ingest.py
+./et0/meta.py
+./et0/pipeline.py
+./et0/selfcheck.py
+./output/et0.csv
+./reference/metservice_et0_2025.csv
+[?2004hroot@98254c38-6d92-484a-af3d-75f7f6376daa:/app# printf '\n===== README.md =====\n'; sed -n '1,240p' README.md; printf '\n===== docs/METHOD.md =====\n'; sed -n '1,320p' docs/METHOD.md
+[?2004l
+===== README.md =====
+# ET0 pipeline (irrigation advice)
+
+Daily reference evapotranspiration (ET0, FAO-56 Penman-Monteith) for the stations our irrigation advice uses. The
+advice service reads `output/et0.csv` every morning and turns ET0 into watering recommendations for growers near each
+station.
+
+Run it for our stations:
+
+    cd /app
+    python -m et0.pipeline --stations config/stations.yaml --data data/raw --out output/et0.csv
+
+Check the formula against FAO-56's worked example: `python -m et0.selfcheck`.
+
+| Path | What it is |
+|---|---|
+| `et0/pipeline.py` | command line: register + raw files -> one ET0 value per station and day |
+| `et0/meta.py` | reads the station register |
+| `et0/ingest.py` | reads one station's raw daily file into the standard inputs |
+| `et0/fao56.py` | the FAO-56 daily equations |
+| `et0/selfcheck.py` | FAO-56 chapter 4, Example 18 |
+| `config/stations.yaml` | station register (8 stations from three networks) |
+| `data/raw/<id>.csv` | raw daily records for 2025 |
+| `docs/METHOD.md` | the method, every constant, and every input form we accept |
+| `reference/metservice_et0_2025.csv` | ET0 published by the national met service for two of our stations (rounded to 0.1 mm/day) |
+| `output/et0.csv` | the current published output |
+
+The register now holds stations from three networks: the original `valley-agromet` stations and, since this year,
+stations imported from the `highland-synop` and `southern-coast` networks.
+
+===== docs/METHOD.md =====
+# How we compute daily ET0
+
+This is the method the `et0` package must follow. It is the daily FAO-56 Penman-Monteith procedure: FAO Irrigation
+and Drainage Paper No. 56, *Crop evapotranspiration* (Allen, Pereira, Raes and Smith, 1998), chapters 3 and 4.
+Equation numbers below are the book's, so you can look any step up there. You do not need the book: everything the
+pipeline needs is on this page.
+
+ET0 is the water a well-watered reference grass surface would lose in one day, in mm/day. We publish one value per
+station per day.
+
+## 1. Inputs, after conversion to standard form
+
+| Symbol | Meaning | Unit |
+|---|---|---|
+| Tmax, Tmin | daily maximum and minimum air temperature | deg C |
+| u2 | mean daily wind speed **at 2 m above ground** | m/s |
+| Rs | incoming solar radiation, daily total | MJ m-2 day-1 |
+| ea | actual vapour pressure | kPa |
+| J | day of the year: 1 on 1 January, up to 365 (366 in a leap year) | - |
+| latitude | decimal degrees, **north positive, south negative** | deg |
+| z | station elevation above sea level | m |
+
+Station records do not always arrive in this form. Section 3 lists every form our station register and raw files use
+and how each one is converted. The FAO-56 equations themselves (section 2) only ever see the standard form.
+
+## 2. The daily procedure
+
+Constants: solar constant Gsc = 0.0820 MJ m-2 min-1; Stefan-Boltzmann constant sigma = 4.903e-9 MJ K-4 m-2 day-1;
+albedo of the reference grass 0.23; absolute temperature in Eq. 39 is T + 273.16.
+
+1. Mean temperature (Eq. 9): Tmean = (Tmax + Tmin) / 2.
+2. Air pressure from elevation (Eq. 7): P = 101.3 * ((293 - 0.0065 z) / 293) ^ 5.26, in kPa.
+3. Psychrometric constant (Eq. 8): gamma = 0.665e-3 * P, in kPa/degC.
+4. Saturation vapour pressure at temperature T (Eq. 11): e0(T) = 0.6108 * exp(17.27 T / (T + 237.3)), in kPa.
+5. Mean saturation vapour pressure (Eq. 12): es = (e0(Tmax) + e0(Tmin)) / 2. Do not use e0(Tmean) here.
+6. Slope of the saturation curve at Tmean (Eq. 13): Delta = 4098 * e0(Tmean) / (Tmean + 237.3)^2, in kPa/degC.
+7. Actual vapour pressure ea, from whichever humidity the station reports (section 3.5):
+   - from daily maximum and minimum relative humidity (Eq. 17): ea = [e0(Tmin) RHmax/100 + e0(Tmax) RHmin/100] / 2;
+   - from the daily mean dewpoint temperature (Eq. 14): ea = e0(Tdew).
+8. Extraterrestrial radiation Ra (Eqs. 21 to 25), with phi = latitude in radians (Eq. 22, negative in the south):
+   - inverse relative Earth-Sun distance (Eq. 23): dr = 1 + 0.033 cos(2 pi J / 365);
+   - solar declination (Eq. 24): delta = 0.409 sin(2 pi J / 365 - 1.39), in radians;
+   - sunset hour angle (Eq. 25): ws = arccos(-tan(phi) tan(delta)), in radians;
+   - Ra = (24 * 60 / pi) * Gsc * dr * [ws sin(phi) sin(delta) + cos(phi) cos(delta) sin(ws)] (Eq. 21), MJ m-2 day-1.
+   The divisor is 365 in every year, leap years included; J itself runs to 366 in a leap year.
+9. Clear-sky radiation (Eq. 37): Rso = (0.75 + 2e-5 z) * Ra.
+10. Net shortwave radiation (Eq. 38): Rns = (1 - 0.23) * Rs.
+11. Net longwave radiation (Eq. 39):
+    Rnl = sigma * [(Tmax + 273.16)^4 + (Tmin + 273.16)^4] / 2 * (0.34 - 0.14 sqrt(ea)) * (1.35 Rs/Rso - 0.35),
+    where the ratio Rs/Rso is limited to at most 1.0 before it is used.
+12. Net radiation (Eq. 40): Rn = Rns - Rnl.
+13. Soil heat flux for a daily step (Eq. 42): G = 0.
+14. Reference evapotranspiration (Eq. 6):
+    ET0 = [0.408 Delta (Rn - G) + gamma * 900 / (Tmean + 273) * u2 * (es - ea)] / [Delta + gamma (1 + 0.34 u2)],
+    in mm/day. The factor 0.408 turns MJ m-2 day-1 into mm/day of evaporated water (Eq. 20).
+
+`et0/fao56.py` implements steps 1 to 14, and `python -m et0.selfcheck` checks it against the daily worked example in
+chapter 4 of the book (Example 18, ET0 = 3.88 mm/day).
+
+## 3. Station register and raw files
+
+### 3.1 The register (`config/stations.yaml`)
+A YAML file with a list `stations`. Every station has every key below; there are no other forms than the ones listed.
+
+| Key | What it holds |
+|---|---|
+| `id` | station code; the raw file is `<data folder>/<id>.csv` |
+| `name`, `network` | free text, not used in the calculation |
+| `latitude` | see 3.2 |
+| `longitude` | decimal degrees, east positive; not used by the daily method |
+| `elevation_m` | elevation above sea level in metres (z in Eqs. 7 and 37) |
+| `wind_height_m` | height of the anemometer above ground in metres; see 3.3 |
+| `radiation_units` | unit of the `solar_rad` column; see 3.4 |
+| `humidity` | which humidity columns the raw file has; see 3.5 |
+
+### 3.2 Latitude
+Two forms are used:
+- a number: signed decimal degrees, north positive, south negative (`38.42`, `-31.85`);
+- text: unsigned decimal degrees followed directly by the hemisphere letter `N` or `S` (`"36.95N"`, `"34.92S"`).
+  `"34.92S"` is the same place as `-34.92`.
+
+### 3.3 Wind sensor height
+`wind_ms` is the mean daily wind speed at the anemometer, which may be at any height (any positive value of
+`wind_height_m` between 1 m and 20 m; 2, 3 and 10 m are the most common). The equations need u2, the speed at 2 m.
+Convert with the logarithmic wind profile (Eq. 47), for every station:
+
+    u2 = uz * 4.87 / ln(67.8 z_w - 5.42)
+
+where uz is the measured speed and z_w the anemometer height in metres. At 10 m the factor is about 0.748; at 2 m it is
+1.000 (to three decimals).
+
+### 3.4 Radiation units
+- `MJ/m2/day`: daily total incoming solar radiation, already Rs.
+- `W/m2`: daily mean solar irradiance. Multiply by 0.0864 to get Rs in MJ m-2 day-1 (1 W m-2 sustained for a day is
+  86 400 J m-2 = 0.0864 MJ m-2).
+
+### 3.5 Humidity
+- `rh_minmax`: columns `rh_max_pct` and `rh_min_pct` (daily maximum and minimum relative humidity, %); use Eq. 17.
+- `dewpoint`: column `tdew_c` (daily mean dewpoint temperature, deg C); use Eq. 14.
+
+### 3.6 Raw daily files (`<data folder>/<id>.csv`)
+One row per day, no gaps and no missing values. Columns: `date` (YYYY-MM-DD), `tmax_c`, `tmin_c`, the humidity
+column(s) of 3.5, `wind_ms` (m/s at the anemometer height), `solar_rad` (in the station's `radiation_units`).
+
+## 4. Output
+CSV with a header row and the columns `station_id`, `date` (YYYY-MM-DD) and `et0_mm_day`: one row for every station
+and every day in the input. The pipeline writes three decimals.
+[?2004hroot@98254c38-6d92-484a-af3d-75f7f6376daa:/app# printf '\n===== package source =====\n'; find et0 -maxdepth 3 -type f -not -path '*/__pycache__/*' -print -exec sh -c 'echo "--- $1"; sed -n "1,320p" "$1"' _ {} \;
+[?2004l
+===== package source =====
+et0/__init__.py
+--- et0/__init__.py
+"""ET0 pipeline for the irrigation-advice service (FAO-56 Penman-Monteith, daily)."""
+__version__ = "1.4.2"
+et0/fao56.py
+--- et0/fao56.py
+"""FAO-56 Penman-Monteith reference evapotranspiration, daily time step.
+
+Implements the daily procedure of FAO Irrigation and Drainage Paper 56 (Allen et al., 1998), chapters 3 and 4, as
+written up in /app/docs/METHOD.md. Every function works on numpy arrays (one element per day).
+
+Inputs expected by et0_daily (already in standard form):
+    tmax, tmin   daily maximum and minimum air temperature [deg C]
+    u2           mean daily wind speed at 2 m above ground [m/s]
+    rs           incoming solar radiation [MJ m-2 day-1]
+    ea           actual vapour pressure [kPa] (see actual_vapour_pressure_*)
+    doy          day of the year, 1 = 1 January
+    latitude     decimal degrees, north positive, south negative
+    elevation    metres above sea level
+"""
+import numpy as np
+
+SOLAR_CONSTANT = 0.0820        # MJ m-2 min-1
+STEFAN_BOLTZMANN = 4.903e-9    # MJ K-4 m-2 day-1
+ALBEDO = 0.23                  # hypothetical grass reference
+
+
+def atmospheric_pressure(elevation):
+    """Eq. 7, kPa."""
+    return 101.3 * ((293.0 - 0.0065 * np.asarray(elevation, float)) / 293.0) ** 5.26
+
+
+def psychrometric_constant(pressure):
+    """Eq. 8, kPa/degC."""
+    return 0.665e-3 * pressure
+
+
+def saturation_vapour_pressure(t):
+    """Eq. 11, kPa."""
+    t = np.asarray(t, float)
+    return 0.6108 * np.exp(17.27 * t / (t + 237.3))
+
+
+def vapour_pressure_slope(t):
+    """Eq. 13, kPa/degC."""
+    t = np.asarray(t, float)
+    return 4098.0 * saturation_vapour_pressure(t) / (t + 237.3) ** 2
+
+
+def actual_vapour_pressure_rh(tmax, tmin, rh_max, rh_min):
+    """Eq. 17, kPa, from daily maximum and minimum relative humidity [%]."""
+    return (saturation_vapour_pressure(tmin) * np.asarray(rh_max, float) / 100.0
+            + saturation_vapour_pressure(tmax) * np.asarray(rh_min, float) / 100.0) / 2.0
+
+
+def actual_vapour_pressure_dewpoint(tdew):
+    """Eq. 14, kPa, from the daily mean dewpoint temperature [degC]."""
+    return saturation_vapour_pressure(tdew)
+
+
+def extraterrestrial_radiation(latitude, doy):
+    """Eqs. 21-25: Ra [MJ m-2 day-1] and the sunset hour angle ws [rad]."""
+    phi = np.deg2rad(np.asarray(latitude, float))
+    doy = np.asarray(doy, float)
+    dr = 1.0 + 0.033 * np.cos(2.0 * np.pi * doy / 365.0)
+    decl = 0.409 * np.sin(2.0 * np.pi * doy / 365.0 - 1.39)
+    ws = np.arccos(np.clip(-np.tan(phi) * np.tan(decl), -1.0, 1.0))
+    ra = (24.0 * 60.0 / np.pi) * SOLAR_CONSTANT * dr * (
+        ws * np.sin(phi) * np.sin(decl) + np.cos(phi) * np.cos(decl) * np.sin(ws))
+    return ra, ws
+
+
+def daylight_hours(ws):
+    """Eq. 34, hours."""
+    return 24.0 / np.pi * ws
+
+
+def clear_sky_radiation(ra, elevation):
+    """Eq. 37, MJ m-2 day-1."""
+    return (0.75 + 2e-5 * np.asarray(elevation, float)) * ra
+
+
+def net_longwave_radiation(tmax, tmin, ea, rs, rso):
+    """Eq. 39, MJ m-2 day-1. Rs/Rso is limited to 1.0."""
+    rel = np.minimum(np.asarray(rs, float) / rso, 1.0)
+    tk4 = ((np.asarray(tmax, float) + 273.16) ** 4 + (np.asarray(tmin, float) + 273.16) ** 4) / 2.0
+    return STEFAN_BOLTZMANN * tk4 * (0.34 - 0.14 * np.sqrt(ea)) * (1.35 * rel - 0.35)
+
+
+def et0_daily(tmax, tmin, u2, rs, ea, doy, latitude, elevation):
+    """Eq. 6, FAO-56 Penman-Monteith reference evapotranspiration [mm/day]; soil heat flux G = 0 (Eq. 42)."""
+    tmax = np.asarray(tmax, float)
+    tmin = np.asarray(tmin, float)
+    u2 = np.asarray(u2, float)
+    rs = np.asarray(rs, float)
+    ea = np.asarray(ea, float)
+    tmean = (tmax + tmin) / 2.0
+    delta = vapour_pressure_slope(tmean)
+    gamma = psychrometric_constant(atmospheric_pressure(elevation))
+    es = (saturation_vapour_pressure(tmax) + saturation_vapour_pressure(tmin)) / 2.0
+    ra, _ = extraterrestrial_radiation(latitude, doy)
+    rso = clear_sky_radiation(ra, elevation)
+    rns = (1.0 - ALBEDO) * rs
+    rnl = net_longwave_radiation(tmax, tmin, ea, rs, rso)
+    rn = rns - rnl
+    g = 0.0
+    num = 0.408 * delta * (rn - g) + gamma * (900.0 / (tmean + 273.0)) * u2 * (es - ea)
+    den = delta + gamma * (1.0 + 0.34 * u2)
+    return num / den
+et0/ingest.py
+--- et0/ingest.py
+"""Read one station's raw daily file and turn it into the standard daily inputs used by fao56.et0_daily."""
+import os
+
+import pandas as pd
+
+from . import fao56
+
+BASE_COLUMNS = ["date", "tmax_c", "tmin_c", "wind_ms", "solar_rad"]
+HUMIDITY_COLUMNS = {"rh_minmax": ["rh_max_pct", "rh_min_pct"], "dewpoint": ["tdew_c"]}
+
+
+def load_station(station, data_dir):
+    """Return a DataFrame with columns station_id, date, doy, tmax, tmin, ea, u2, rs (standard units)."""
+    path = os.path.join(data_dir, f"{station.station_id}.csv")
+    raw = pd.read_csv(path)
+    if station.humidity not in HUMIDITY_COLUMNS:
+        raise ValueError(f"{station.station_id}: unknown humidity type {station.humidity!r}")
+    missing = [c for c in BASE_COLUMNS + HUMIDITY_COLUMNS[station.humidity] if c not in raw.columns]
+    if missing:
+        raise ValueError(f"{path}: missing columns {missing}")
+
+    dates = pd.to_datetime(raw["date"], format="%Y-%m-%d")
+    df = pd.DataFrame({
+        "station_id": station.station_id,
+        "date": dates.dt.strftime("%Y-%m-%d"),
+        "doy": dates.dt.dayofyear.astype(int),
+        "tmax": raw["tmax_c"].astype(float),
+        "tmin": raw["tmin_c"].astype(float),
+    })
+    if station.humidity == "dewpoint":
+        df["ea"] = fao56.actual_vapour_pressure_dewpoint(raw["tdew_c"].astype(float))
+    else:
+        df["ea"] = fao56.actual_vapour_pressure_rh(df["tmax"], df["tmin"], raw["rh_max_pct"].astype(float),
+                                                   raw["rh_min_pct"].astype(float))
+    df["u2"] = raw["wind_ms"].astype(float)          # m/s at 2 m
+    df["rs"] = raw["solar_rad"].astype(float)        # MJ m-2 day-1
+    return df
+et0/meta.py
+--- et0/meta.py
+"""Station register: read the stations YAML into Station records (fields are described in /app/docs/METHOD.md)."""
+from dataclasses import dataclass
+
+import yaml
+
+
+@dataclass(frozen=True)
+class Station:
+    station_id: str
+    name: str
+    latitude: float          # decimal degrees, north positive
+    longitude: float
+    elevation_m: float
+    wind_height_m: float
+    radiation_units: str
+    humidity: str
+    network: str
+
+
+def parse_latitude(value):
+    """Latitude in decimal degrees.
+
+    The register holds plain numbers (38.42, -31.85) and, for stations imported from the synop and coast networks,
+    text with a hemisphere letter ("36.95N").
+    """
+    if isinstance(value, (int, float)):
+        return float(value)
+    text = str(value).strip().upper()
+    return float(text.rstrip("NS"))
+
+
+def load_stations(path):
+    with open(path, encoding="utf-8") as f:
+        doc = yaml.safe_load(f)
+    stations = []
+    for rec in doc["stations"]:
+        stations.append(Station(
+            station_id=str(rec["id"]),
+            name=str(rec.get("name", "")),
+            latitude=parse_latitude(rec["latitude"]),
+            longitude=float(rec["longitude"]),
+            elevation_m=float(rec["elevation_m"]),
+            wind_height_m=float(rec["wind_height_m"]),
+            radiation_units=str(rec["radiation_units"]),
+            humidity=str(rec["humidity"]),
+            network=str(rec.get("network", "")),
+        ))
+    return stations
+et0/pipeline.py
+--- et0/pipeline.py
+"""Daily ET0 for every station in a register.
+
+    python -m et0.pipeline --stations config/stations.yaml --data data/raw --out output/et0.csv
+"""
+import argparse
+import os
+import sys
+
+import pandas as pd
+
+from . import fao56, ingest, meta
+
+
+def run(stations_path, data_dir, out_path):
+    frames = []
+    for st in meta.load_stations(stations_path):
+        df = ingest.load_station(st, data_dir)
+        df["et0_mm_day"] = fao56.et0_daily(df["tmax"], df["tmin"], df["u2"], df["rs"], df["ea"], df["doy"],
+                                           st.latitude, st.elevation_m)
+        frames.append(df[["station_id", "date", "et0_mm_day"]])
+        print(f"{st.station_id}: {len(df)} days, mean ET0 {df['et0_mm_day'].mean():.2f} mm/day")
+    out = pd.concat(frames, ignore_index=True)
+    parent = os.path.dirname(out_path)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+    out.to_csv(out_path, index=False, float_format="%.3f")
+    return out
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--stations", required=True, help="station register (YAML)")
+    ap.add_argument("--data", required=True, help="folder with one <station_id>.csv per station")
+    ap.add_argument("--out", required=True, help="output CSV")
+    args = ap.parse_args(argv)
+    run(args.stations, args.data, args.out)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+et0/selfcheck.py
+--- et0/selfcheck.py
+"""Check fao56.et0_daily against the daily worked example of FAO-56 (chapter 4, Example 18).
+
+    python -m et0.selfcheck
+
+Uccle (Brussels), 6 July, 50 deg 48 min N, 100 m: Tmax 21.5, Tmin 12.3 degC, RHmax 84 %, RHmin 63 %, sunshine 9.25 h,
+wind 2.078 m/s at 2 m (the book first converts its 10 m reading). The book's answer is ETo = 3.88 mm/day (3.9 rounded).
+"""
+import sys
+
+from . import fao56
+
+BOOK_ET0 = 3.88
+
+
+def main():
+    lat, elev, doy = 50.0 + 48.0 / 60.0, 100.0, 187
+    tmax, tmin, rh_max, rh_min, sunshine, u2 = 21.5, 12.3, 84.0, 63.0, 9.25, 2.078
+    ra, ws = fao56.extraterrestrial_radiation(lat, doy)
+    rs = (0.25 + 0.50 * sunshine / fao56.daylight_hours(ws)) * ra      # Angstrom formula (Eq. 35), as in the book
+    ea = fao56.actual_vapour_pressure_rh(tmax, tmin, rh_max, rh_min)
+    et0 = float(fao56.et0_daily(tmax, tmin, u2, rs, ea, doy, lat, elev))
+    ok = abs(et0 - BOOK_ET0) <= 0.01
+    print(f"FAO-56 Example 18: Ra={float(ra):.2f} Rs={float(rs):.2f} ea={float(ea):.3f} ET0={et0:.3f} "
+          f"(book {BOOK_ET0}) -> {'OK' if ok else 'MISMATCH'}")
+    return 0 if ok else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+[?2004hroot@98254c38-6d92-484a-af3d-75f7f6376daa:/app# printf '\n===== stations =====\n'; cat config/stations.yaml; printf '\n===== raw file samples =====\n'; for f in data/raw/*.csv; do echo "--- $f"; sed -n '1,8p' "$f"; done; printf '\n===== reference =====\n'; sed -n '1,15p' reference/metservice_et0_2025.csv
+[?2004l
+===== stations =====
+# Station register for the irrigation-advice ET0 run (see /app/docs/METHOD.md for every field).
+stations:
+  - id: VNT
+    name: Valle Norte
+    latitude: 38.42
+    longitude: -3.71
+    elevation_m: 85
+    wind_height_m: 2.0
+    radiation_units: "MJ/m2/day"
+    humidity: rh_minmax
+    network: valley-agromet
+  - id: PAL
+    name: Paso Alto
+    latitude: "36.95N"
+    longitude: -3.02
+    elevation_m: 1840
+    wind_height_m: 10.0
+    radiation_units: "MJ/m2/day"
+    humidity: rh_minmax
+    network: highland-synop
+  - id: CDB
+    name: Costa del Bajo
+    latitude: "34.92S"
+    longitude: 138.6
+    elevation_m: 48
+    wind_height_m: 2.0
+    radiation_units: "MJ/m2/day"
+    humidity: dewpoint
+    network: southern-coast
+  - id: LGN
+    name: Laguna Grande
+    latitude: -31.85
+    longitude: 116.02
+    elevation_m: 420
+    wind_height_m: 3.0
+    radiation_units: "W/m2"
+    humidity: rh_minmax
+    network: southern-coast
+  - id: RSD
+    name: Ribera Seca
+    latitude: "41.73N"
+    longitude: -1.02
+    elevation_m: 230
+    wind_height_m: 2.0
+    radiation_units: "W/m2"
+    humidity: dewpoint
+    network: highland-synop
+  - id: MRS
+    name: Marisma
+    latitude: 35.1
+    longitude: -6.15
+    elevation_m: 12
+    wind_height_m: 3.0
+    radiation_units: "MJ/m2/day"
+    humidity: rh_minmax
+    network: valley-agromet
+  - id: HLT
+    name: Altiplano Sur
+    latitude: "33.40S"
+    longitude: -70.55
+    elevation_m: 610
+    wind_height_m: 10.0
+    radiation_units: "W/m2"
+    humidity: dewpoint
+    network: highland-synop
+  - id: ARN
+    name: Arenales
+    latitude: 40.05
+    longitude: -4.4
+    elevation_m: 690
+    wind_height_m: 2.0
+    radiation_units: "MJ/m2/day"
+    humidity: dewpoint
+    network: valley-agromet
+
+===== raw file samples =====
+--- data/raw/ARN.csv
+date,tmax_c,tmin_c,tdew_c,wind_ms,solar_rad
+2025-01-01,10.1,-5.2,-6.2,1.7,8.81
+2025-01-02,9.9,-5.6,-9.4,1.5,6.24
+2025-01-03,11.7,-2.2,-18.8,1.5,7.63
+2025-01-04,9.5,-5.6,-15.3,1.9,8.86
+2025-01-05,11.1,-5.7,-8.9,1.1,10.33
+2025-01-06,10.5,-2.9,-5.5,1.5,7.58
+2025-01-07,7.3,-6.8,-15.3,2.7,9.00
+--- data/raw/CDB.csv
+date,tmax_c,tmin_c,tdew_c,wind_ms,solar_rad
+2025-01-01,28.2,19.4,18.6,1.9,15.53
+2025-01-02,26.8,16.7,12.5,3.3,22.78
+2025-01-03,27.4,18.7,18.1,1.9,22.10
+2025-01-04,26.3,16.4,16.0,2.1,22.25
+2025-01-05,27.4,19.4,17.3,3.5,18.62
+2025-01-06,25.5,16.7,15.7,3.6,22.33
+2025-01-07,25.7,15.7,10.1,3.2,27.30
+--- data/raw/HLT.csv
+date,tmax_c,tmin_c,tdew_c,wind_ms,solar_rad
+2025-01-01,25.1,12.1,9.0,2.8,211.3
+2025-01-02,22.5,8.9,-1.8,2.1,370.0
+2025-01-03,22.3,10.3,0.3,3.1,269.1
+2025-01-04,26.7,11.9,0.5,4.9,308.2
+2025-01-05,23.3,10.2,3.4,3.9,293.5
+2025-01-06,24.9,11.0,2.9,1.9,262.2
+2025-01-07,24.9,9.4,7.5,1.7,334.3
+--- data/raw/LGN.csv
+date,tmax_c,tmin_c,rh_max_pct,rh_min_pct,wind_ms,solar_rad
+2025-01-01,30.2,18.0,50,26,1.6,292.9
+2025-01-02,31.5,17.4,32,16,1.4,327.2
+2025-01-03,29.9,16.2,63,28,1.9,369.5
+2025-01-04,29.0,16.8,39,22,3.1,249.8
+2025-01-05,30.1,15.6,51,24,3.0,297.0
+2025-01-06,30.2,15.6,88,36,4.3,345.2
+2025-01-07,33.8,18.1,73,27,2.7,329.7
+--- data/raw/MRS.csv
+date,tmax_c,tmin_c,rh_max_pct,rh_min_pct,wind_ms,solar_rad
+2025-01-01,13.6,3.5,93,43,4.8,8.88
+2025-01-02,15.7,3.9,87,37,3.6,10.01
+2025-01-03,16.3,5.5,88,46,4.6,8.67
+2025-01-04,15.9,5.5,95,50,4.7,8.80
+2025-01-05,17.5,6.8,95,42,5.3,6.15
+2025-01-06,15.0,4.3,86,38,5.8,10.73
+2025-01-07,17.0,6.3,72,35,4.9,8.86
+--- data/raw/PAL.csv
+date,tmax_c,tmin_c,rh_max_pct,rh_min_pct,wind_ms,solar_rad
+2025-01-01,4.1,-6.4,87,39,1.6,7.77
+2025-01-02,7.7,-5.1,87,36,3.6,10.27
+2025-01-03,6.8,-4.2,54,22,4.1,8.75
+2025-01-04,4.2,-7.5,32,12,3.8,9.88
+2025-01-05,3.8,-9.8,82,33,3.5,10.16
+2025-01-06,3.7,-7.4,90,39,2.4,6.15
+2025-01-07,3.6,-8.4,76,28,2.4,9.48
+--- data/raw/RSD.csv
+date,tmax_c,tmin_c,tdew_c,wind_ms,solar_rad
+2025-01-01,9.9,-2.7,-5.8,2.7,89.6
+2025-01-02,12.4,-0.9,-2.6,4.2,85.2
+2025-01-03,14.0,2.6,-10.3,3.8,68.0
+2025-01-04,12.9,1.3,-11.0,3.6,59.8
+2025-01-05,12.4,-0.3,-7.4,2.6,95.7
+2025-01-06,13.3,1.0,-2.4,2.7,85.6
+2025-01-07,11.4,1.5,-4.0,6.1,79.9
+--- data/raw/VNT.csv
+date,tmax_c,tmin_c,rh_max_pct,rh_min_pct,wind_ms,solar_rad
+2025-01-01,15.6,2.7,78,32,1.9,6.96
+2025-01-02,11.3,0.1,69,29,2.8,7.27
+2025-01-03,12.9,1.0,81,39,2.6,4.96
+2025-01-04,14.2,2.0,78,36,2.0,7.44
+2025-01-05,13.2,1.5,77,33,2.4,6.76
+2025-01-06,13.7,1.8,63,30,2.3,8.59
+2025-01-07,16.7,3.3,90,38,1.8,6.96
+
+===== reference =====
+station_id,date,et0_mm_day
+PAL,2025-01-01,0.9
+PAL,2025-01-02,1.5
+PAL,2025-01-03,1.9
+PAL,2025-01-04,1.9
+PAL,2025-01-05,1.3
+PAL,2025-01-06,1.0
+PAL,2025-01-07,1.2
+PAL,2025-01-08,1.3
+PAL,2025-01-09,1.2
+PAL,2025-01-10,1.0
+PAL,2025-01-11,1.4
+PAL,2025-01-12,1.0
+PAL,2025-01-13,1.2
+PAL,2025-01-14,1.4
+[?2004hroot@98254c38-6d92-484a-af3d-75f7f6376daa:/app# nl -ba docs/METHOD.md | sed -n '1,140p'
+[?2004l     1	# How we compute daily ET0
+     2	
+     3	This is the method the `et0` package must follow. It is the daily FAO-56 Penman-Monteith procedure: FAO Irrigation
+     4	and Drainage Paper No. 56, *Crop evapotranspiration* (Allen, Pereira, Raes and Smith, 1998), chapters 3 and 4.
+     5	Equation numbers below are the book's, so you can look any step up there. You do not need the book: everything the
+     6	pipeline needs is on this page.
+     7	
+     8	ET0 is the water a well-watered reference grass surface would lose in one day, in mm/day. We publish one value per
+     9	station per day.
+    10	
+    11	## 1. Inputs, after conversion to standard form
+    12	
+    13	| Symbol | Meaning | Unit |
+    14	|---|---|---|
+    15	| Tmax, Tmin | daily maximum and minimum air temperature | deg C |
+    16	| u2 | mean daily wind speed **at 2 m above ground** | m/s |
+    17	| Rs | incoming solar radiation, daily total | MJ m-2 day-1 |
+    18	| ea | actual vapour pressure | kPa |
+    19	| J | day of the year: 1 on 1 January, up to 365 (366 in a leap year) | - |
+    20	| latitude | decimal degrees, **north positive, south negative** | deg |
+    21	| z | station elevation above sea level | m |
+    22	
+    23	Station records do not always arrive in this form. Section 3 lists every form our station register and raw files use
+    24	and how each one is converted. The FAO-56 equations themselves (section 2) only ever see the standard form.
+    25	
+    26	## 2. The daily procedure
+    27	
+    28	Constants: solar constant Gsc = 0.0820 MJ m-2 min-1; Stefan-Boltzmann constant sigma = 4.903e-9 MJ K-4 m-2 day-1;
+    29	albedo of the reference grass 0.23; absolute temperature in Eq. 39 is T + 273.16.
+    30	
+    31	1. Mean temperature (Eq. 9): Tmean = (Tmax + Tmin) / 2.
+    32	2. Air pressure from elevation (Eq. 7): P = 101.3 * ((293 - 0.0065 z) / 293) ^ 5.26, in kPa.
+    33	3. Psychrometric constant (Eq. 8): gamma = 0.665e-3 * P, in kPa/degC.
+    34	4. Saturation vapour pressure at temperature T (Eq. 11): e0(T) = 0.6108 * exp(17.27 T / (T + 237.3)), in kPa.
+    35	5. Mean saturation vapour pressure (Eq. 12): es = (e0(Tmax) + e0(Tmin)) / 2. Do not use e0(Tmean) here.
+    36	6. Slope of the saturation curve at Tmean (Eq. 13): Delta = 4098 * e0(Tmean) / (Tmean + 237.3)^2, in kPa/degC.
+    37	7. Actual vapour pressure ea, from whichever humidity the station reports (section 3.5):
+    38	   - from daily maximum and minimum relative humidity (Eq. 17): ea = [e0(Tmin) RHmax/100 + e0(Tmax) RHmin/100] / 2;
+    39	   - from the daily mean dewpoint temperature (Eq. 14): ea = e0(Tdew).
+    40	8. Extraterrestrial radiation Ra (Eqs. 21 to 25), with phi = latitude in radians (Eq. 22, negative in the south):
+    41	   - inverse relative Earth-Sun distance (Eq. 23): dr = 1 + 0.033 cos(2 pi J / 365);
+    42	   - solar declination (Eq. 24): delta = 0.409 sin(2 pi J / 365 - 1.39), in radians;
+    43	   - sunset hour angle (Eq. 25): ws = arccos(-tan(phi) tan(delta)), in radians;
+    44	   - Ra = (24 * 60 / pi) * Gsc * dr * [ws sin(phi) sin(delta) + cos(phi) cos(delta) sin(ws)] (Eq. 21), MJ m-2 day-1.
+    45	   The divisor is 365 in every year, leap years included; J itself runs to 366 in a leap year.
+    46	9. Clear-sky radiation (Eq. 37): Rso = (0.75 + 2e-5 z) * Ra.
+    47	10. Net shortwave radiation (Eq. 38): Rns = (1 - 0.23) * Rs.
+    48	11. Net longwave radiation (Eq. 39):
+    49	    Rnl = sigma * [(Tmax + 273.16)^4 + (Tmin + 273.16)^4] / 2 * (0.34 - 0.14 sqrt(ea)) * (1.35 Rs/Rso - 0.35),
+    50	    where the ratio Rs/Rso is limited to at most 1.0 before it is used.
+    51	12. Net radiation (Eq. 40): Rn = Rns - Rnl.
+    52	13. Soil heat flux for a daily step (Eq. 42): G = 0.
+    53	14. Reference evapotranspiration (Eq. 6):
+    54	    ET0 = [0.408 Delta (Rn - G) + gamma * 900 / (Tmean + 273) * u2 * (es - ea)] / [Delta + gamma (1 + 0.34 u2)],
+    55	    in mm/day. The factor 0.408 turns MJ m-2 day-1 into mm/day of evaporated water (Eq. 20).
+    56	
+    57	`et0/fao56.py` implements steps 1 to 14, and `python -m et0.selfcheck` checks it against the daily worked example in
+    58	chapter 4 of the book (Example 18, ET0 = 3.88 mm/day).
+    59	
+    60	## 3. Station register and raw files
+    61	
+    62	### 3.1 The register (`config/stations.yaml`)
+    63	A YAML file with a list `stations`. Every station has every key below; there are no other forms than the ones listed.
+    64	
+    65	| Key | What it holds |
+    66	|---|---|
+    67	| `id` | station code; the raw file is `<data folder>/<id>.csv` |
+    68	| `name`, `network` | free text, not used in the calculation |
+    69	| `latitude` | see 3.2 |
+    70	| `longitude` | decimal degrees, east positive; not used by the daily method |
+    71	| `elevation_m` | elevation above sea level in metres (z in Eqs. 7 and 37) |
+    72	| `wind_height_m` | height of the anemometer above ground in metres; see 3.3 |
+    73	| `radiation_units` | unit of the `solar_rad` column; see 3.4 |
+    74	| `humidity` | which humidity columns the raw file has; see 3.5 |
+    75	
+    76	### 3.2 Latitude
+    77	Two forms are used:
+    78	- a number: signed decimal degrees, north positive, south negative (`38.42`, `-31.85`);
+    79	- text: unsigned decimal degrees followed directly by the hemisphere letter `N` or `S` (`"36.95N"`, `"34.92S"`).
+    80	  `"34.92S"` is the same place as `-34.92`.
+    81	
+    82	### 3.3 Wind sensor height
+    83	`wind_ms` is the mean daily wind speed at the anemometer, which may be at any height (any positive value of
+    84	`wind_height_m` between 1 m and 20 m; 2, 3 and 10 m are the most common). The equations need u2, the speed at 2 m.
+    85	Convert with the logarithmic wind profile (Eq. 47), for every station:
+    86	
+    87	    u2 = uz * 4.87 / ln(67.8 z_w - 5.42)
+    88	
+    89	where uz is the measured speed and z_w the anemometer height in metres. At 10 m the factor is about 0.748; at 2 m it is
+    90	1.000 (to three decimals).
+    91	
+    92	### 3.4 Radiation units
+    93	- `MJ/m2/day`: daily total incoming solar radiation, already Rs.
+    94	- `W/m2`: daily mean solar irradiance. Multiply by 0.0864 to get Rs in MJ m-2 day-1 (1 W m-2 sustained for a day is
+    95	  86 400 J m-2 = 0.0864 MJ m-2).
+    96	
+    97	### 3.5 Humidity
+    98	- `rh_minmax`: columns `rh_max_pct` and `rh_min_pct` (daily maximum and minimum relative humidity, %); use Eq. 17.
+    99	- `dewpoint`: column `tdew_c` (daily mean dewpoint temperature, deg C); use Eq. 14.
+   100	
+   101	### 3.6 Raw daily files (`<data folder>/<id>.csv`)
+   102	One row per day, no gaps and no missing values. Columns: `date` (YYYY-MM-DD), `tmax_c`, `tmin_c`, the humidity
+   103	column(s) of 3.5, `wind_ms` (m/s at the anemometer height), `solar_rad` (in the station's `radiation_units`).
+   104	
+   105	## 4. Output
+   106	CSV with a header row and the columns `station_id`, `date` (YYYY-MM-DD) and `et0_mm_day`: one row for every station
+   107	and every day in the input. The pipeline writes three decimals.
+[?2004hroot@98254c38-6d92-484a-af3d-75f7f6376daa:/app# nl -ba docs/METHOD.md | sed -n '141,300p'
+[?2004l[?2004hroot@98254c38-6d92-484a-af3d-75f7f6376daa:/app# for f in et0/__init__.py et0/meta.py et0/ingest.py et0/fao56.py et0/pipeline.py et0/selfcheck.py; do echo "===== $f ====="; nl -ba "$f"; done
+[?2004l===== et0/__init__.py =====
+     1	"""ET0 pipeline for the irrigation-advice service (FAO-56 Penman-Monteith, daily)."""
+     2	__version__ = "1.4.2"
+===== et0/meta.py =====
+     1	"""Station register: read the stations YAML into Station records (fields are described in /app/docs/METHOD.md)."""
+     2	from dataclasses import dataclass
+     3	
+     4	import yaml
+     5	
+     6	
+     7	@dataclass(frozen=True)
+     8	class Station:
+     9	    station_id: str
+    10	    name: str
+    11	    latitude: float          # decimal degrees, north positive
+    12	    longitude: float
+    13	    elevation_m: float
+    14	    wind_height_m: float
+    15	    radiation_units: str
+    16	    humidity: str
+    17	    network: str
+    18	
+    19	
+    20	def parse_latitude(value):
+    21	    """Latitude in decimal degrees.
+    22	
+    23	    The register holds plain numbers (38.42, -31.85) and, for stations imported from the synop and coast networks,
+    24	    text with a hemisphere letter ("36.95N").
+    25	    """
+    26	    if isinstance(value, (int, float)):
+    27	        return float(value)
+    28	    text = str(value).strip().upper()
+    29	    return float(text.rstrip("NS"))
+    30	
+    31	
+    32	def load_stations(path):
+    33	    with open(path, encoding="utf-8") as f:
+    34	        doc = yaml.safe_load(f)
+    35	    stations = []
+    36	    for rec in doc["stations"]:
+    37	        stations.append(Station(
+    38	            station_id=str(rec["id"]),
+    39	            name=str(rec.get("name", "")),
+    40	            latitude=parse_latitude(rec["latitude"]),
+    41	            longitude=float(rec["longitude"]),
+    42	            elevation_m=float(rec["elevation_m"]),
+    43	            wind_height_m=float(rec["wind_height_m"]),
+    44	            radiation_units=str(rec["radiation_units"]),
+    45	            humidity=str(rec["humidity"]),
+    46	            network=str(rec.get("network", "")),
+    47	        ))
+    48	    return stations
+===== et0/ingest.py =====
+     1	"""Read one station's raw daily file and turn it into the standard daily inputs used by fao56.et0_daily."""
+     2	import os
+     3	
+     4	import pandas as pd
+     5	
+     6	from . import fao56
+     7	
+     8	BASE_COLUMNS = ["date", "tmax_c", "tmin_c", "wind_ms", "solar_rad"]
+     9	HUMIDITY_COLUMNS = {"rh_minmax": ["rh_max_pct", "rh_min_pct"], "dewpoint": ["tdew_c"]}
+    10	
+    11	
+    12	def load_station(station, data_dir):
+    13	    """Return a DataFrame with columns station_id, date, doy, tmax, tmin, ea, u2, rs (standard units)."""
+    14	    path = os.path.join(data_dir, f"{station.station_id}.csv")
+    15	    raw = pd.read_csv(path)
+    16	    if station.humidity not in HUMIDITY_COLUMNS:
+    17	        raise ValueError(f"{station.station_id}: unknown humidity type {station.humidity!r}")
+    18	    missing = [c for c in BASE_COLUMNS + HUMIDITY_COLUMNS[station.humidity] if c not in raw.columns]
+    19	    if missing:
+    20	        raise ValueError(f"{path}: missing columns {missing}")
+    21	
+    22	    dates = pd.to_datetime(raw["date"], format="%Y-%m-%d")
+    23	    df = pd.DataFrame({
+    24	        "station_id": station.station_id,
+    25	        "date": dates.dt.strftime("%Y-%m-%d"),
+    26	        "doy": dates.dt.dayofyear.astype(int),
+    27	        "tmax": raw["tmax_c"].astype(float),
+    28	        "tmin": raw["tmin_c"].astype(float),
+    29	    })
+    30	    if station.humidity == "dewpoint":
+    31	        df["ea"] = fao56.actual_vapour_pressure_dewpoint(raw["tdew_c"].astype(float))
+    32	    else:
+    33	        df["ea"] = fao56.actual_vapour_pressure_rh(df["tmax"], df["tmin"], raw["rh_max_pct"].astype(float),
+    34	                                                   raw["rh_min_pct"].astype(float))
+    35	    df["u2"] = raw["wind_ms"].astype(float)          # m/s at 2 m
+    36	    df["rs"] = raw["solar_rad"].astype(float)        # MJ m-2 day-1
+    37	    return df
+===== et0/fao56.py =====
+     1	"""FAO-56 Penman-Monteith reference evapotranspiration, daily time step.
+     2	
+     3	Implements the daily procedure of FAO Irrigation and Drainage Paper 56 (Allen et al., 1998), chapters 3 and 4, as
+     4	written up in /app/docs/METHOD.md. Every function works on numpy arrays (one element per day).
+     5	
+     6	Inputs expected by et0_daily (already in standard form):
+     7	    tmax, tmin   daily maximum and minimum air temperature [deg C]
+     8	    u2           mean daily wind speed at 2 m above ground [m/s]
+     9	    rs           incoming solar radiation [MJ m-2 day-1]
+    10	    ea           actual vapour pressure [kPa] (see actual_vapour_pressure_*)
+    11	    doy          day of the year, 1 = 1 January
+    12	    latitude     decimal degrees, north positive, south negative
+    13	    elevation    metres above sea level
+    14	"""
+    15	import numpy as np
+    16	
+    17	SOLAR_CONSTANT = 0.0820        # MJ m-2 min-1
+    18	STEFAN_BOLTZMANN = 4.903e-9    # MJ K-4 m-2 day-1
+    19	ALBEDO = 0.23                  # hypothetical grass reference
+    20	
+    21	
+    22	def atmospheric_pressure(elevation):
+    23	    """Eq. 7, kPa."""
+    24	    return 101.3 * ((293.0 - 0.0065 * np.asarray(elevation, float)) / 293.0) ** 5.26
+    25	
+    26	
+    27	def psychrometric_constant(pressure):
+    28	    """Eq. 8, kPa/degC."""
+    29	    return 0.665e-3 * pressure
+    30	
+    31	
+    32	def saturation_vapour_pressure(t):
+    33	    """Eq. 11, kPa."""
+    34	    t = np.asarray(t, float)
+    35	    return 0.6108 * np.exp(17.27 * t / (t + 237.3))
+    36	
+    37	
+    38	def vapour_pressure_slope(t):
+    39	    """Eq. 13, kPa/degC."""
+    40	    t = np.asarray(t, float)
+    41	    return 4098.0 * saturation_vapour_pressure(t) / (t + 237.3) ** 2
+    42	
+    43	
+    44	def actual_vapour_pressure_rh(tmax, tmin, rh_max, rh_min):
+    45	    """Eq. 17, kPa, from daily maximum and minimum relative humidity [%]."""
+    46	    return (saturation_vapour_pressure(tmin) * np.asarray(rh_max, float) / 100.0
+    47	            + saturation_vapour_pressure(tmax) * np.asarray(rh_min, float) / 100.0) / 2.0
+    48	
+    49	
+    50	def actual_vapour_pressure_dewpoint(tdew):
+    51	    """Eq. 14, kPa, from the daily mean dewpoint temperature [degC]."""
+    52	    return saturation_vapour_pressure(tdew)
+    53	
+    54	
+    55	def extraterrestrial_radiation(latitude, doy):
+    56	    """Eqs. 21-25: Ra [MJ m-2 day-1] and the sunset hour angle ws [rad]."""
+    57	    phi = np.deg2rad(np.asarray(latitude, float))
+    58	    doy = np.asarray(doy, float)
+    59	    dr = 1.0 + 0.033 * np.cos(2.0 * np.pi * doy / 365.0)
+    60	    decl = 0.409 * np.sin(2.0 * np.pi * doy / 365.0 - 1.39)
+    61	    ws = np.arccos(np.clip(-np.tan(phi) * np.tan(decl), -1.0, 1.0))
+    62	    ra = (24.0 * 60.0 / np.pi) * SOLAR_CONSTANT * dr * (
+    63	        ws * np.sin(phi) * np.sin(decl) + np.cos(phi) * np.cos(decl) * np.sin(ws))
+    64	    return ra, ws
+    65	
+    66	
+    67	def daylight_hours(ws):
+    68	    """Eq. 34, hours."""
+    69	    return 24.0 / np.pi * ws
+    70	
+    71	
+    72	def clear_sky_radiation(ra, elevation):
+    73	    """Eq. 37, MJ m-2 day-1."""
+    74	    return (0.75 + 2e-5 * np.asarray(elevation, float)) * ra
+    75	
+    76	
+    77	def net_longwave_radiation(tmax, tmin, ea, rs, rso):
+    78	    """Eq. 39, MJ m-2 day-1. Rs/Rso is limited to 1.0."""
+    79	    rel = np.minimum(np.asarray(rs, float) / rso, 1.0)
+    80	    tk4 = ((np.asarray(tmax, float) + 273.16) ** 4 + (np.asarray(tmin, float) + 273.16) ** 4) / 2.0
+    81	    return STEFAN_BOLTZMANN * tk4 * (0.34 - 0.14 * np.sqrt(ea)) * (1.35 * rel - 0.35)
+    82	
+    83	
+    84	def et0_daily(tmax, tmin, u2, rs, ea, doy, latitude, elevation):
+    85	    """Eq. 6, FAO-56 Penman-Monteith reference evapotranspiration [mm/day]; soil heat flux G = 0 (Eq. 42)."""
+    86	    tmax = np.asarray(tmax, float)
+    87	    tmin = np.asarray(tmin, float)
+    88	    u2 = np.asarray(u2, float)
+    89	    rs = np.asarray(rs, float)
+    90	    ea = np.asarray(ea, float)
+    91	    tmean = (tmax + tmin) / 2.0
+    92	    delta = vapour_pressure_slope(tmean)
+    93	    gamma = psychrometric_constant(atmospheric_pressure(elevation))
+    94	    es = (saturation_vapour_pressure(tmax) + saturation_vapour_pressure(tmin)) / 2.0
+    95	    ra, _ = extraterrestrial_radiation(latitude, doy)
+    96	    rso = clear_sky_radiation(ra, elevation)
+    97	    rns = (1.0 - ALBEDO) * rs
+    98	    rnl = net_longwave_radiation(tmax, tmin, ea, rs, rso)
+    99	    rn = rns - rnl
+   100	    g = 0.0
+   101	    num = 0.408 * delta * (rn - g) + gamma * (900.0 / (tmean + 273.0)) * u2 * (es - ea)
+   102	    den = delta + gamma * (1.0 + 0.34 * u2)
+   103	    return num / den
+===== et0/pipeline.py =====
+     1	"""Daily ET0 for every station in a register.
+     2	
+     3	    python -m et0.pipeline --stations config/stations.yaml --data data/raw --out output/et0.csv
+     4	"""
+     5	import argparse
+     6	import os
+     7	import sys
+     8	
+     9	import pandas as pd
+    10	
+    11	from . import fao56, ingest, meta
+    12	
+    13	
+    14	def run(stations_path, data_dir, out_path):
+    15	    frames = []
+    16	    for st in meta.load_stations(stations_path):
+    17	        df = ingest.load_station(st, data_dir)
+    18	        df["et0_mm_day"] = fao56.et0_daily(df["tmax"], df["tmin"], df["u2"], df["rs"], df["ea"], df["doy"],
+    19	                                           st.latitude, st.elevation_m)
+    20	        frames.append(df[["station_id", "date", "et0_mm_day"]])
+    21	        print(f"{st.station_id}: {len(df)} days, mean ET0 {df['et0_mm_day'].mean():.2f} mm/day")
+    22	    out = pd.concat(frames, ignore_index=True)
+    23	    parent = os.path.dirname(out_path)
+    24	    if parent:
+    25	        os.makedirs(parent, exist_ok=True)
+    26	    out.to_csv(out_path, index=False, float_format="%.3f")
+    27	    return out
+    28	
+    29	
+    30	def main(argv=None):
+    31	    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    32	    ap.add_argument("--stations", required=True, help="station register (YAML)")
+    33	    ap.add_argument("--data", required=True, help="folder with one <station_id>.csv per station")
+    34	    ap.add_argument("--out", required=True, help="output CSV")
+    35	    args = ap.parse_args(argv)
+    36	    run(args.stations, args.data, args.out)
+    37	    return 0
+    38	
+    39	
+    40	if __name__ == "__main__":
+    41	    sys.exit(main())
+===== et0/selfcheck.py =====
+     1	"""Check fao56.et0_daily against the daily worked example of FAO-56 (chapter 4, Example 18).
+     2	
+     3	    python -m et0.selfcheck
+     4	
+     5	Uccle (Brussels), 6 July, 50 deg 48 min N, 100 m: Tmax 21.5, Tmin 12.3 degC, RHmax 84 %, RHmin 63 %, sunshine 9.25 h,
+     6	wind 2.078 m/s at 2 m (the book first converts its 10 m reading). The book's answer is ETo = 3.88 mm/day (3.9 rounded).
+     7	"""
+     8	import sys
+     9	
+    10	from . import fao56
+    11	
+    12	BOOK_ET0 = 3.88
+    13	
+    14	
+    15	def main():
+    16	    lat, elev, doy = 50.0 + 48.0 / 60.0, 100.0, 187
+    17	    tmax, tmin, rh_max, rh_min, sunshine, u2 = 21.5, 12.3, 84.0, 63.0, 9.25, 2.078
+    18	    ra, ws = fao56.extraterrestrial_radiation(lat, doy)
+    19	    rs = (0.25 + 0.50 * sunshine / fao56.daylight_hours(ws)) * ra      # Angstrom formula (Eq. 35), as in the book
+    20	    ea = fao56.actual_vapour_pressure_rh(tmax, tmin, rh_max, rh_min)
+    21	    et0 = float(fao56.et0_daily(tmax, tmin, u2, rs, ea, doy, lat, elev))
+    22	    ok = abs(et0 - BOOK_ET0) <= 0.01
+    23	    print(f"FAO-56 Example 18: Ra={float(ra):.2f} Rs={float(rs):.2f} ea={float(ea):.3f} ET0={et0:.3f} "
+    24	          f"(book {BOOK_ET0}) -> {'OK' if ok else 'MISMATCH'}")
+    25	    return 0 if ok else 1
+    26	
+    27	
+    28	if __name__ == "__main__":
+    29	    sys.exit(main())
+[?2004hroot@98254c38-6d92-484a-af3d-75f7f6376daa:/app# echo '===== current output ====='; sed -n '1,12p' output/et0.csv; wc -l output/et0.csv; echo '===== selfcheck ====='; python -m et0.selfcheck; echo '===== pipeline current ====='; python -m et0.pipeline --stations config/stations.yaml --data data/raw --out /tmp/current-et0.csv; echo status=$?; sed -n '1,12p' /tmp/current-et0.csv
+[?2004l===== current output =====
+station_id,date,et0_mm_day
+VNT,2025-01-01,1.768
+VNT,2025-01-02,1.999
+VNT,2025-01-03,1.778
+VNT,2025-01-04,1.666
+VNT,2025-01-05,1.856
+VNT,2025-01-06,1.989
+VNT,2025-01-07,1.625
+VNT,2025-01-08,1.857
+VNT,2025-01-09,1.598
+VNT,2025-01-10,2.148
+VNT,2025-01-11,2.520
+2921 output/et0.csv
+===== selfcheck =====
+FAO-56 Example 18: Ra=41.09 Rs=22.07 ea=1.409 ET0=3.880 (book 3.88) -> OK
+===== pipeline current =====
+VNT: 365 days, mean ET0 3.55 mm/day
+PAL: 365 days, mean ET0 3.10 mm/day
+CDB: 365 days, mean ET0 3.60 mm/day
+LGN: 365 days, mean ET0 34.48 mm/day
+RSD: 365 days, mean ET0 26.88 mm/day
+MRS: 365 days, mean ET0 4.11 mm/day
+HLT: 365 days, mean ET0 29.91 mm/day
+ARN: 365 days, mean ET0 3.21 mm/day
+status=0
+station_id,date,et0_mm_day
+VNT,2025-01-01,1.768
+VNT,2025-01-02,1.999
+VNT,2025-01-03,1.778
+VNT,2025-01-04,1.666
+VNT,2025-01-05,1.856
+VNT,2025-01-06,1.989
+VNT,2025-01-07,1.625
+VNT,2025-01-08,1.857
+VNT,2025-01-09,1.598
+VNT,2025-01-10,2.148
+VNT,2025-01-11,2.520
+[?2004hroot@98254c38-6d92-484a-af3d-75f7f6376daa:/app# python - <<'PY'
+[?2004l[?2004h> import csv
+[?2004l[?2004h> ref={}
+[?2004l[?2004h> with open('reference/metservice_et0_2025.csv') as f:
+[?2004l[?2004h>     for r in csv.DictReader(f): ref[(r['station_id'],r['date'])]=float(r['et0_mm_day'])
+[?2004l[?2004h> with open('/tmp/current-et0.csv') as f:
+[?2004l[?2004h>     rows=[r for r in csv.DictReader(f) if (r['station_id'],r['date']) in ref]
+[?2004l[?2004h> print('reference rows',len(ref),'stations',sorted({k[0] for k in ref}))
+[?2004l[?2004h> for r in rows:
+[?2004l[?2004h>     ours=float(r['et0_mm_day']); expected=ref[(r['station_id'],r['date'])]
+[?2004l[?2004h>     print(r['station_id'],r['date'],f'ours={ours:.3f}',f'ref={expected:.1f}',f'diff={ours-expected:+.3f}')
+[?2004l[?2004h> PY
+[?2004lreference rows 730 stations ['CDB', 'PAL']
+PAL 2025-01-01 ours=0.967 ref=0.9 diff=+0.067
+PAL 2025-01-02 ours=1.665 ref=1.5 diff=+0.165
+PAL 2025-01-03 ours=2.241 ref=1.9 diff=+0.341
+PAL 2025-01-04 ours=2.197 ref=1.9 diff=+0.297
+PAL 2025-01-05 ours=1.448 ref=1.3 diff=+0.148
+PAL 2025-01-06 ours=1.118 ref=1.0 diff=+0.118
+PAL 2025-01-07 ours=1.316 ref=1.2 diff=+0.116
+PAL 2025-01-08 ours=1.468 ref=1.3 diff=+0.168
+PAL 2025-01-09 ours=1.392 ref=1.2 diff=+0.192
+PAL 2025-01-10 ours=1.153 ref=1.0 diff=+0.153
+PAL 2025-01-11 ours=1.688 ref=1.4 diff=+0.288
+PAL 2025-01-12 ours=1.106 ref=1.0 diff=+0.106
+PAL 2025-01-13 ours=1.319 ref=1.2 diff=+0.119
+PAL 2025-01-14 ours=1.641 ref=1.4 diff=+0.241
+PAL 2025-01-15 ours=1.491 ref=1.3 diff=+0.191
+PAL 2025-01-16 ours=1.333 ref=1.2 diff=+0.133
+PAL 2025-01-17 ours=1.460 ref=1.3 diff=+0.160
+PAL 2025-01-18 ours=1.526 ref=1.3 diff=+0.226
+PAL 2025-01-19 ours=1.505 ref=1.3 diff=+0.205
+PAL 2025-01-20 ours=2.022 ref=1.8 diff=+0.222
+PAL 2025-01-21 ours=2.185 ref=1.9 diff=+0.285
+PAL 2025-01-22 ours=1.661 ref=1.5 diff=+0.161
+PAL 2025-01-23 ours=1.757 ref=1.5 diff=+0.257
+PAL 2025-01-24 ours=1.943 ref=1.8 diff=+0.143
+PAL 2025-01-25 ours=3.405 ref=3.0 diff=+0.405
+PAL 2025-01-26 ours=2.523 ref=2.3 diff=+0.223
+PAL 2025-01-27 ours=1.875 ref=1.7 diff=+0.175
+PAL 2025-01-28 ours=1.475 ref=1.3 diff=+0.175
+PAL 2025-01-29 ours=1.440 ref=1.3 diff=+0.140
+PAL 2025-01-30 ours=1.196 ref=1.1 diff=+0.096
+PAL 2025-01-31 ours=1.347 ref=1.2 diff=+0.147
+PAL 2025-02-01 ours=1.548 ref=1.4 diff=+0.148
+PAL 2025-02-02 ours=2.017 ref=1.8 diff=+0.217
+PAL 2025-02-03 ours=1.633 ref=1.5 diff=+0.133
+PAL 2025-02-04 ours=1.451 ref=1.3 diff=+0.151
+PAL 2025-02-05 ours=2.262 ref=2.0 diff=+0.262
+PAL 2025-02-06 ours=1.624 ref=1.5 diff=+0.124
+PAL 2025-02-07 ours=1.571 ref=1.4 diff=+0.171
+PAL 2025-02-08 ours=2.114 ref=1.9 diff=+0.214
+PAL 2025-02-09 ours=1.734 ref=1.6 diff=+0.134
+PAL 2025-02-10 ours=1.990 ref=1.8 diff=+0.190
+PAL 2025-02-11 ours=2.304 ref=2.1 diff=+0.204
+PAL 2025-02-12 ours=1.545 ref=1.4 diff=+0.145
+PAL 2025-02-13 ours=2.696 ref=2.4 diff=+0.296
+PAL 2025-02-14 ours=2.355 ref=2.1 diff=+0.255
+PAL 2025-02-15 ours=1.615 ref=1.5 diff=+0.115
+PAL 2025-02-16 ours=1.876 ref=1.7 diff=+0.176
+PAL 2025-02-17 ours=1.372 ref=1.3 diff=+0.072
+PAL 2025-02-18 ours=1.234 ref=1.2 diff=+0.034
+PAL 2025-02-19 ours=1.768 ref=1.6 diff=+0.168
+PAL 2025-02-20 ours=2.349 ref=2.1 diff=+0.249
+PAL 2025-02-21 ours=1.842 ref=1.7 diff=+0.142
+PAL 2025-02-22 ours=1.366 ref=1.3 diff=+0.066
+PAL 2025-02-23 ours=1.344 ref=1.3 diff=+0.044
+PAL 2025-02-24 ours=1.250 ref=1.2 diff=+0.050
+PAL 2025-02-25 ours=1.526 ref=1.4 diff=+0.126
+PAL 2025-02-26 ours=1.777 ref=1.6 diff=+0.177
+PAL 2025-02-27 ours=1.790 ref=1.6 diff=+0.190
+PAL 2025-02-28 ours=1.397 ref=1.3 diff=+0.097
+PAL 2025-03-01 ours=2.294 ref=2.1 diff=+0.194
+PAL 2025-03-02 ours=2.233 ref=2.1 diff=+0.133
+PAL 2025-03-03 ours=2.128 ref=2.0 diff=+0.128
+PAL 2025-03-04 ours=1.631 ref=1.6 diff=+0.031
+PAL 2025-03-05 ours=2.368 ref=2.1 diff=+0.268
+PAL 2025-03-06 ours=2.194 ref=2.0 diff=+0.194
+PAL 2025-03-07 ours=2.166 ref=2.0 diff=+0.166
+PAL 2025-03-08 ours=2.479 ref=2.3 diff=+0.179
+PAL 2025-03-09 ours=2.824 ref=2.6 diff=+0.224
+PAL 2025-03-10 ours=3.033 ref=2.8 diff=+0.233
+PAL 2025-03-11 ours=2.833 ref=2.6 diff=+0.233
+PAL 2025-03-12 ours=2.121 ref=2.0 diff=+0.121
+PAL 2025-03-13 ours=2.880 ref=2.6 diff=+0.280
+PAL 2025-03-14 ours=1.812 ref=1.7 diff=+0.112
+PAL 2025-03-15 ours=2.477 ref=2.3 diff=+0.177
+PAL 2025-03-16 ours=2.632 ref=2.4 diff=+0.232
+PAL 2025-03-17 ours=2.650 ref=2.4 diff=+0.250
+PAL 2025-03-18 ours=2.581 ref=2.4 diff=+0.181
+PAL 2025-03-19 ours=2.232 ref=2.1 diff=+0.132
+PAL 2025-03-20 ours=2.321 ref=2.2 diff=+0.121
+PAL 2025-03-21 ours=2.412 ref=2.3 diff=+0.112
+PAL 2025-03-22 ours=2.545 ref=2.4 diff=+0.145
+PAL 2025-03-23 ours=3.396 ref=3.1 diff=+0.296
+PAL 2025-03-24 ours=1.965 ref=1.9 diff=+0.065
+PAL 2025-03-25 ours=2.404 ref=2.3 diff=+0.104
+PAL 2025-03-26 ours=2.814 ref=2.6 diff=+0.214
+PAL 2025-03-27 ours=2.951 ref=2.8 diff=+0.151
+PAL 2025-03-28 ours=2.556 ref=2.4 diff=+0.156
+PAL 2025-03-29 ours=2.125 ref=2.0 diff=+0.125
+PAL 2025-03-30 ours=2.875 ref=2.7 diff=+0.175
+PAL 2025-03-31 ours=3.035 ref=2.8 diff=+0.235
+PAL 2025-04-01 ours=3.148 ref=2.9 diff=+0.248
+PAL 2025-04-02 ours=2.752 ref=2.6 diff=+0.152
+PAL 2025-04-03 ours=3.766 ref=3.5 diff=+0.266
+PAL 2025-04-04 ours=3.004 ref=2.8 diff=+0.204
+PAL 2025-04-05 ours=2.914 ref=2.8 diff=+0.114
+PAL 2025-04-06 ours=3.474 ref=3.2 diff=+0.274
+PAL 2025-04-07 ours=3.218 ref=3.0 diff=+0.218
+PAL 2025-04-08 ours=2.597 ref=2.5 diff=+0.097
+PAL 2025-04-09 ours=3.562 ref=3.3 diff=+0.262
+PAL 2025-04-10 ours=3.192 ref=3.0 diff=+0.192
+PAL 2025-04-11 ours=2.671 ref=2.5 diff=+0.171
+PAL 2025-04-12 ours=2.940 ref=2.8 diff=+0.140
+PAL 2025-04-13 ours=2.155 ref=2.1 diff=+0.055
+PAL 2025-04-14 ours=2.664 ref=2.6 diff=+0.064
+PAL 2025-04-15 ours=3.554 ref=3.3 diff=+0.254
+PAL 2025-04-16 ours=3.614 ref=3.4 diff=+0.214
+PAL 2025-04-17 ours=3.207 ref=3.0 diff=+0.207
+PAL 2025-04-18 ours=2.787 ref=2.7 diff=+0.087
+PAL 2025-04-19 ours=3.472 ref=3.3 diff=+0.172
+PAL 2025-04-20 ours=3.931 ref=3.7 diff=+0.231
+PAL 2025-04-21 ours=3.420 ref=3.3 diff=+0.120
+PAL 2025-04-22 ours=3.396 ref=3.2 diff=+0.196
+PAL 2025-04-23 ours=2.802 ref=2.6 diff=+0.202
+PAL 2025-04-24 ours=4.184 ref=4.0 diff=+0.184
+PAL 2025-04-25 ours=3.734 ref=3.6 diff=+0.134
+PAL 2025-04-26 ours=4.392 ref=4.2 diff=+0.192
+PAL 2025-04-27 ours=4.176 ref=4.0 diff=+0.176
+PAL 2025-04-28 ours=4.009 ref=3.9 diff=+0.109
+PAL 2025-04-29 ours=4.165 ref=4.0 diff=+0.165
+PAL 2025-04-30 ours=3.149 ref=3.0 diff=+0.149
+PAL 2025-05-01 ours=2.750 ref=2.7 diff=+0.050
+PAL 2025-05-02 ours=3.654 ref=3.4 diff=+0.254
+PAL 2025-05-03 ours=3.771 ref=3.6 diff=+0.171
+PAL 2025-05-04 ours=3.677 ref=3.5 diff=+0.177
+PAL 2025-05-05 ours=3.991 ref=3.8 diff=+0.191
+PAL 2025-05-06 ours=4.385 ref=4.1 diff=+0.285
+PAL 2025-05-07 ours=4.515 ref=4.3 diff=+0.215
+PAL 2025-05-08 ours=4.011 ref=3.8 diff=+0.211
+PAL 2025-05-09 ours=3.822 ref=3.7 diff=+0.122
+PAL 2025-05-10 ours=4.677 ref=4.5 diff=+0.177
+PAL 2025-05-11 ours=3.445 ref=3.3 diff=+0.145
+PAL 2025-05-12 ours=3.960 ref=3.8 diff=+0.160
+PAL 2025-05-13 ours=4.336 ref=4.2 diff=+0.136
+PAL 2025-05-14 ours=5.112 ref=4.7 diff=+0.412
+PAL 2025-05-15 ours=5.080 ref=4.7 diff=+0.380
+PAL 2025-05-16 ours=4.766 ref=4.6 diff=+0.166
+PAL 2025-05-17 ours=5.163 ref=5.0 diff=+0.163
+PAL 2025-05-18 ours=4.131 ref=3.9 diff=+0.231
+PAL 2025-05-19 ours=4.063 ref=3.8 diff=+0.263
+PAL 2025-05-20 ours=5.292 ref=5.0 diff=+0.292
+PAL 2025-05-21 ours=4.473 ref=4.3 diff=+0.173
+PAL 2025-05-22 ours=4.814 ref=4.5 diff=+0.314
+PAL 2025-05-23 ours=5.287 ref=5.0 diff=+0.287
+PAL 2025-05-24 ours=4.565 ref=4.4 diff=+0.165
+PAL 2025-05-25 ours=3.458 ref=3.3 diff=+0.158
+PAL 2025-05-26 ours=3.486 ref=3.4 diff=+0.086
+PAL 2025-05-27 ours=4.819 ref=4.6 diff=+0.219
+PAL 2025-05-28 ours=4.388 ref=4.3 diff=+0.088
+PAL 2025-05-29 ours=5.311 ref=5.0 diff=+0.311
+PAL 2025-05-30 ours=4.408 ref=4.1 diff=+0.308
+PAL 2025-05-31 ours=4.394 ref=4.3 diff=+0.094
+PAL 2025-06-01 ours=4.188 ref=4.1 diff=+0.088
+PAL 2025-06-02 ours=4.491 ref=4.2 diff=+0.291
+PAL 2025-06-03 ours=2.857 ref=2.8 diff=+0.057
+PAL 2025-06-04 ours=4.929 ref=4.5 diff=+0.429
+PAL 2025-06-05 ours=3.407 ref=3.2 diff=+0.207
+PAL 2025-06-06 ours=4.051 ref=3.9 diff=+0.151
+PAL 2025-06-07 ours=4.284 ref=4.1 diff=+0.184
+PAL 2025-06-08 ours=5.006 ref=4.7 diff=+0.306
+PAL 2025-06-09 ours=5.738 ref=5.4 diff=+0.338
+PAL 2025-06-10 ours=5.090 ref=4.7 diff=+0.390
+PAL 2025-06-11 ours=4.192 ref=4.1 diff=+0.092
+PAL 2025-06-12 ours=4.004 ref=3.9 diff=+0.104
+PAL 2025-06-13 ours=3.875 ref=3.6 diff=+0.275
+PAL 2025-06-14 ours=5.502 ref=5.2 diff=+0.302
+PAL 2025-06-15 ours=5.351 ref=5.0 diff=+0.351
+PAL 2025-06-16 ours=7.044 ref=6.5 diff=+0.544
+PAL 2025-06-17 ours=7.034 ref=6.4 diff=+0.634
+PAL 2025-06-18 ours=5.834 ref=5.3 diff=+0.534
+PAL 2025-06-19 ours=5.441 ref=5.0 diff=+0.441
+PAL 2025-06-20 ours=4.874 ref=4.7 diff=+0.174
+PAL 2025-06-21 ours=5.763 ref=5.3 diff=+0.463
+PAL 2025-06-22 ours=4.981 ref=4.7 diff=+0.281
+PAL 2025-06-23 ours=6.176 ref=5.8 diff=+0.376
+PAL 2025-06-24 ours=5.529 ref=5.3 diff=+0.229
+PAL 2025-06-25 ours=4.690 ref=4.5 diff=+0.190
+PAL 2025-06-26 ours=4.522 ref=4.3 diff=+0.222
+PAL 2025-06-27 ours=4.847 ref=4.7 diff=+0.147
+PAL 2025-06-28 ours=3.430 ref=3.3 diff=+0.130
+PAL 2025-06-29 ours=4.186 ref=4.1 diff=+0.086
+PAL 2025-06-30 ours=5.672 ref=5.2 diff=+0.472
+PAL 2025-07-01 ours=4.333 ref=4.1 diff=+0.233
+PAL 2025-07-02 ours=4.661 ref=4.4 diff=+0.261
+PAL 2025-07-03 ours=4.774 ref=4.4 diff=+0.374
+PAL 2025-07-04 ours=5.438 ref=5.1 diff=+0.338
+PAL 2025-07-05 ours=3.629 ref=3.5 diff=+0.129
+PAL 2025-07-06 ours=4.811 ref=4.6 diff=+0.211
+PAL 2025-07-07 ours=5.517 ref=5.2 diff=+0.317
+PAL 2025-07-08 ours=5.646 ref=5.3 diff=+0.346
+PAL 2025-07-09 ours=3.873 ref=3.7 diff=+0.173
+PAL 2025-07-10 ours=3.945 ref=3.8 diff=+0.145
+PAL 2025-07-11 ours=3.906 ref=3.7 diff=+0.206
+PAL 2025-07-12 ours=3.756 ref=3.6 diff=+0.156
+PAL 2025-07-13 ours=4.569 ref=4.5 diff=+0.069
+PAL 2025-07-14 ours=4.150 ref=4.1 diff=+0.050
+PAL 2025-07-15 ours=4.072 ref=3.8 diff=+0.272
+PAL 2025-07-16 ours=5.049 ref=4.7 diff=+0.349
+PAL 2025-07-17 ours=4.100 ref=3.9 diff=+0.200
+PAL 2025-07-18 ours=4.594 ref=4.3 diff=+0.294
+PAL 2025-07-19 ours=6.284 ref=5.8 diff=+0.484
+PAL 2025-07-20 ours=5.590 ref=5.4 diff=+0.190
+PAL 2025-07-21 ours=6.828 ref=6.2 diff=+0.628
+PAL 2025-07-22 ours=5.349 ref=5.0 diff=+0.349
+PAL 2025-07-23 ours=4.757 ref=4.5 diff=+0.257
+PAL 2025-07-24 ours=4.802 ref=4.5 diff=+0.302
+PAL 2025-07-25 ours=5.236 ref=4.9 diff=+0.336
+PAL 2025-07-26 ours=3.793 ref=3.6 diff=+0.193
+PAL 2025-07-27 ours=5.980 ref=5.6 diff=+0.380
+PAL 2025-07-28 ours=4.883 ref=4.5 diff=+0.383
+PAL 2025-07-29 ours=3.922 ref=3.7 diff=+0.222
+PAL 2025-07-30 ours=3.114 ref=3.0 diff=+0.114
+PAL 2025-07-31 ours=4.759 ref=4.5 diff=+0.259
+PAL 2025-08-01 ours=5.524 ref=5.3 diff=+0.224
+PAL 2025-08-02 ours=4.817 ref=4.6 diff=+0.217
+PAL 2025-08-03 ours=4.930 ref=4.8 diff=+0.130
+PAL 2025-08-04 ours=3.849 ref=3.6 diff=+0.249
+PAL 2025-08-05 ours=4.199 ref=4.0 diff=+0.199
+PAL 2025-08-06 ours=4.770 ref=4.5 diff=+0.270
+PAL 2025-08-07 ours=5.346 ref=5.0 diff=+0.346
+PAL 2025-08-08 ours=5.738 ref=5.3 diff=+0.438
+PAL 2025-08-09 ours=4.340 ref=4.1 diff=+0.240
+PAL 2025-08-10 ours=4.679 ref=4.4 diff=+0.279
+PAL 2025-08-11 ours=5.586 ref=5.1 diff=+0.486
+PAL 2025-08-12 ours=4.629 ref=4.4 diff=+0.229
+PAL 2025-08-13 ours=6.382 ref=5.9 diff=+0.482
+PAL 2025-08-14 ours=3.714 ref=3.6 diff=+0.114
+PAL 2025-08-15 ours=5.614 ref=5.1 diff=+0.514
+PAL 2025-08-16 ours=6.209 ref=5.6 diff=+0.609
+PAL 2025-08-17 ours=4.054 ref=3.8 diff=+0.254
+PAL 2025-08-18 ours=4.115 ref=3.9 diff=+0.215
+PAL 2025-08-19 ours=4.886 ref=4.5 diff=+0.386
+PAL 2025-08-20 ours=3.889 ref=3.7 diff=+0.189
+PAL 2025-08-21 ours=4.046 ref=3.8 diff=+0.246
+PAL 2025-08-22 ours=3.980 ref=3.7 diff=+0.280
+PAL 2025-08-23 ours=4.505 ref=4.2 diff=+0.305
+PAL 2025-08-24 ours=4.030 ref=3.8 diff=+0.230
+PAL 2025-08-25 ours=4.485 ref=4.2 diff=+0.285
+PAL 2025-08-26 ours=3.622 ref=3.4 diff=+0.222
+PAL 2025-08-27 ours=3.598 ref=3.3 diff=+0.298
+PAL 2025-08-28 ours=3.711 ref=3.6 diff=+0.111
+PAL 2025-08-29 ours=4.142 ref=3.9 diff=+0.242
+PAL 2025-08-30 ours=3.924 ref=3.6 diff=+0.324
+PAL 2025-08-31 ours=4.675 ref=4.3 diff=+0.375
+PAL 2025-09-01 ours=4.730 ref=4.4 diff=+0.330
+PAL 2025-09-02 ours=3.037 ref=2.9 diff=+0.137
+PAL 2025-09-03 ours=3.742 ref=3.5 diff=+0.242
+PAL 2025-09-04 ours=2.990 ref=2.9 diff=+0.090
+PAL 2025-09-05 ours=4.366 ref=4.0 diff=+0.366
+PAL 2025-09-06 ours=4.518 ref=4.1 diff=+0.418
+PAL 2025-09-07 ours=3.362 ref=3.2 diff=+0.162
+PAL 2025-09-08 ours=3.270 ref=3.2 diff=+0.070
+PAL 2025-09-09 ours=3.506 ref=3.2 diff=+0.306
+PAL 2025-09-10 ours=3.974 ref=3.7 diff=+0.274
+PAL 2025-09-11 ours=3.651 ref=3.4 diff=+0.251
+PAL 2025-09-12 ours=4.080 ref=3.8 diff=+0.280
+PAL 2025-09-13 ours=3.764 ref=3.5 diff=+0.264
+PAL 2025-09-14 ours=4.287 ref=4.0 diff=+0.287
+PAL 2025-09-15 ours=3.912 ref=3.7 diff=+0.212
+PAL 2025-09-16 ours=3.542 ref=3.3 diff=+0.242
+PAL 2025-09-17 ours=3.884 ref=3.6 diff=+0.284
+PAL 2025-09-18 ours=3.594 ref=3.4 diff=+0.194
+PAL 2025-09-19 ours=3.853 ref=3.6 diff=+0.253
+PAL 2025-09-20 ours=4.096 ref=3.7 diff=+0.396
+PAL 2025-09-21 ours=4.446 ref=4.0 diff=+0.446
+PAL 2025-09-22 ours=3.177 ref=3.0 diff=+0.177
+PAL 2025-09-23 ours=4.193 ref=3.8 diff=+0.393
+PAL 2025-09-24 ours=2.910 ref=2.7 diff=+0.210
+PAL 2025-09-25 ours=3.982 ref=3.7 diff=+0.282
+PAL 2025-09-26 ours=2.610 ref=2.5 diff=+0.110
+PAL 2025-09-27 ours=2.927 ref=2.7 diff=+0.227
+PAL 2025-09-28 ours=3.431 ref=3.2 diff=+0.231
+PAL 2025-09-29 ours=3.361 ref=3.1 diff=+0.261
+PAL 2025-09-30 ours=3.781 ref=3.4 diff=+0.381
+PAL 2025-10-01 ours=3.523 ref=3.2 diff=+0.323
+PAL 2025-10-02 ours=2.501 ref=2.3 diff=+0.201
+PAL 2025-10-03 ours=2.925 ref=2.6 diff=+0.325
+PAL 2025-10-04 ours=2.215 ref=2.0 diff=+0.215
+PAL 2025-10-05 ours=3.280 ref=3.0 diff=+0.280
+PAL 2025-10-06 ours=2.712 ref=2.4 diff=+0.312
+PAL 2025-10-07 ours=2.369 ref=2.2 diff=+0.169
+PAL 2025-10-08 ours=2.026 ref=1.9 diff=+0.126
+PAL 2025-10-09 ours=2.974 ref=2.7 diff=+0.274
+PAL 2025-10-10 ours=2.294 ref=2.1 diff=+0.194
+PAL 2025-10-11 ours=2.102 ref=2.0 diff=+0.102
+PAL 2025-10-12 ours=2.332 ref=2.2 diff=+0.132
+PAL 2025-10-13 ours=2.650 ref=2.4 diff=+0.250
+PAL 2025-10-14 ours=2.278 ref=2.1 diff=+0.178
+PAL 2025-10-15 ours=2.789 ref=2.5 diff=+0.289
+PAL 2025-10-16 ours=2.495 ref=2.3 diff=+0.195
+PAL 2025-10-17 ours=3.188 ref=2.8 diff=+0.388
+PAL 2025-10-18 ours=2.301 ref=2.1 diff=+0.201
+PAL 2025-10-19 ours=2.316 ref=2.1 diff=+0.216
+PAL 2025-10-20 ours=2.216 ref=2.0 diff=+0.216
+PAL 2025-10-21 ours=1.729 ref=1.6 diff=+0.129
+PAL 2025-10-22 ours=2.715 ref=2.4 diff=+0.315
+PAL 2025-10-23 ours=2.148 ref=2.0 diff=+0.148
+PAL 2025-10-24 ours=1.697 ref=1.6 diff=+0.097
+PAL 2025-10-25 ours=2.565 ref=2.3 diff=+0.265
+PAL 2025-10-26 ours=1.680 ref=1.5 diff=+0.180
+PAL 2025-10-27 ours=1.786 ref=1.6 diff=+0.186
+PAL 2025-10-28 ours=1.965 ref=1.7 diff=+0.265
+PAL 2025-10-29 ours=1.907 ref=1.7 diff=+0.207
+PAL 2025-10-30 ours=1.571 ref=1.4 diff=+0.171
+PAL 2025-10-31 ours=2.264 ref=2.0 diff=+0.264
+PAL 2025-11-01 ours=1.808 ref=1.6 diff=+0.208
+PAL 2025-11-02 ours=1.664 ref=1.5 diff=+0.164
+PAL 2025-11-03 ours=1.538 ref=1.4 diff=+0.138
+PAL 2025-11-04 ours=1.410 ref=1.3 diff=+0.110
+PAL 2025-11-05 ours=1.689 ref=1.5 diff=+0.189
+PAL 2025-11-06 ours=1.360 ref=1.2 diff=+0.160
+PAL 2025-11-07 ours=1.387 ref=1.3 diff=+0.087
+PAL 2025-11-08 ours=2.006 ref=1.7 diff=+0.306
+PAL 2025-11-09 ours=2.222 ref=1.9 diff=+0.322
+PAL 2025-11-10 ours=1.417 ref=1.3 diff=+0.117
+PAL 2025-11-11 ours=1.377 ref=1.2 diff=+0.177
+PAL 2025-11-12 ours=1.483 ref=1.3 diff=+0.183
+PAL 2025-11-13 ours=1.592 ref=1.4 diff=+0.192
+PAL 2025-11-14 ours=1.217 ref=1.1 diff=+0.117
+PAL 2025-11-15 ours=1.701 ref=1.5 diff=+0.201
+PAL 2025-11-16 ours=1.564 ref=1.4 diff=+0.164
+PAL 2025-11-17 ours=2.095 ref=1.8 diff=+0.295
+PAL 2025-11-18 ours=2.107 ref=1.9 diff=+0.207
+PAL 2025-11-19 ours=2.399 ref=2.1 diff=+0.299
+PAL 2025-11-20 ours=1.552 ref=1.4 diff=+0.152
+PAL 2025-11-21 ours=1.680 ref=1.5 diff=+0.180
+PAL 2025-11-22 ours=2.302 ref=2.0 diff=+0.302
+PAL 2025-11-23 ours=1.361 ref=1.2 diff=+0.161
+PAL 2025-11-24 ours=1.501 ref=1.3 diff=+0.201
+PAL 2025-11-25 ours=1.778 ref=1.5 diff=+0.278
+PAL 2025-11-26 ours=1.302 ref=1.2 diff=+0.102
+PAL 2025-11-27 ours=1.873 ref=1.6 diff=+0.273
+PAL 2025-11-28 ours=2.192 ref=1.9 diff=+0.292
+PAL 2025-11-29 ours=1.611 ref=1.4 diff=+0.211
+PAL 2025-11-30 ours=1.745 ref=1.5 diff=+0.245
+PAL 2025-12-01 ours=2.044 ref=1.8 diff=+0.244
+PAL 2025-12-02 ours=1.165 ref=1.0 diff=+0.165
+PAL 2025-12-03 ours=0.979 ref=0.9 diff=+0.079
+PAL 2025-12-04 ours=1.274 ref=1.1 diff=+0.174
+PAL 2025-12-05 ours=1.473 ref=1.3 diff=+0.173
+PAL 2025-12-06 ours=1.007 ref=0.9 diff=+0.107
+PAL 2025-12-07 ours=0.957 ref=0.9 diff=+0.057
+PAL 2025-12-08 ours=1.713 ref=1.5 diff=+0.213
+PAL 2025-12-09 ours=1.698 ref=1.5 diff=+0.198
+PAL 2025-12-10 ours=2.034 ref=1.8 diff=+0.234
+PAL 2025-12-11 ours=1.655 ref=1.5 diff=+0.155
+PAL 2025-12-12 ours=1.675 ref=1.4 diff=+0.275
+PAL 2025-12-13 ours=1.175 ref=1.0 diff=+0.175
+PAL 2025-12-14 ours=1.261 ref=1.1 diff=+0.161
+PAL 2025-12-15 ours=1.241 ref=1.1 diff=+0.141
+PAL 2025-12-16 ours=1.431 ref=1.2 diff=+0.231
+PAL 2025-12-17 ours=2.257 ref=2.0 diff=+0.257
+PAL 2025-12-18 ours=1.288 ref=1.1 diff=+0.188
+PAL 2025-12-19 ours=1.812 ref=1.6 diff=+0.212
+PAL 2025-12-20 ours=2.054 ref=1.8 diff=+0.254
+PAL 2025-12-21 ours=1.512 ref=1.3 diff=+0.212
+PAL 2025-12-22 ours=1.645 ref=1.4 diff=+0.245
+PAL 2025-12-23 ours=2.073 ref=1.8 diff=+0.273
+PAL 2025-12-24 ours=1.326 ref=1.2 diff=+0.126
+PAL 2025-12-25 ours=0.975 ref=0.9 diff=+0.075
+PAL 2025-12-26 ours=1.773 ref=1.5 diff=+0.273
+PAL 2025-12-27 ours=1.108 ref=1.0 diff=+0.108
+PAL 2025-12-28 ours=1.633 ref=1.4 diff=+0.233
+PAL 2025-12-29 ours=1.667 ref=1.5 diff=+0.167
+PAL 2025-12-30 ours=1.938 ref=1.7 diff=+0.238
+PAL 2025-12-31 ours=2.142 ref=1.9 diff=+0.242
+CDB 2025-01-01 ours=2.913 ref=3.8 diff=-0.887
+CDB 2025-01-02 ours=5.237 ref=5.8 diff=-0.563
+CDB 2025-01-03 ours=4.060 ref=4.6 diff=-0.540
+CDB 2025-01-04 ours=4.023 ref=4.6 diff=-0.577
+CDB 2025-01-05 ours=4.138 ref=4.8 diff=-0.662
+CDB 2025-01-06 ours=4.342 ref=4.9 diff=-0.558
+CDB 2025-01-07 ours=5.974 ref=6.3 diff=-0.326
+CDB 2025-01-08 ours=4.624 ref=5.2 diff=-0.576
+CDB 2025-01-09 ours=2.782 ref=3.9 diff=-1.118
+CDB 2025-01-10 ours=4.220 ref=4.7 diff=-0.480
+CDB 2025-01-11 ours=2.435 ref=3.4 diff=-0.965
+CDB 2025-01-12 ours=3.888 ref=4.4 diff=-0.512
+CDB 2025-01-13 ours=4.420 ref=4.8 diff=-0.380
+CDB 2025-01-14 ours=4.789 ref=5.2 diff=-0.411
+CDB 2025-01-15 ours=3.894 ref=4.7 diff=-0.806
+CDB 2025-01-16 ours=3.876 ref=4.6 diff=-0.724
+CDB 2025-01-17 ours=4.321 ref=4.8 diff=-0.479
+CDB 2025-01-18 ours=4.235 ref=4.8 diff=-0.565
+CDB 2025-01-19 ours=5.050 ref=5.8 diff=-0.750
+CDB 2025-01-20 ours=6.067 ref=6.4 diff=-0.333
+CDB 2025-01-21 ours=4.028 ref=4.6 diff=-0.572
+CDB 2025-01-22 ours=5.234 ref=5.8 diff=-0.566
+CDB 2025-01-23 ours=6.795 ref=7.0 diff=-0.205
+CDB 2025-01-24 ours=4.525 ref=5.1 diff=-0.575
+CDB 2025-01-25 ours=4.863 ref=5.5 diff=-0.637
+CDB 2025-01-26 ours=4.932 ref=5.5 diff=-0.568
+CDB 2025-01-27 ours=4.064 ref=4.7 diff=-0.636
+CDB 2025-01-28 ours=3.892 ref=4.7 diff=-0.808
+CDB 2025-01-29 ours=5.173 ref=5.6 diff=-0.427
+CDB 2025-01-30 ours=5.533 ref=6.1 diff=-0.567
+CDB 2025-01-31 ours=5.527 ref=6.0 diff=-0.473
+CDB 2025-02-01 ours=5.068 ref=5.5 diff=-0.432
+CDB 2025-02-02 ours=5.572 ref=6.1 diff=-0.528
+CDB 2025-02-03 ours=5.594 ref=6.0 diff=-0.406
+CDB 2025-02-04 ours=3.031 ref=3.9 diff=-0.869
+CDB 2025-02-05 ours=3.775 ref=4.5 diff=-0.725
+CDB 2025-02-06 ours=4.285 ref=4.8 diff=-0.515
+CDB 2025-02-07 ours=3.322 ref=4.0 diff=-0.678
+CDB 2025-02-08 ours=4.647 ref=5.4 diff=-0.753
+CDB 2025-02-09 ours=4.193 ref=5.0 diff=-0.807
+CDB 2025-02-10 ours=4.747 ref=5.5 diff=-0.753
+CDB 2025-02-11 ours=4.605 ref=5.6 diff=-0.995
+CDB 2025-02-12 ours=3.676 ref=4.5 diff=-0.824
+CDB 2025-02-13 ours=4.511 ref=4.9 diff=-0.389
+CDB 2025-02-14 ours=4.751 ref=5.1 diff=-0.349
+CDB 2025-02-15 ours=3.709 ref=4.4 diff=-0.691
+CDB 2025-02-16 ours=3.603 ref=4.3 diff=-0.697
+CDB 2025-02-17 ours=3.317 ref=4.0 diff=-0.683
+CDB 2025-02-18 ours=4.118 ref=5.1 diff=-0.982
+CDB 2025-02-19 ours=4.145 ref=4.7 diff=-0.555
+CDB 2025-02-20 ours=3.318 ref=3.9 diff=-0.582
+CDB 2025-02-21 ours=2.561 ref=3.1 diff=-0.539
+CDB 2025-02-22 ours=3.045 ref=3.6 diff=-0.555
+CDB 2025-02-23 ours=2.656 ref=3.1 diff=-0.444
+CDB 2025-02-24 ours=3.611 ref=4.1 diff=-0.489
+CDB 2025-02-25 ours=3.420 ref=3.9 diff=-0.480
+CDB 2025-02-26 ours=4.172 ref=4.6 diff=-0.428
+CDB 2025-02-27 ours=4.204 ref=4.6 diff=-0.396
+CDB 2025-02-28 ours=3.781 ref=4.3 diff=-0.519
+CDB 2025-03-01 ours=4.516 ref=4.9 diff=-0.384
+CDB 2025-03-02 ours=5.009 ref=5.5 diff=-0.491
+CDB 2025-03-03 ours=3.331 ref=3.7 diff=-0.369
+CDB 2025-03-04 ours=3.365 ref=3.8 diff=-0.435
+CDB 2025-03-05 ours=3.629 ref=3.9 diff=-0.271
+CDB 2025-03-06 ours=3.934 ref=4.3 diff=-0.366
+CDB 2025-03-07 ours=3.808 ref=4.2 diff=-0.392
+CDB 2025-03-08 ours=4.102 ref=4.4 diff=-0.298
+CDB 2025-03-09 ours=3.839 ref=4.1 diff=-0.261
+CDB 2025-03-10 ours=2.899 ref=3.1 diff=-0.201
+CDB 2025-03-11 ours=3.726 ref=3.9 diff=-0.174
+CDB 2025-03-12 ours=2.933 ref=3.1 diff=-0.167
+CDB 2025-03-13 ours=3.377 ref=3.5 diff=-0.123
+CDB 2025-03-14 ours=4.373 ref=4.5 diff=-0.127
+CDB 2025-03-15 ours=5.236 ref=5.4 diff=-0.164
+CDB 2025-03-16 ours=3.381 ref=3.5 diff=-0.119
+CDB 2025-03-17 ours=4.544 ref=4.6 diff=-0.056
+CDB 2025-03-18 ours=4.208 ref=4.3 diff=-0.092
+CDB 2025-03-19 ours=3.973 ref=4.0 diff=-0.027
+CDB 2025-03-20 ours=4.801 ref=4.8 diff=+0.001
+CDB 2025-03-21 ours=4.155 ref=4.2 diff=-0.045
+CDB 2025-03-22 ours=3.707 ref=3.7 diff=+0.007
+CDB 2025-03-23 ours=4.142 ref=4.1 diff=+0.042
+CDB 2025-03-24 ours=5.118 ref=5.1 diff=+0.018
+CDB 2025-03-25 ours=4.010 ref=4.0 diff=+0.010
+CDB 2025-03-26 ours=4.473 ref=4.4 diff=+0.073
+CDB 2025-03-27 ours=4.491 ref=4.4 diff=+0.091
+CDB 2025-03-28 ours=4.056 ref=3.9 diff=+0.156
+CDB 2025-03-29 ours=3.158 ref=3.0 diff=+0.158
+CDB 2025-03-30 ours=3.164 ref=3.0 diff=+0.164
+CDB 2025-03-31 ours=3.319 ref=3.1 diff=+0.219
+CDB 2025-04-01 ours=3.254 ref=3.1 diff=+0.154
+CDB 2025-04-02 ours=4.208 ref=4.0 diff=+0.208
+CDB 2025-04-03 ours=5.238 ref=5.0 diff=+0.238
+CDB 2025-04-04 ours=4.415 ref=4.2 diff=+0.215
+CDB 2025-04-05 ours=4.454 ref=4.2 diff=+0.254
+CDB 2025-04-06 ours=3.150 ref=2.9 diff=+0.250
+CDB 2025-04-07 ours=2.703 ref=2.4 diff=+0.303
+CDB 2025-04-08 ours=3.232 ref=3.0 diff=+0.232
+CDB 2025-04-09 ours=2.707 ref=2.4 diff=+0.307
+CDB 2025-04-10 ours=3.263 ref=3.0 diff=+0.263
+CDB 2025-04-11 ours=2.717 ref=2.5 diff=+0.217
+CDB 2025-04-12 ours=3.416 ref=3.0 diff=+0.416
+CDB 2025-04-13 ours=2.921 ref=2.5 diff=+0.421
+CDB 2025-04-14 ours=2.861 ref=2.4 diff=+0.461
+CDB 2025-04-15 ours=2.465 ref=2.1 diff=+0.365
+CDB 2025-04-16 ours=2.338 ref=2.0 diff=+0.338
+CDB 2025-04-17 ours=2.658 ref=2.3 diff=+0.358
+CDB 2025-04-18 ours=3.911 ref=3.4 diff=+0.511
+CDB 2025-04-19 ours=3.482 ref=3.0 diff=+0.482
+CDB 2025-04-20 ours=3.372 ref=2.9 diff=+0.472
+CDB 2025-04-21 ours=3.733 ref=3.2 diff=+0.533
+CDB 2025-04-22 ours=3.872 ref=3.4 diff=+0.472
+CDB 2025-04-23 ours=3.466 ref=2.9 diff=+0.566
+CDB 2025-04-24 ours=3.875 ref=3.3 diff=+0.575
+CDB 2025-04-25 ours=4.260 ref=3.7 diff=+0.560
+CDB 2025-04-26 ours=3.247 ref=2.7 diff=+0.547
+CDB 2025-04-27 ours=3.882 ref=3.4 diff=+0.482
+CDB 2025-04-28 ours=3.325 ref=3.0 diff=+0.325
+CDB 2025-04-29 ours=2.913 ref=2.5 diff=+0.413
+CDB 2025-04-30 ours=2.771 ref=2.4 diff=+0.371
+CDB 2025-05-01 ours=3.308 ref=2.7 diff=+0.608
+CDB 2025-05-02 ours=3.651 ref=2.9 diff=+0.751
+CDB 2025-05-03 ours=3.649 ref=3.0 diff=+0.649
+CDB 2025-05-04 ours=3.245 ref=2.5 diff=+0.745
+CDB 2025-05-05 ours=2.844 ref=2.3 diff=+0.544
+CDB 2025-05-06 ours=3.773 ref=3.0 diff=+0.773
+CDB 2025-05-07 ours=3.598 ref=3.0 diff=+0.598
+CDB 2025-05-08 ours=5.329 ref=4.7 diff=+0.629
+CDB 2025-05-09 ours=2.751 ref=2.3 diff=+0.451
+CDB 2025-05-10 ours=3.405 ref=2.6 diff=+0.805
+CDB 2025-05-11 ours=3.811 ref=3.3 diff=+0.511
+CDB 2025-05-12 ours=3.073 ref=2.3 diff=+0.773
+CDB 2025-05-13 ours=3.204 ref=2.6 diff=+0.604
+CDB 2025-05-14 ours=2.866 ref=2.0 diff=+0.866
+CDB 2025-05-15 ours=2.724 ref=1.9 diff=+0.824
+CDB 2025-05-16 ours=2.842 ref=2.2 diff=+0.642
+CDB 2025-05-17 ours=2.963 ref=2.1 diff=+0.863
+CDB 2025-05-18 ours=3.007 ref=2.3 diff=+0.707
+CDB 2025-05-19 ours=3.249 ref=2.6 diff=+0.649
+CDB 2025-05-20 ours=2.931 ref=2.4 diff=+0.531
+CDB 2025-05-21 ours=3.033 ref=2.4 diff=+0.633
+CDB 2025-05-22 ours=2.851 ref=2.0 diff=+0.851
+CDB 2025-05-23 ours=2.593 ref=1.9 diff=+0.693
+CDB 2025-05-24 ours=3.244 ref=2.3 diff=+0.944
+CDB 2025-05-25 ours=2.861 ref=1.9 diff=+0.961
+CDB 2025-05-26 ours=2.492 ref=2.0 diff=+0.492
+CDB 2025-05-27 ours=3.223 ref=2.8 diff=+0.423
+CDB 2025-05-28 ours=2.728 ref=2.4 diff=+0.328
+CDB 2025-05-29 ours=3.332 ref=2.9 diff=+0.432
+CDB 2025-05-30 ours=3.861 ref=3.1 diff=+0.761
+CDB 2025-05-31 ours=2.253 ref=1.6 diff=+0.653
+CDB 2025-06-01 ours=2.222 ref=1.7 diff=+0.522
+CDB 2025-06-02 ours=2.534 ref=1.9 diff=+0.634
+CDB 2025-06-03 ours=3.025 ref=2.2 diff=+0.825
+CDB 2025-06-04 ours=3.319 ref=2.6 diff=+0.719
+CDB 2025-06-05 ours=3.376 ref=2.8 diff=+0.576
+CDB 2025-06-06 ours=2.685 ref=2.0 diff=+0.685
+CDB 2025-06-07 ours=2.470 ref=1.8 diff=+0.670
+CDB 2025-06-08 ours=2.646 ref=2.2 diff=+0.446
+CDB 2025-06-09 ours=3.088 ref=2.5 diff=+0.588
+CDB 2025-06-10 ours=3.331 ref=2.5 diff=+0.831
+CDB 2025-06-11 ours=2.445 ref=1.7 diff=+0.745
+CDB 2025-06-12 ours=3.062 ref=2.4 diff=+0.662
+CDB 2025-06-13 ours=2.445 ref=1.7 diff=+0.745
+CDB 2025-06-14 ours=2.499 ref=1.5 diff=+0.999
+CDB 2025-06-15 ours=2.621 ref=1.8 diff=+0.821
+CDB 2025-06-16 ours=2.626 ref=1.9 diff=+0.726
+CDB 2025-06-17 ours=2.642 ref=2.0 diff=+0.642
+CDB 2025-06-18 ours=4.226 ref=3.4 diff=+0.826
+CDB 2025-06-19 ours=3.655 ref=2.8 diff=+0.855
+CDB 2025-06-20 ours=1.887 ref=1.4 diff=+0.487
+CDB 2025-06-21 ours=2.531 ref=1.9 diff=+0.631
+CDB 2025-06-22 ours=2.513 ref=1.8 diff=+0.713
+CDB 2025-06-23 ours=2.858 ref=2.0 diff=+0.858
+CDB 2025-06-24 ours=2.793 ref=1.7 diff=+1.093
+CDB 2025-06-25 ours=2.166 ref=1.6 diff=+0.566
+CDB 2025-06-26 ours=2.460 ref=1.8 diff=+0.660
+CDB 2025-06-27 ours=2.097 ref=1.6 diff=+0.497
+CDB 2025-06-28 ours=2.997 ref=2.3 diff=+0.697
+CDB 2025-06-29 ours=1.777 ref=1.4 diff=+0.377
+CDB 2025-06-30 ours=2.758 ref=2.1 diff=+0.658
+CDB 2025-07-01 ours=2.294 ref=1.7 diff=+0.594
+CDB 2025-07-02 ours=2.355 ref=1.8 diff=+0.555
+CDB 2025-07-03 ours=2.205 ref=1.6 diff=+0.605
+CDB 2025-07-04 ours=2.589 ref=1.9 diff=+0.689
+CDB 2025-07-05 ours=2.315 ref=1.9 diff=+0.415
+CDB 2025-07-06 ours=2.631 ref=1.8 diff=+0.831
+CDB 2025-07-07 ours=2.533 ref=1.9 diff=+0.633
+CDB 2025-07-08 ours=2.478 ref=1.5 diff=+0.978
+CDB 2025-07-09 ours=2.196 ref=1.3 diff=+0.896
+CDB 2025-07-10 ours=2.896 ref=2.1 diff=+0.796
+CDB 2025-07-11 ours=2.360 ref=1.6 diff=+0.760
+CDB 2025-07-12 ours=2.470 ref=1.6 diff=+0.870
+CDB 2025-07-13 ours=2.562 ref=2.0 diff=+0.562
+CDB 2025-07-14 ours=2.843 ref=2.3 diff=+0.543
+CDB 2025-07-15 ours=3.857 ref=3.1 diff=+0.757
+CDB 2025-07-16 ours=2.047 ref=1.5 diff=+0.547
+CDB 2025-07-17 ours=2.477 ref=1.8 diff=+0.677
+CDB 2025-07-18 ours=2.094 ref=1.6 diff=+0.494
+CDB 2025-07-19 ours=2.705 ref=2.0 diff=+0.705
+CDB 2025-07-20 ours=2.847 ref=2.1 diff=+0.747
+CDB 2025-07-21 ours=2.554 ref=1.8 diff=+0.754
+CDB 2025-07-22 ours=2.024 ref=1.5 diff=+0.524
+CDB 2025-07-23 ours=2.350 ref=1.7 diff=+0.650
+CDB 2025-07-24 ours=2.833 ref=2.4 diff=+0.433
+CDB 2025-07-25 ours=2.243 ref=1.6 diff=+0.643
+CDB 2025-07-26 ours=2.698 ref=2.1 diff=+0.598
+CDB 2025-07-27 ours=2.711 ref=2.2 diff=+0.511
+CDB 2025-07-28 ours=2.182 ref=1.8 diff=+0.382
+CDB 2025-07-29 ours=3.202 ref=2.4 diff=+0.802
+CDB 2025-07-30 ours=3.000 ref=2.5 diff=+0.500
+CDB 2025-07-31 ours=4.305 ref=3.7 diff=+0.605
+CDB 2025-08-01 ours=3.529 ref=2.9 diff=+0.629
+CDB 2025-08-02 ours=2.666 ref=2.0 diff=+0.666
+CDB 2025-08-03 ours=3.130 ref=2.5 diff=+0.630
+CDB 2025-08-04 ours=3.145 ref=2.3 diff=+0.845
+CDB 2025-08-05 ours=2.761 ref=2.1 diff=+0.661
+CDB 2025-08-06 ours=2.799 ref=2.3 diff=+0.499
+CDB 2025-08-07 ours=3.099 ref=2.5 diff=+0.599
+CDB 2025-08-08 ours=3.200 ref=2.4 diff=+0.800
+CDB 2025-08-09 ours=2.929 ref=2.3 diff=+0.629
+CDB 2025-08-10 ours=3.195 ref=2.9 diff=+0.295
+CDB 2025-08-11 ours=2.718 ref=2.2 diff=+0.518
+CDB 2025-08-12 ours=2.655 ref=2.3 diff=+0.355
+CDB 2025-08-13 ours=2.411 ref=1.9 diff=+0.511
+CDB 2025-08-14 ours=2.453 ref=1.9 diff=+0.553
+CDB 2025-08-15 ours=2.607 ref=2.0 diff=+0.607
+CDB 2025-08-16 ours=3.040 ref=2.4 diff=+0.640
+CDB 2025-08-17 ours=2.938 ref=2.5 diff=+0.438
+CDB 2025-08-18 ours=3.533 ref=3.0 diff=+0.533
+CDB 2025-08-19 ours=2.582 ref=2.2 diff=+0.382
+CDB 2025-08-20 ours=2.304 ref=2.0 diff=+0.304
+CDB 2025-08-21 ours=2.237 ref=1.9 diff=+0.337
+CDB 2025-08-22 ours=3.165 ref=2.7 diff=+0.465
+CDB 2025-08-23 ours=2.900 ref=2.5 diff=+0.400
+CDB 2025-08-24 ours=2.610 ref=2.1 diff=+0.510
+CDB 2025-08-25 ours=2.671 ref=2.3 diff=+0.371
+CDB 2025-08-26 ours=2.884 ref=2.5 diff=+0.384
+CDB 2025-08-27 ours=2.970 ref=2.6 diff=+0.370
+CDB 2025-08-28 ours=3.068 ref=2.5 diff=+0.568
+CDB 2025-08-29 ours=2.973 ref=2.7 diff=+0.273
+CDB 2025-08-30 ours=3.403 ref=3.1 diff=+0.303
+CDB 2025-08-31 ours=3.748 ref=3.4 diff=+0.348
+CDB 2025-09-01 ours=2.799 ref=2.5 diff=+0.299
+CDB 2025-09-02 ours=2.773 ref=2.5 diff=+0.273
+CDB 2025-09-03 ours=3.512 ref=3.3 diff=+0.212
+CDB 2025-09-04 ours=2.494 ref=2.3 diff=+0.194
+CDB 2025-09-05 ours=2.346 ref=2.1 diff=+0.246
+CDB 2025-09-06 ours=2.266 ref=2.1 diff=+0.166
+CDB 2025-09-07 ours=3.127 ref=2.9 diff=+0.227
+CDB 2025-09-08 ours=2.521 ref=2.3 diff=+0.221
+CDB 2025-09-09 ours=3.391 ref=3.2 diff=+0.191
+CDB 2025-09-10 ours=3.101 ref=3.0 diff=+0.101
+CDB 2025-09-11 ours=2.919 ref=2.8 diff=+0.119
+CDB 2025-09-12 ours=3.257 ref=3.1 diff=+0.157
+CDB 2025-09-13 ours=3.703 ref=3.5 diff=+0.203
+CDB 2025-09-14 ours=2.836 ref=2.7 diff=+0.136
+CDB 2025-09-15 ours=2.150 ref=2.1 diff=+0.050
+CDB 2025-09-16 ours=2.467 ref=2.4 diff=+0.067
+CDB 2025-09-17 ours=2.555 ref=2.5 diff=+0.055
+CDB 2025-09-18 ours=2.591 ref=2.6 diff=-0.009
+CDB 2025-09-19 ours=3.123 ref=3.1 diff=+0.023
+CDB 2025-09-20 ours=3.113 ref=3.1 diff=+0.013
+CDB 2025-09-21 ours=5.156 ref=5.2 diff=-0.044
+CDB 2025-09-22 ours=4.810 ref=4.8 diff=+0.010
+CDB 2025-09-23 ours=4.777 ref=4.8 diff=-0.023
+CDB 2025-09-24 ours=2.944 ref=3.0 diff=-0.056
+CDB 2025-09-25 ours=2.937 ref=3.0 diff=-0.063
+CDB 2025-09-26 ours=3.027 ref=3.1 diff=-0.073
+CDB 2025-09-27 ours=3.320 ref=3.4 diff=-0.080
+CDB 2025-09-28 ours=2.802 ref=2.9 diff=-0.098
+CDB 2025-09-29 ours=2.845 ref=3.1 diff=-0.255
+CDB 2025-09-30 ours=3.721 ref=4.0 diff=-0.279
+CDB 2025-10-01 ours=2.877 ref=3.1 diff=-0.223
+CDB 2025-10-02 ours=2.399 ref=2.6 diff=-0.201
+CDB 2025-10-03 ours=3.331 ref=3.6 diff=-0.269
+CDB 2025-10-04 ours=3.618 ref=3.8 diff=-0.182
+CDB 2025-10-05 ours=3.066 ref=3.3 diff=-0.234
+CDB 2025-10-06 ours=4.221 ref=4.5 diff=-0.279
+CDB 2025-10-07 ours=3.316 ref=3.7 diff=-0.384
+CDB 2025-10-08 ours=3.944 ref=4.2 diff=-0.256
+CDB 2025-10-09 ours=4.033 ref=4.4 diff=-0.367
+CDB 2025-10-10 ours=2.655 ref=3.0 diff=-0.345
+CDB 2025-10-11 ours=3.865 ref=4.3 diff=-0.435
+CDB 2025-10-12 ours=3.728 ref=4.1 diff=-0.372
+CDB 2025-10-13 ours=5.006 ref=5.3 diff=-0.294
+CDB 2025-10-14 ours=3.418 ref=4.0 diff=-0.582
+CDB 2025-10-15 ours=4.474 ref=5.0 diff=-0.526
+CDB 2025-10-16 ours=4.832 ref=5.3 diff=-0.468
+CDB 2025-10-17 ours=4.706 ref=5.1 diff=-0.394
+CDB 2025-10-18 ours=2.975 ref=3.4 diff=-0.425
+CDB 2025-10-19 ours=4.250 ref=4.8 diff=-0.550
+CDB 2025-10-20 ours=4.700 ref=5.2 diff=-0.500
+CDB 2025-10-21 ours=3.219 ref=3.9 diff=-0.681
+CDB 2025-10-22 ours=3.343 ref=4.0 diff=-0.657
+CDB 2025-10-23 ours=4.187 ref=4.5 diff=-0.313
+CDB 2025-10-24 ours=3.247 ref=3.8 diff=-0.553
+CDB 2025-10-25 ours=4.112 ref=4.5 diff=-0.388
+CDB 2025-10-26 ours=2.639 ref=3.2 diff=-0.561
+CDB 2025-10-27 ours=2.948 ref=3.4 diff=-0.452
+CDB 2025-10-28 ours=3.720 ref=4.1 diff=-0.380
+CDB 2025-10-29 ours=2.337 ref=3.1 diff=-0.763
+CDB 2025-10-30 ours=2.669 ref=3.4 diff=-0.731
+CDB 2025-10-31 ours=2.653 ref=3.4 diff=-0.747
+CDB 2025-11-01 ours=3.541 ref=4.2 diff=-0.659
+CDB 2025-11-02 ours=4.009 ref=4.4 diff=-0.391
+CDB 2025-11-03 ours=4.155 ref=4.8 diff=-0.645
+CDB 2025-11-04 ours=4.067 ref=4.4 diff=-0.333
+CDB 2025-11-05 ours=2.927 ref=3.7 diff=-0.773
+CDB 2025-11-06 ours=5.750 ref=6.1 diff=-0.350
+CDB 2025-11-07 ours=4.814 ref=5.1 diff=-0.286
+CDB 2025-11-08 ours=3.959 ref=4.5 diff=-0.541
+CDB 2025-11-09 ours=3.165 ref=3.7 diff=-0.535
+CDB 2025-11-10 ours=4.600 ref=4.9 diff=-0.300
+CDB 2025-11-11 ours=3.336 ref=4.1 diff=-0.764
+CDB 2025-11-12 ours=2.133 ref=3.1 diff=-0.967
+CDB 2025-11-13 ours=3.139 ref=4.0 diff=-0.861
+CDB 2025-11-14 ours=4.011 ref=4.6 diff=-0.589
+CDB 2025-11-15 ours=4.108 ref=4.8 diff=-0.692
+CDB 2025-11-16 ours=2.873 ref=3.8 diff=-0.927
+CDB 2025-11-17 ours=4.483 ref=5.0 diff=-0.517
+CDB 2025-11-18 ours=4.509 ref=5.0 diff=-0.491
+CDB 2025-11-19 ours=5.293 ref=5.7 diff=-0.407
+CDB 2025-11-20 ours=3.829 ref=4.5 diff=-0.671
+CDB 2025-11-21 ours=4.118 ref=4.9 diff=-0.782
+CDB 2025-11-22 ours=4.981 ref=5.4 diff=-0.419
+CDB 2025-11-23 ours=4.174 ref=4.8 diff=-0.626
+CDB 2025-11-24 ours=4.632 ref=5.1 diff=-0.468
+CDB 2025-11-25 ours=3.431 ref=4.2 diff=-0.769
+CDB 2025-11-26 ours=4.982 ref=5.4 diff=-0.418
+CDB 2025-11-27 ours=4.957 ref=5.4 diff=-0.443
+CDB 2025-11-28 ours=4.497 ref=5.2 diff=-0.703
+CDB 2025-11-29 ours=4.985 ref=5.6 diff=-0.615
+CDB 2025-11-30 ours=5.117 ref=5.6 diff=-0.483
+CDB 2025-12-01 ours=6.795 ref=7.4 diff=-0.605
+CDB 2025-12-02 ours=4.369 ref=5.2 diff=-0.831
+CDB 2025-12-03 ours=5.543 ref=6.2 diff=-0.657
+CDB 2025-12-04 ours=5.361 ref=6.1 diff=-0.739
+CDB 2025-12-05 ours=6.540 ref=6.8 diff=-0.260
+CDB 2025-12-06 ours=4.614 ref=5.2 diff=-0.586
+CDB 2025-12-07 ours=5.568 ref=6.0 diff=-0.432
+CDB 2025-12-08 ours=3.794 ref=4.6 diff=-0.806
+CDB 2025-12-09 ours=5.156 ref=5.6 diff=-0.444
+CDB 2025-12-10 ours=5.665 ref=6.1 diff=-0.435
+CDB 2025-12-11 ours=4.374 ref=5.2 diff=-0.826
+CDB 2025-12-12 ours=5.829 ref=6.2 diff=-0.371
+CDB 2025-12-13 ours=4.425 ref=5.1 diff=-0.675
+CDB 2025-12-14 ours=4.960 ref=5.5 diff=-0.540
+CDB 2025-12-15 ours=4.116 ref=4.9 diff=-0.784
+CDB 2025-12-16 ours=4.619 ref=5.3 diff=-0.681
+CDB 2025-12-17 ours=5.080 ref=5.5 diff=-0.420
+CDB 2025-12-18 ours=5.078 ref=5.5 diff=-0.422
+CDB 2025-12-19 ours=5.152 ref=5.5 diff=-0.348
+CDB 2025-12-20 ours=3.821 ref=4.7 diff=-0.879
+CDB 2025-12-21 ours=4.966 ref=5.4 diff=-0.434
+CDB 2025-12-22 ours=6.007 ref=6.5 diff=-0.493
+CDB 2025-12-23 ours=4.702 ref=5.4 diff=-0.698
+CDB 2025-12-24 ours=5.276 ref=5.9 diff=-0.624
+CDB 2025-12-25 ours=5.078 ref=5.8 diff=-0.722
+CDB 2025-12-26 ours=6.114 ref=6.3 diff=-0.186
+CDB 2025-12-27 ours=4.784 ref=5.3 diff=-0.516
+CDB 2025-12-28 ours=4.132 ref=4.9 diff=-0.768
+CDB 2025-12-29 ours=4.680 ref=5.2 diff=-0.520
+CDB 2025-12-30 ours=5.064 ref=5.5 diff=-0.436
+CDB 2025-12-31 ours=5.436 ref=5.9 diff=-0.464
+[?2004hroot@98254c38-6d92-484a-af3d-75f7f6376daa:/app# sed -n '60,220p' docs/METHOD.md
+[?2004l## 3. Station register and raw files
+
+### 3.1 The register (`config/stations.yaml`)
+A YAML file with a list `stations`. Every station has every key below; there are no other forms than the ones listed.
+
+| Key | What it holds |
+|---|---|
+| `id` | station code; the raw file is `<data folder>/<id>.csv` |
+| `name`, `network` | free text, not used in the calculation |
+| `latitude` | see 3.2 |
+| `longitude` | decimal degrees, east positive; not used by the daily method |
+| `elevation_m` | elevation above sea level in metres (z in Eqs. 7 and 37) |
+| `wind_height_m` | height of the anemometer above ground in metres; see 3.3 |
+| `radiation_units` | unit of the `solar_rad` column; see 3.4 |
+| `humidity` | which humidity columns the raw file has; see 3.5 |
+
+### 3.2 Latitude
+Two forms are used:
+- a number: signed decimal degrees, north positive, south negative (`38.42`, `-31.85`);
+- text: unsigned decimal degrees followed directly by the hemisphere letter `N` or `S` (`"36.95N"`, `"34.92S"`).
+  `"34.92S"` is the same place as `-34.92`.
+
+### 3.3 Wind sensor height
+`wind_ms` is the mean daily wind speed at the anemometer, which may be at any height (any positive value of
+`wind_height_m` between 1 m and 20 m; 2, 3 and 10 m are the most common). The equations need u2, the speed at 2 m.
+Convert with the logarithmic wind profile (Eq. 47), for every station:
+
+    u2 = uz * 4.87 / ln(67.8 z_w - 5.42)
+
+where uz is the measured speed and z_w the anemometer height in metres. At 10 m the factor is about 0.748; at 2 m it is
+1.000 (to three decimals).
+
+### 3.4 Radiation units
+- `MJ/m2/day`: daily total incoming solar radiation, already Rs.
+- `W/m2`: daily mean solar irradiance. Multiply by 0.0864 to get Rs in MJ m-2 day-1 (1 W m-2 sustained for a day is
+  86 400 J m-2 = 0.0864 MJ m-2).
+
+### 3.5 Humidity
+- `rh_minmax`: columns `rh_max_pct` and `rh_min_pct` (daily maximum and minimum relative humidity, %); use Eq. 17.
+- `dewpoint`: column `tdew_c` (daily mean dewpoint temperature, deg C); use Eq. 14.
+
+### 3.6 Raw daily files (`<data folder>/<id>.csv`)
+One row per day, no gaps and no missing values. Columns: `date` (YYYY-MM-DD), `tmax_c`, `tmin_c`, the humidity
+column(s) of 3.5, `wind_ms` (m/s at the anemometer height), `solar_rad` (in the station's `radiation_units`).
+
+## 4. Output
+CSV with a header row and the columns `station_id`, `date` (YYYY-MM-DD) and `et0_mm_day`: one row for every station
+and every day in the input. The pipeline writes three decimals.
+[?2004hroot@98254c38-6d92-484a-af3d-75f7f6376daa:/app# echo '===== meta.py ====='; cat et0/meta.py; echo '===== ingest.py ====='; cat et0/ingest.py
+[?2004l===== meta.py =====
+"""Station register: read the stations YAML into Station records (fields are described in /app/docs/METHOD.md)."""
+from dataclasses import dataclass
+
+import yaml
+
+
+@dataclass(frozen=True)
+class Station:
+    station_id: str
+    name: str
+    latitude: float          # decimal degrees, north positive
+    longitude: float
+    elevation_m: float
+    wind_height_m: float
+    radiation_units: str
+    humidity: str
+    network: str
+
+
+def parse_latitude(value):
+    """Latitude in decimal degrees.
+
+    The register holds plain numbers (38.42, -31.85) and, for stations imported from the synop and coast networks,
+    text with a hemisphere letter ("36.95N").
+    """
+    if isinstance(value, (int, float)):
+        return float(value)
+    text = str(value).strip().upper()
+    return float(text.rstrip("NS"))
+
+
+def load_stations(path):
+    with open(path, encoding="utf-8") as f:
+        doc = yaml.safe_load(f)
+    stations = []
+    for rec in doc["stations"]:
+        stations.append(Station(
+            station_id=str(rec["id"]),
+            name=str(rec.get("name", "")),
+            latitude=parse_latitude(rec["latitude"]),
+            longitude=float(rec["longitude"]),
+            elevation_m=float(rec["elevation_m"]),
+            wind_height_m=float(rec["wind_height_m"]),
+            radiation_units=str(rec["radiation_units"]),
+            humidity=str(rec["humidity"]),
+            network=str(rec.get("network", "")),
+        ))
+    return stations
+===== ingest.py =====
+"""Read one station's raw daily file and turn it into the standard daily inputs used by fao56.et0_daily."""
+import os
+
+import pandas as pd
+
+from . import fao56
+
+BASE_COLUMNS = ["date", "tmax_c", "tmin_c", "wind_ms", "solar_rad"]
+HUMIDITY_COLUMNS = {"rh_minmax": ["rh_max_pct", "rh_min_pct"], "dewpoint": ["tdew_c"]}
+
+
+def load_station(station, data_dir):
+    """Return a DataFrame with columns station_id, date, doy, tmax, tmin, ea, u2, rs (standard units)."""
+    path = os.path.join(data_dir, f"{station.station_id}.csv")
+    raw = pd.read_csv(path)
+    if station.humidity not in HUMIDITY_COLUMNS:
+        raise ValueError(f"{station.station_id}: unknown humidity type {station.humidity!r}")
+    missing = [c for c in BASE_COLUMNS + HUMIDITY_COLUMNS[station.humidity] if c not in raw.columns]
+    if missing:
+        raise ValueError(f"{path}: missing columns {missing}")
+
+    dates = pd.to_datetime(raw["date"], format="%Y-%m-%d")
+    df = pd.DataFrame({
+        "station_id": station.station_id,
+        "date": dates.dt.strftime("%Y-%m-%d"),
+        "doy": dates.dt.dayofyear.astype(int),
+        "tmax": raw["tmax_c"].astype(float),
+        "tmin": raw["tmin_c"].astype(float),
+    })
+    if station.humidity == "dewpoint":
+        df["ea"] = fao56.actual_vapour_pressure_dewpoint(raw["tdew_c"].astype(float))
+    else:
+        df["ea"] = fao56.actual_vapour_pressure_rh(df["tmax"], df["tmin"], raw["rh_max_pct"].astype(float),
+                                                   raw["rh_min_pct"].astype(float))
+    df["u2"] = raw["wind_ms"].astype(float)          # m/s at 2 m
+    df["rs"] = raw["solar_rad"].astype(float)        # MJ m-2 day-1
+    return df
+[?2004hroot@98254c38-6d92-484a-af3d-75f7f6376daa:/app# echo '===== fao56.py ====='; cat et0/fao56.py; echo '===== pipeline.py ====='; cat et0/pipeline.py
+[?2004l===== fao56.py =====
+"""FAO-56 Penman-Monteith reference evapotranspiration, daily time step.
+
+Implements the daily procedure of FAO Irrigation and Drainage Paper 56 (Allen et al., 1998), chapters 3 and 4, as
+written up in /app/docs/METHOD.md. Every function works on numpy arrays (one element per day).
+
+Inputs expected by et0_daily (already in standard form):
+    tmax, tmin   daily maximum and minimum air temperature [deg C]
+    u2           mean daily wind speed at 2 m above ground [m/s]
+    rs           incoming solar radiation [MJ m-2 day-1]
+    ea           actual vapour pressure [kPa] (see actual_vapour_pressure_*)
+    doy          day of the year, 1 = 1 January
+    latitude     decimal degrees, north positive, south negative
+    elevation    metres above sea level
+"""
+import numpy as np
+
+SOLAR_CONSTANT = 0.0820        # MJ m-2 min-1
+STEFAN_BOLTZMANN = 4.903e-9    # MJ K-4 m-2 day-1
+ALBEDO = 0.23                  # hypothetical grass reference
+
+
+def atmospheric_pressure(elevation):
+    """Eq. 7, kPa."""
+    return 101.3 * ((293.0 - 0.0065 * np.asarray(elevation, float)) / 293.0) ** 5.26
+
+
+def psychrometric_constant(pressure):
+    """Eq. 8, kPa/degC."""
+    return 0.665e-3 * pressure
+
+
+def saturation_vapour_pressure(t):
+    """Eq. 11, kPa."""
+    t = np.asarray(t, float)
+    return 0.6108 * np.exp(17.27 * t / (t + 237.3))
+
+
+def vapour_pressure_slope(t):
+    """Eq. 13, kPa/degC."""
+    t = np.asarray(t, float)
+    return 4098.0 * saturation_vapour_pressure(t) / (t + 237.3) ** 2
+
+
+def actual_vapour_pressure_rh(tmax, tmin, rh_max, rh_min):
+    """Eq. 17, kPa, from daily maximum and minimum relative humidity [%]."""
+    return (saturation_vapour_pressure(tmin) * np.asarray(rh_max, float) / 100.0
+            + saturation_vapour_pressure(tmax) * np.asarray(rh_min, float) / 100.0) / 2.0
+
+
+def actual_vapour_pressure_dewpoint(tdew):
+    """Eq. 14, kPa, from the daily mean dewpoint temperature [degC]."""
+    return saturation_vapour_pressure(tdew)
+
+
+def extraterrestrial_radiation(latitude, doy):
+    """Eqs. 21-25: Ra [MJ m-2 day-1] and the sunset hour angle ws [rad]."""
+    phi = np.deg2rad(np.asarray(latitude, float))
+    doy = np.asarray(doy, float)
+    dr = 1.0 + 0.033 * np.cos(2.0 * np.pi * doy / 365.0)
+    decl = 0.409 * np.sin(2.0 * np.pi * doy / 365.0 - 1.39)
+    ws = np.arccos(np.clip(-np.tan(phi) * np.tan(decl), -1.0, 1.0))
+    ra = (24.0 * 60.0 / np.pi) * SOLAR_CONSTANT * dr * (
+        ws * np.sin(phi) * np.sin(decl) + np.cos(phi) * np.cos(decl) * np.sin(ws))
+    return ra, ws
+
+
+def daylight_hours(ws):
+    """Eq. 34, hours."""
+    return 24.0 / np.pi * ws
+
+
+def clear_sky_radiation(ra, elevation):
+    """Eq. 37, MJ m-2 day-1."""
+    return (0.75 + 2e-5 * np.asarray(elevation, float)) * ra
+
+
+def net_longwave_radiation(tmax, tmin, ea, rs, rso):
+    """Eq. 39, MJ m-2 day-1. Rs/Rso is limited to 1.0."""
+    rel = np.minimum(np.asarray(rs, float) / rso, 1.0)
+    tk4 = ((np.asarray(tmax, float) + 273.16) ** 4 + (np.asarray(tmin, float) + 273.16) ** 4) / 2.0
+    return STEFAN_BOLTZMANN * tk4 * (0.34 - 0.14 * np.sqrt(ea)) * (1.35 * rel - 0.35)
+
+
+def et0_daily(tmax, tmin, u2, rs, ea, doy, latitude, elevation):
+    """Eq. 6, FAO-56 Penman-Monteith reference evapotranspiration [mm/day]; soil heat flux G = 0 (Eq. 42)."""
+    tmax = np.asarray(tmax, float)
+    tmin = np.asarray(tmin, float)
+    u2 = np.asarray(u2, float)
+    rs = np.asarray(rs, float)
+    ea = np.asarray(ea, float)
+    tmean = (tmax + tmin) / 2.0
+    delta = vapour_pressure_slope(tmean)
+    gamma = psychrometric_constant(atmospheric_pressure(elevation))
+    es = (saturation_vapour_pressure(tmax) + saturation_vapour_pressure(tmin)) / 2.0
+    ra, _ = extraterrestrial_radiation(latitude, doy)
+    rso = clear_sky_radiation(ra, elevation)
+    rns = (1.0 - ALBEDO) * rs
+    rnl = net_longwave_radiation(tmax, tmin, ea, rs, rso)
+    rn = rns - rnl
+    g = 0.0
+    num = 0.408 * delta * (rn - g) + gamma * (900.0 / (tmean + 273.0)) * u2 * (es - ea)
+    den = delta + gamma * (1.0 + 0.34 * u2)
+    return num / den
+===== pipeline.py =====
+"""Daily ET0 for every station in a register.
+
+    python -m et0.pipeline --stations config/stations.yaml --data data/raw --out output/et0.csv
+"""
+import argparse
+import os
+import sys
+
+import pandas as pd
+
+from . import fao56, ingest, meta
+
+
+def run(stations_path, data_dir, out_path):
+    frames = []
+    for st in meta.load_stations(stations_path):
+        df = ingest.load_station(st, data_dir)
+        df["et0_mm_day"] = fao56.et0_daily(df["tmax"], df["tmin"], df["u2"], df["rs"], df["ea"], df["doy"],
+                                           st.latitude, st.elevation_m)
+        frames.append(df[["station_id", "date", "et0_mm_day"]])
+        print(f"{st.station_id}: {len(df)} days, mean ET0 {df['et0_mm_day'].mean():.2f} mm/day")
+    out = pd.concat(frames, ignore_index=True)
+    parent = os.path.dirname(out_path)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+    out.to_csv(out_path, index=False, float_format="%.3f")
+    return out
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--stations", required=True, help="station register (YAML)")
+    ap.add_argument("--data", required=True, help="folder with one <station_id>.csv per station")
+    ap.add_argument("--out", required=True, help="output CSV")
+    args = ap.parse_args(argv)
+    run(args.stations, args.data, args.out)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+[?2004hroot@98254c38-6d92-484a-af3d-75f7f6376daa:/app# python - <<'PY'
+[?2004l[?2004h> import csv, collections, math
+[?2004l[?2004h> ref={}
+[?2004l[?2004h> with open('reference/metservice_et0_2025.csv', newline='') as f:
+[?2004l[?2004h>     for r in csv.DictReader(f): ref[(r['station_id'],r['date'])]=float(r['et0_mm_day'])
+[?2004l[?2004h> with open('/tmp/current-et0.csv', newline='') as f:
+[?2004l[?2004h>     rows=list(csv.DictReader(f))
+[?2004l[?2004h> print('current columns:', list(rows[0]) if rows else None)
+[?2004l[?2004h> print('current rows:', len(rows), 'unique station/day:', len({(r.get('station_id'),r.get('date')) for r in rows}))
+[?2004l[?2004h> g=collections.defaultdict(list)
+[?2004l[?2004h> for r in rows:
+[?2004l[?2004h>     k=(r['station_id'],r['date'])
+[?2004l[?2004h>     if k in ref: g[r['station_id']].append(float(r['et0_mm_day'])-ref[k])
+[?2004l[?2004h> for sid in sorted(g):
+[?2004l[?2004h>     d=g[sid]
+[?2004l[?2004h>     print(f'{sid}: n={len(d)} mean_diff={sum(d)/len(d):+.3f} max_abs={max(map(abs,d)):.3f} within_0.03={sum(abs(x)<=0.03 for x in d)}/{len(d)}')
+[?2004l[?2004h> PY
+[?2004lcurrent columns: ['station_id', 'date', 'et0_mm_day']
+current rows: 2920 unique station/day: 2920
+CDB: n=365 mean_diff=+0.008 max_abs=1.118 within_0.03=10/365
+PAL: n=365 mean_diff=+0.218 max_abs=0.634 within_0.03=0/365
+[?2004hroot@98254c38-6d92-484a-af3d-75f7f6376daa:/app# cat et0/meta.py
+[?2004l"""Station register: read the stations YAML into Station records (fields are described in /app/docs/METHOD.md)."""
+from dataclasses import dataclass
+
+import yaml
+
+
+@dataclass(frozen=True)
+class Station:
+    station_id: str
+    name: str
+    latitude: float          # decimal degrees, north positive
+    longitude: float
+    elevation_m: float
+    wind_height_m: float
+    radiation_units: str
+    humidity: str
+    network: str
+
+
+def parse_latitude(value):
+    """Latitude in decimal degrees.
+
+    The register holds plain numbers (38.42, -31.85) and, for stations imported from the synop and coast networks,
+    text with a hemisphere letter ("36.95N").
+    """
+    if isinstance(value, (int, float)):
+        return float(value)
+    text = str(value).strip().upper()
+    return float(text.rstrip("NS"))
+
+
+def load_stations(path):
+    with open(path, encoding="utf-8") as f:
+        doc = yaml.safe_load(f)
+    stations = []
+    for rec in doc["stations"]:
+        stations.append(Station(
+            station_id=str(rec["id"]),
+            name=str(rec.get("name", "")),
+            latitude=parse_latitude(rec["latitude"]),
+            longitude=float(rec["longitude"]),
+            elevation_m=float(rec["elevation_m"]),
+            wind_height_m=float(rec["wind_height_m"]),
+            radiation_units=str(rec["radiation_units"]),
+            humidity=str(rec["humidity"]),
+            network=str(rec.get("network", "")),
+        ))
+    return stations
+[?2004hroot@98254c38-6d92-484a-af3d-75f7f6376daa:/app# cat et0/ingest.py
+[?2004l"""Read one station's raw daily file and turn it into the standard daily inputs used by fao56.et0_daily."""
+import os
+
+import pandas as pd
+
+from . import fao56
+
+BASE_COLUMNS = ["date", "tmax_c", "tmin_c", "wind_ms", "solar_rad"]
+HUMIDITY_COLUMNS = {"rh_minmax": ["rh_max_pct", "rh_min_pct"], "dewpoint": ["tdew_c"]}
+
+
+def load_station(station, data_dir):
+    """Return a DataFrame with columns station_id, date, doy, tmax, tmin, ea, u2, rs (standard units)."""
+    path = os.path.join(data_dir, f"{station.station_id}.csv")
+    raw = pd.read_csv(path)
+    if station.humidity not in HUMIDITY_COLUMNS:
+        raise ValueError(f"{station.station_id}: unknown humidity type {station.humidity!r}")
+    missing = [c for c in BASE_COLUMNS + HUMIDITY_COLUMNS[station.humidity] if c not in raw.columns]
+    if missing:
+        raise ValueError(f"{path}: missing columns {missing}")
+
+    dates = pd.to_datetime(raw["date"], format="%Y-%m-%d")
+    df = pd.DataFrame({
+        "station_id": station.station_id,
+        "date": dates.dt.strftime("%Y-%m-%d"),
+        "doy": dates.dt.dayofyear.astype(int),
+        "tmax": raw["tmax_c"].astype(float),
+        "tmin": raw["tmin_c"].astype(float),
+    })
+    if station.humidity == "dewpoint":
+        df["ea"] = fao56.actual_vapour_pressure_dewpoint(raw["tdew_c"].astype(float))
+    else:
+        df["ea"] = fao56.actual_vapour_pressure_rh(df["tmax"], df["tmin"], raw["rh_max_pct"].astype(float),
+                                                   raw["rh_min_pct"].astype(float))
+    df["u2"] = raw["wind_ms"].astype(float)          # m/s at 2 m
+    df["rs"] = raw["solar_rad"].astype(float)        # MJ m-2 day-1
+    return df
+[?2004hroot@98254c38-6d92-484a-af3d-75f7f6376daa:/app# cat et0/fao56.py
+[?2004l"""FAO-56 Penman-Monteith reference evapotranspiration, daily time step.
+
+Implements the daily procedure of FAO Irrigation and Drainage Paper 56 (Allen et al., 1998), chapters 3 and 4, as
+written up in /app/docs/METHOD.md. Every function works on numpy arrays (one element per day).
+
+Inputs expected by et0_daily (already in standard form):
+    tmax, tmin   daily maximum and minimum air temperature [deg C]
+    u2           mean daily wind speed at 2 m above ground [m/s]
+    rs           incoming solar radiation [MJ m-2 day-1]
+    ea           actual vapour pressure [kPa] (see actual_vapour_pressure_*)
+    doy          day of the year, 1 = 1 January
+    latitude     decimal degrees, north positive, south negative
+    elevation    metres above sea level
+"""
+import numpy as np
+
+SOLAR_CONSTANT = 0.0820        # MJ m-2 min-1
+STEFAN_BOLTZMANN = 4.903e-9    # MJ K-4 m-2 day-1
+ALBEDO = 0.23                  # hypothetical grass reference
+
+
+def atmospheric_pressure(elevation):
+    """Eq. 7, kPa."""
+    return 101.3 * ((293.0 - 0.0065 * np.asarray(elevation, float)) / 293.0) ** 5.26
+
+
+def psychrometric_constant(pressure):
+    """Eq. 8, kPa/degC."""
+    return 0.665e-3 * pressure
+
+
+def saturation_vapour_pressure(t):
+    """Eq. 11, kPa."""
+    t = np.asarray(t, float)
+    return 0.6108 * np.exp(17.27 * t / (t + 237.3))
+
+
+def vapour_pressure_slope(t):
+    """Eq. 13, kPa/degC."""
+    t = np.asarray(t, float)
+    return 4098.0 * saturation_vapour_pressure(t) / (t + 237.3) ** 2
+
+
+def actual_vapour_pressure_rh(tmax, tmin, rh_max, rh_min):
+    """Eq. 17, kPa, from daily maximum and minimum relative humidity [%]."""
+    return (saturation_vapour_pressure(tmin) * np.asarray(rh_max, float) / 100.0
+            + saturation_vapour_pressure(tmax) * np.asarray(rh_min, float) / 100.0) / 2.0
+
+
+def actual_vapour_pressure_dewpoint(tdew):
+    """Eq. 14, kPa, from the daily mean dewpoint temperature [degC]."""
+    return saturation_vapour_pressure(tdew)
+
+
+def extraterrestrial_radiation(latitude, doy):
+    """Eqs. 21-25: Ra [MJ m-2 day-1] and the sunset hour angle ws [rad]."""
+    phi = np.deg2rad(np.asarray(latitude, float))
+    doy = np.asarray(doy, float)
+    dr = 1.0 + 0.033 * np.cos(2.0 * np.pi * doy / 365.0)
+    decl = 0.409 * np.sin(2.0 * np.pi * doy / 365.0 - 1.39)
+    ws = np.arccos(np.clip(-np.tan(phi) * np.tan(decl), -1.0, 1.0))
+    ra = (24.0 * 60.0 / np.pi) * SOLAR_CONSTANT * dr * (
+        ws * np.sin(phi) * np.sin(decl) + np.cos(phi) * np.cos(decl) * np.sin(ws))
+    return ra, ws
+
+
+def daylight_hours(ws):
+    """Eq. 34, hours."""
+    return 24.0 / np.pi * ws
+
+
+def clear_sky_radiation(ra, elevation):
+    """Eq. 37, MJ m-2 day-1."""
+    return (0.75 + 2e-5 * np.asarray(elevation, float)) * ra
+
+
+def net_longwave_radiation(tmax, tmin, ea, rs, rso):
+    """Eq. 39, MJ m-2 day-1. Rs/Rso is limited to 1.0."""
+    rel = np.minimum(np.asarray(rs, float) / rso, 1.0)
+    tk4 = ((np.asarray(tmax, float) + 273.16) ** 4 + (np.asarray(tmin, float) + 273.16) ** 4) / 2.0
+    return STEFAN_BOLTZMANN * tk4 * (0.34 - 0.14 * np.sqrt(ea)) * (1.35 * rel - 0.35)
+
+
+def et0_daily(tmax, tmin, u2, rs, ea, doy, latitude, elevation):
+    """Eq. 6, FAO-56 Penman-Monteith reference evapotranspiration [mm/day]; soil heat flux G = 0 (Eq. 42)."""
+    tmax = np.asarray(tmax, float)
+    tmin = np.asarray(tmin, float)
+    u2 = np.asarray(u2, float)
+    rs = np.asarray(rs, float)
+    ea = np.asarray(ea, float)
+    tmean = (tmax + tmin) / 2.0
+    delta = vapour_pressure_slope(tmean)
+    gamma = psychrometric_constant(atmospheric_pressure(elevation))
+    es = (saturation_vapour_pressure(tmax) + saturation_vapour_pressure(tmin)) / 2.0
+    ra, _ = extraterrestrial_radiation(latitude, doy)
+    rso = clear_sky_radiation(ra, elevation)
+    rns = (1.0 - ALBEDO) * rs
+    rnl = net_longwave_radiation(tmax, tmin, ea, rs, rso)
+    rn = rns - rnl
+    g = 0.0
+    num = 0.408 * delta * (rn - g) + gamma * (900.0 / (tmean + 273.0)) * u2 * (es - ea)
+    den = delta + gamma * (1.0 + 0.34 * u2)
+    return num / den
+[?2004hroot@98254c38-6d92-484a-af3d-75f7f6376daa:/app# cat et0/pipeline.py
+[?2004l"""Daily ET0 for every station in a register.
+
+    python -m et0.pipeline --stations config/stations.yaml --data data/raw --out output/et0.csv
+"""
+import argparse
+import os
+import sys
+
+import pandas as pd
+
+from . import fao56, ingest, meta
+
+
+def run(stations_path, data_dir, out_path):
+    frames = []
+    for st in meta.load_stations(stations_path):
+        df = ingest.load_station(st, data_dir)
+        df["et0_mm_day"] = fao56.et0_daily(df["tmax"], df["tmin"], df["u2"], df["rs"], df["ea"], df["doy"],
+                                           st.latitude, st.elevation_m)
+        frames.append(df[["station_id", "date", "et0_mm_day"]])
+        print(f"{st.station_id}: {len(df)} days, mean ET0 {df['et0_mm_day'].mean():.2f} mm/day")
+    out = pd.concat(frames, ignore_index=True)
+    parent = os.path.dirname(out_path)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+    out.to_csv(out_path, index=False, float_format="%.3f")
+    return out
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--stations", required=True, help="station register (YAML)")
+    ap.add_argument("--data", required=True, help="folder with one <station_id>.csv per station")
+    ap.add_argument("--out", required=True, help="output CSV")
+    args = ap.parse_args(argv)
+    run(args.stations, args.data, args.out)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+[?2004hroot@98254c38-6d92-484a-af3d-75f7f6376daa:/app# sed -n '60,180p' docs/METHOD.md
+[?2004l## 3. Station register and raw files
+
+### 3.1 The register (`config/stations.yaml`)
+A YAML file with a list `stations`. Every station has every key below; there are no other forms than the ones listed.
+
+| Key | What it holds |
+|---|---|
+| `id` | station code; the raw file is `<data folder>/<id>.csv` |
+| `name`, `network` | free text, not used in the calculation |
+| `latitude` | see 3.2 |
+| `longitude` | decimal degrees, east positive; not used by the daily method |
+| `elevation_m` | elevation above sea level in metres (z in Eqs. 7 and 37) |
+| `wind_height_m` | height of the anemometer above ground in metres; see 3.3 |
+| `radiation_units` | unit of the `solar_rad` column; see 3.4 |
+| `humidity` | which humidity columns the raw file has; see 3.5 |
+
+### 3.2 Latitude
+Two forms are used:
+- a number: signed decimal degrees, north positive, south negative (`38.42`, `-31.85`);
+- text: unsigned decimal degrees followed directly by the hemisphere letter `N` or `S` (`"36.95N"`, `"34.92S"`).
+  `"34.92S"` is the same place as `-34.92`.
+
+### 3.3 Wind sensor height
+`wind_ms` is the mean daily wind speed at the anemometer, which may be at any height (any positive value of
+`wind_height_m` between 1 m and 20 m; 2, 3 and 10 m are the most common). The equations need u2, the speed at 2 m.
+Convert with the logarithmic wind profile (Eq. 47), for every station:
+
+    u2 = uz * 4.87 / ln(67.8 z_w - 5.42)
+
+where uz is the measured speed and z_w the anemometer height in metres. At 10 m the factor is about 0.748; at 2 m it is
+1.000 (to three decimals).
+
+### 3.4 Radiation units
+- `MJ/m2/day`: daily total incoming solar radiation, already Rs.
+- `W/m2`: daily mean solar irradiance. Multiply by 0.0864 to get Rs in MJ m-2 day-1 (1 W m-2 sustained for a day is
+  86 400 J m-2 = 0.0864 MJ m-2).
+
+### 3.5 Humidity
+- `rh_minmax`: columns `rh_max_pct` and `rh_min_pct` (daily maximum and minimum relative humidity, %); use Eq. 17.
+- `dewpoint`: column `tdew_c` (daily mean dewpoint temperature, deg C); use Eq. 14.
+
+### 3.6 Raw daily files (`<data folder>/<id>.csv`)
+One row per day, no gaps and no missing values. Columns: `date` (YYYY-MM-DD), `tmax_c`, `tmin_c`, the humidity
+column(s) of 3.5, `wind_ms` (m/s at the anemometer height), `solar_rad` (in the station's `radiation_units`).
+
+## 4. Output
+CSV with a header row and the columns `station_id`, `date` (YYYY-MM-DD) and `et0_mm_day`: one row for every station
+and every day in the input. The pipeline writes three decimals.
+[?2004hroot@98254c38-6d92-484a-af3d-75f7f6376daa:/app# echo '===== et0/meta.py ====='; nl -ba et0/meta.py
+[?2004l===== et0/meta.py =====
+     1	"""Station register: read the stations YAML into Station records (fields are described in /app/docs/METHOD.md)."""
+     2	from dataclasses import dataclass
+     3	
+     4	import yaml
+     5	
+     6	
+     7	@dataclass(frozen=True)
+     8	class Station:
+     9	    station_id: str
+    10	    name: str
+    11	    latitude: float          # decimal degrees, north positive
+    12	    longitude: float
+    13	    elevation_m: float
+    14	    wind_height_m: float
+    15	    radiation_units: str
+    16	    humidity: str
+    17	    network: str
+    18	
+    19	
+    20	def parse_latitude(value):
+    21	    """Latitude in decimal degrees.
+    22	
+    23	    The register holds plain numbers (38.42, -31.85) and, for stations imported from the synop and coast networks,
+    24	    text with a hemisphere letter ("36.95N").
+    25	    """
+    26	    if isinstance(value, (int, float)):
+    27	        return float(value)
+    28	    text = str(value).strip().upper()
+    29	    return float(text.rstrip("NS"))
+    30	
+    31	
+    32	def load_stations(path):
+    33	    with open(path, encoding="utf-8") as f:
+    34	        doc = yaml.safe_load(f)
+    35	    stations = []
+    36	    for rec in doc["stations"]:
+    37	        stations.append(Station(
+    38	            station_id=str(rec["id"]),
+    39	            name=str(rec.get("name", "")),
+    40	            latitude=parse_latitude(rec["latitude"]),
+    41	            longitude=float(rec["longitude"]),
+    42	            elevation_m=float(rec["elevation_m"]),
+    43	            wind_height_m=float(rec["wind_height_m"]),
+    44	            radiation_units=str(rec["radiation_units"]),
+    45	            humidity=str(rec["humidity"]),
+    46	            network=str(rec.get("network", "")),
+    47	        ))
+    48	    return stations
+[?2004hroot@98254c38-6d92-484a-af3d-75f7f6376daa:/app# nl -ba et0/ingest.py
+[?2004l     1	"""Read one station's raw daily file and turn it into the standard daily inputs used by fao56.et0_daily."""
+     2	import os
+     3	
+     4	import pandas as pd
+     5	
+     6	from . import fao56
+     7	
+     8	BASE_COLUMNS = ["date", "tmax_c", "tmin_c", "wind_ms", "solar_rad"]
+     9	HUMIDITY_COLUMNS = {"rh_minmax": ["rh_max_pct", "rh_min_pct"], "dewpoint": ["tdew_c"]}
+    10	
+    11	
+    12	def load_station(station, data_dir):
+    13	    """Return a DataFrame with columns station_id, date, doy, tmax, tmin, ea, u2, rs (standard units)."""
+    14	    path = os.path.join(data_dir, f"{station.station_id}.csv")
+    15	    raw = pd.read_csv(path)
+    16	    if station.humidity not in HUMIDITY_COLUMNS:
+    17	        raise ValueError(f"{station.station_id}: unknown humidity type {station.humidity!r}")
+    18	    missing = [c for c in BASE_COLUMNS + HUMIDITY_COLUMNS[station.humidity] if c not in raw.columns]
+    19	    if missing:
+    20	        raise ValueError(f"{path}: missing columns {missing}")
+    21	
+    22	    dates = pd.to_datetime(raw["date"], format="%Y-%m-%d")
+    23	    df = pd.DataFrame({
+    24	        "station_id": station.station_id,
+    25	        "date": dates.dt.strftime("%Y-%m-%d"),
+    26	        "doy": dates.dt.dayofyear.astype(int),
+    27	        "tmax": raw["tmax_c"].astype(float),
+    28	        "tmin": raw["tmin_c"].astype(float),
+    29	    })
+    30	    if station.humidity == "dewpoint":
+    31	        df["ea"] = fao56.actual_vapour_pressure_dewpoint(raw["tdew_c"].astype(float))
+    32	    else:
+    33	        df["ea"] = fao56.actual_vapour_pressure_rh(df["tmax"], df["tmin"], raw["rh_max_pct"].astype(float),
+    34	                                                   raw["rh_min_pct"].astype(float))
+    35	    df["u2"] = raw["wind_ms"].astype(float)          # m/s at 2 m
+    36	    df["rs"] = raw["solar_rad"].astype(float)        # MJ m-2 day-1
+    37	    return df
+[?2004hroot@98254c38-6d92-484a-af3d-75f7f6376daa:/app# nl -ba et0/fao56.py
+[?2004l     1	"""FAO-56 Penman-Monteith reference evapotranspiration, daily time step.
+     2	
+     3	Implements the daily procedure of FAO Irrigation and Drainage Paper 56 (Allen et al., 1998), chapters 3 and 4, as
+     4	written up in /app/docs/METHOD.md. Every function works on numpy arrays (one element per day).
+     5	
+     6	Inputs expected by et0_daily (already in standard form):
+     7	    tmax, tmin   daily maximum and minimum air temperature [deg C]
+     8	    u2           mean daily wind speed at 2 m above ground [m/s]
+     9	    rs           incoming solar radiation [MJ m-2 day-1]
+    10	    ea           actual vapour pressure [kPa] (see actual_vapour_pressure_*)
+    11	    doy          day of the year, 1 = 1 January
+    12	    latitude     decimal degrees, north positive, south negative
+    13	    elevation    metres above sea level
+    14	"""
+    15	import numpy as np
+    16	
+    17	SOLAR_CONSTANT = 0.0820        # MJ m-2 min-1
+    18	STEFAN_BOLTZMANN = 4.903e-9    # MJ K-4 m-2 day-1
+    19	ALBEDO = 0.23                  # hypothetical grass reference
+    20	
+    21	
+    22	def atmospheric_pressure(elevation):
+    23	    """Eq. 7, kPa."""
+    24	    return 101.3 * ((293.0 - 0.0065 * np.asarray(elevation, float)) / 293.0) ** 5.26
+    25	
+    26	
+    27	def psychrometric_constant(pressure):
+    28	    """Eq. 8, kPa/degC."""
+    29	    return 0.665e-3 * pressure
+    30	
+    31	
+    32	def saturation_vapour_pressure(t):
+    33	    """Eq. 11, kPa."""
+    34	    t = np.asarray(t, float)
+    35	    return 0.6108 * np.exp(17.27 * t / (t + 237.3))
+    36	
+    37	
+    38	def vapour_pressure_slope(t):
+    39	    """Eq. 13, kPa/degC."""
+    40	    t = np.asarray(t, float)
+    41	    return 4098.0 * saturation_vapour_pressure(t) / (t + 237.3) ** 2
+    42	
+    43	
+    44	def actual_vapour_pressure_rh(tmax, tmin, rh_max, rh_min):
+    45	    """Eq. 17, kPa, from daily maximum and minimum relative humidity [%]."""
+    46	    return (saturation_vapour_pressure(tmin) * np.asarray(rh_max, float) / 100.0
+    47	            + saturation_vapour_pressure(tmax) * np.asarray(rh_min, float) / 100.0) / 2.0
+    48	
+    49	
+    50	def actual_vapour_pressure_dewpoint(tdew):
+    51	    """Eq. 14, kPa, from the daily mean dewpoint temperature [degC]."""
+    52	    return saturation_vapour_pressure(tdew)
+    53	
+    54	
+    55	def extraterrestrial_radiation(latitude, doy):
+    56	    """Eqs. 21-25: Ra [MJ m-2 day-1] and the sunset hour angle ws [rad]."""
+    57	    phi = np.deg2rad(np.asarray(latitude, float))
+    58	    doy = np.asarray(doy, float)
+    59	    dr = 1.0 + 0.033 * np.cos(2.0 * np.pi * doy / 365.0)
+    60	    decl = 0.409 * np.sin(2.0 * np.pi * doy / 365.0 - 1.39)
+    61	    ws = np.arccos(np.clip(-np.tan(phi) * np.tan(decl), -1.0, 1.0))
+    62	    ra = (24.0 * 60.0 / np.pi) * SOLAR_CONSTANT * dr * (
+    63	        ws * np.sin(phi) * np.sin(decl) + np.cos(phi) * np.cos(decl) * np.sin(ws))
+    64	    return ra, ws
+    65	
+    66	
+    67	def daylight_hours(ws):
+    68	    """Eq. 34, hours."""
+    69	    return 24.0 / np.pi * ws
+    70	
+    71	
+    72	def clear_sky_radiation(ra, elevation):
+    73	    """Eq. 37, MJ m-2 day-1."""
+    74	    return (0.75 + 2e-5 * np.asarray(elevation, float)) * ra
+    75	
+    76	
+    77	def net_longwave_radiation(tmax, tmin, ea, rs, rso):
+    78	    """Eq. 39, MJ m-2 day-1. Rs/Rso is limited to 1.0."""
+    79	    rel = np.minimum(np.asarray(rs, float) / rso, 1.0)
+    80	    tk4 = ((np.asarray(tmax, float) + 273.16) ** 4 + (np.asarray(tmin, float) + 273.16) ** 4) / 2.0
+    81	    return STEFAN_BOLTZMANN * tk4 * (0.34 - 0.14 * np.sqrt(ea)) * (1.35 * rel - 0.35)
+    82	
+    83	
+    84	def et0_daily(tmax, tmin, u2, rs, ea, doy, latitude, elevation):
+    85	    """Eq. 6, FAO-56 Penman-Monteith reference evapotranspiration [mm/day]; soil heat flux G = 0 (Eq. 42)."""
+    86	    tmax = np.asarray(tmax, float)
+    87	    tmin = np.asarray(tmin, float)
+    88	    u2 = np.asarray(u2, float)
+    89	    rs = np.asarray(rs, float)
+    90	    ea = np.asarray(ea, float)
+    91	    tmean = (tmax + tmin) / 2.0
+    92	    delta = vapour_pressure_slope(tmean)
+    93	    gamma = psychrometric_constant(atmospheric_pressure(elevation))
+    94	    es = (saturation_vapour_pressure(tmax) + saturation_vapour_pressure(tmin)) / 2.0
+    95	    ra, _ = extraterrestrial_radiation(latitude, doy)
+    96	    rso = clear_sky_radiation(ra, elevation)
+    97	    rns = (1.0 - ALBEDO) * rs
+    98	    rnl = net_longwave_radiation(tmax, tmin, ea, rs, rso)
+    99	    rn = rns - rnl
+   100	    g = 0.0
+   101	    num = 0.408 * delta * (rn - g) + gamma * (900.0 / (tmean + 273.0)) * u2 * (es - ea)
+   102	    den = delta + gamma * (1.0 + 0.34 * u2)
+   103	    return num / den
+[?2004hroot@98254c38-6d92-484a-af3d-75f7f6376daa:/app# nl -ba et0/pipeline.py
+[?2004l     1	"""Daily ET0 for every station in a register.
+     2	
+     3	    python -m et0.pipeline --stations config/stations.yaml --data data/raw --out output/et0.csv
+     4	"""
+     5	import argparse
+     6	import os
+     7	import sys
+     8	
+     9	import pandas as pd
+    10	
+    11	from . import fao56, ingest, meta
+    12	
+    13	
+    14	def run(stations_path, data_dir, out_path):
+    15	    frames = []
+    16	    for st in meta.load_stations(stations_path):
+    17	        df = ingest.load_station(st, data_dir)
+    18	        df["et0_mm_day"] = fao56.et0_daily(df["tmax"], df["tmin"], df["u2"], df["rs"], df["ea"], df["doy"],
+    19	                                           st.latitude, st.elevation_m)
+    20	        frames.append(df[["station_id", "date", "et0_mm_day"]])
+    21	        print(f"{st.station_id}: {len(df)} days, mean ET0 {df['et0_mm_day'].mean():.2f} mm/day")
+    22	    out = pd.concat(frames, ignore_index=True)
+    23	    parent = os.path.dirname(out_path)
+    24	    if parent:
+    25	        os.makedirs(parent, exist_ok=True)
+    26	    out.to_csv(out_path, index=False, float_format="%.3f")
+    27	    return out
+    28	
+    29	
+    30	def main(argv=None):
+    31	    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    32	    ap.add_argument("--stations", required=True, help="station register (YAML)")
+    33	    ap.add_argument("--data", required=True, help="folder with one <station_id>.csv per station")
+    34	    ap.add_argument("--out", required=True, help="output CSV")
+    35	    args = ap.parse_args(argv)
+    36	    run(args.stations, args.data, args.out)
+    37	    return 0
+    38	
+    39	
+    40	if __name__ == "__main__":
+    41	    sys.exit(main())
+[?2004hroot@98254c38-6d92-484a-af3d-75f7f6376daa:/app# python - <<'PY'
+[?2004lstation_id}: wind_height_m must be positive")
+    wind_height = float(station.wind_height_m)
+    wind_factor = 4.87 / math.log(67.8 * wind_height - 5.42)
+    df["u2"] = raw["wind_ms"].astype(float) * wind_factor
+
+    if station.radiation_units == "MJ/m2/day":
+        df["rs"] = raw["solar_rad"].astype(float)
+    elif station.radiation_units == "W/m2":
+        # Daily mean irradiance to a daily total: 1 W/m2 over a day is 0.0864 MJ/m2.
+        df["rs"] = raw["solar_rad"].astype(float) * 0.0864
+    else:
+        raise ValueError(f"{station.station_id}: unknown radiation units {station.radiation_units!r}")
+    return df
+'''
+if old not in s:
+    raise SystemExit('expected ingest.py block not found')
+p.write_text(s.replace(old, new))
+PY
+[?2004h> from pathlib import Path
+[?2004l[?2004h> p = Path('et0/meta.py')
+[?2004l[?2004h> s = p.read_text()
+[?2004l[?2004h> old = '''    if isinstance(value, (int, float)):
+[?2004l[?2004h>         return float(value)
+[?2004l[?2004h>     text = str(value).strip().upper()
+[?2004l[?2004h>     return float(text.rstrip("NS"))
+[?2004l[?2004h> '''
+[?2004l[?2004h> new = '''    if isinstance(value, (int, float)):
+[?2004l[?2004h>         return float(value)
+[?2004l[?2004h>     text = str(value).strip().upper()
+[?2004l[?2004h>     if text.endswith("N"):
+[?2004l[?2004h>         return float(text[:-1])
+[?2004l[?2004h>     if text.endswith("S"):
+[?2004l[?2004h>         return -float(text[:-1])
+[?2004l[?2004h>     return float(text)
+[?2004l[?2004h> '''
+[?2004l[?2004h> if old not in s:
+[?2004l[?2004h>     raise SystemExit('expected meta.py block not found')
+[?2004l[?2004h> p.write_text(s.replace(old, new))
+[?2004l[?2004h> 
+[?2004l[?2004h> p = Path('et0/ingest.py')
+[?2004l[?2004h> s = p.read_text()
+[?2004l[?2004h> s = s.replace('import os\n', 'import math\nimport os\n')
+[?2004l[?2004h> old = '''    df["u2"] = raw["wind_ms"].astype(float)          # m/s at 2 m
+[?2004l[?2004h>     df["rs"] = raw["solar_rad"].astype(float)        # MJ m-2 day-1
+[?2004l[?2004h>     return df
+[?2004l[?2004h> '''
+[?2004l[?2004h> new = '''    # Eq. 47: convert the measured wind speed to the standard 2 m height.
+[?2004l[?2004h>     if station.wind_height_m <= 0:
+[?2004l[?2004h>         raise ValueError(f"{station.station_id}: wind_height_m must be positive")
+[?2004l[?2004h>     wind_height = float(station.wind_height_m)
+[?2004l[?2004h>     wind_factor = 4.87 / math.log(67.8 * wind_height - 5.42)
+[?2004l[?2004h>     df["u2"] = raw["wind_ms"].astype(float) * wind_factor
+[?2004l[?2004h> 
+[?2004l[?2004h>     if station.radiation_units == "MJ/m2/day":
+[?2004l[?2004h>         df["rs"] = raw["solar_rad"].astype(float)
+[?2004l[?2004h>     elif station.radiation_units == "W/m2":
+[?2004l[?2004h>         # Daily mean irradiance to a daily total: 1 W/m2 over a day is 0.0864 MJ/m2.
+[?2004l[?2004h>         df["rs"] = raw["solar_rad"].astype(float) * 0.0864
+[?2004l[?2004h>     else:
+[?2004l[?2004h>         raise ValueError(f"{station.station_id}: unknown radiation units {station.radiation_units!r}")
+[?2004l[?2004h>     return df
+[?2004l[?2004h> '''
+[?2004l[?2004h> if old not in s:
+[?2004l[?2004h>     raise SystemExit('expected ingest.py block not found')
+[?2004l[?2004h> p.write_text(s.replace(old, new))
+[?2004l[?2004h> PY
+[?2004l[?2004hroot@98254c38-6d92-484a-af3d-75f7f6376daa:/app# python -m et0.selfcheck && python -m et0.pipeline --stations config/stations.yaml --data data/raw --out /tmp/fixed-et0.csv
+[?2004lFAO-56 Example 18: Ra=41.09 Rs=22.07 ea=1.409 ET0=3.880 (book 3.88) -> OK
+VNT: 365 days, mean ET0 3.55 mm/day
+PAL: 365 days, mean ET0 2.88 mm/day
+CDB: 365 days, mean ET0 3.59 mm/day
+LGN: 365 days, mean ET0 4.23 mm/day
+RSD: 365 days, mean ET0 3.70 mm/day
+MRS: 365 days, mean ET0 4.01 mm/day
+HLT: 365 days, mean ET0 3.71 mm/day
+ARN: 365 days, mean ET0 3.21 mm/day
+[?2004hroot@98254c38-6d92-484a-af3d-75f7f6376daa:/app# python - <<'PY'
+[?2004l[?2004h> import csv, collections
+[?2004l[?2004h> ref = {}
+[?2004l[?2004h> with open('reference/metservice_et0_2025.csv', newline='') as f:
+[?2004l[?2004h>     for r in csv.DictReader(f):
+[?2004l[?2004h>         ref[(r['station_id'], r['date'])] = float(r['et0_mm_day'])
+[?2004l[?2004h> with open('/tmp/fixed-et0.csv', newline='') as f:
+[?2004l[?2004h>     rows = list(csv.DictReader(f))
+[?2004l[?2004h> g = collections.defaultdict(list)
+[?2004l[?2004h> for r in rows:
+[?2004l[?2004h>     k = (r['station_id'], r['date'])
+[?2004l[?2004h>     if k in ref:
+[?2004l[?2004h>         g[r['station_id']].append(float(r['et0_mm_day']) - ref[k])
+[?2004l[?2004h> print('columns:', list(rows[0]), 'rows:', len(rows), 'unique:', len({(r['station_id'], r['date']) for r in rows}))
+[?2004l[?2004h> for sid, diffs in sorted(g.items()):
+[?2004l[?2004h>     print(f'{sid}: n={len(diffs)} mean={sum(diffs)/len(diffs):+.3f} max_abs={max(map(abs,diffs)):.3f} within_0.03={sum(abs(x)<=0.03 for x in diffs)}/{len(diffs)}')
+[?2004l[?2004h> PY
+[?2004lcolumns: ['station_id', 'date', 'et0_mm_day'] rows: 2920 unique: 2920
+CDB: n=365 mean=+0.001 max_abs=0.050 within_0.03=211/365
+PAL: n=365 mean=+0.001 max_abs=0.050 within_0.03=214/365
+[?2004hroot@98254c38-6d92-484a-af3d-75f7f6376daa:/app# python -m et0.pipeline --stations config/stations.yaml --data data/raw --out output/et0.csv
+[?2004lVNT: 365 days, mean ET0 3.55 mm/day
+PAL: 365 days, mean ET0 2.88 mm/day
+CDB: 365 days, mean ET0 3.59 mm/day
+LGN: 365 days, mean ET0 4.23 mm/day
+RSD: 365 days, mean ET0 3.70 mm/day
+MRS: 365 days, mean ET0 4.01 mm/day
+HLT: 365 days, mean ET0 3.71 mm/day
+ARN: 365 days, mean ET0 3.21 mm/day
+[?2004hroot@98254c38-6d92-484a-af3d-75f7f6376daa:/app# grep -RIn --exclude-dir='__pycache__' '/app' et0 || true; sed -n '1,220p' et0/ingest.py; sed -n '18,40p' et0/meta.py
+[?2004let0/fao56.py:4:written up in /app/docs/METHOD.md. Every function works on numpy arrays (one element per day).
+et0/meta.py:1:"""Station register: read the stations YAML into Station records (fields are described in /app/docs/METHOD.md)."""
+"""Read one station's raw daily file and turn it into the standard daily inputs used by fao56.et0_daily."""
+import math
+import os
+
+import pandas as pd
+
+from . import fao56
+
+BASE_COLUMNS = ["date", "tmax_c", "tmin_c", "wind_ms", "solar_rad"]
+HUMIDITY_COLUMNS = {"rh_minmax": ["rh_max_pct", "rh_min_pct"], "dewpoint": ["tdew_c"]}
+
+
+def load_station(station, data_dir):
+    """Return a DataFrame with columns station_id, date, doy, tmax, tmin, ea, u2, rs (standard units)."""
+    path = os.path.join(data_dir, f"{station.station_id}.csv")
+    raw = pd.read_csv(path)
+    if station.humidity not in HUMIDITY_COLUMNS:
+        raise ValueError(f"{station.station_id}: unknown humidity type {station.humidity!r}")
+    missing = [c for c in BASE_COLUMNS + HUMIDITY_COLUMNS[station.humidity] if c not in raw.columns]
+    if missing:
+        raise ValueError(f"{path}: missing columns {missing}")
+
+    dates = pd.to_datetime(raw["date"], format="%Y-%m-%d")
+    df = pd.DataFrame({
+        "station_id": station.station_id,
+        "date": dates.dt.strftime("%Y-%m-%d"),
+        "doy": dates.dt.dayofyear.astype(int),
+        "tmax": raw["tmax_c"].astype(float),
+        "tmin": raw["tmin_c"].astype(float),
+    })
+    if station.humidity == "dewpoint":
+        df["ea"] = fao56.actual_vapour_pressure_dewpoint(raw["tdew_c"].astype(float))
+    else:
+        df["ea"] = fao56.actual_vapour_pressure_rh(df["tmax"], df["tmin"], raw["rh_max_pct"].astype(float),
+                                                   raw["rh_min_pct"].astype(float))
+    # Eq. 47: convert the measured wind speed to the standard 2 m height.
+    if station.wind_height_m <= 0:
+        raise ValueError(f"{station.station_id}: wind_height_m must be positive")
+    wind_height = float(station.wind_height_m)
+    wind_factor = 4.87 / math.log(67.8 * wind_height - 5.42)
+    df["u2"] = raw["wind_ms"].astype(float) * wind_factor
+
+    if station.radiation_units == "MJ/m2/day":
+        df["rs"] = raw["solar_rad"].astype(float)
+    elif station.radiation_units == "W/m2":
+        # Daily mean irradiance to a daily total: 1 W/m2 over a day is 0.0864 MJ/m2.
+        df["rs"] = raw["solar_rad"].astype(float) * 0.0864
+    else:
+        raise ValueError(f"{station.station_id}: unknown radiation units {station.radiation_units!r}")
+    return df
+
+
+def parse_latitude(value):
+    """Latitude in decimal degrees.
+
+    The register holds plain numbers (38.42, -31.85) and, for stations imported from the synop and coast networks,
+    text with a hemisphere letter ("36.95N").
+    """
+    if isinstance(value, (int, float)):
+        return float(value)
+    text = str(value).strip().upper()
+    if text.endswith("N"):
+        return float(text[:-1])
+    if text.endswith("S"):
+        return -float(text[:-1])
+    return float(text)
+
+
+def load_stations(path):
+    with open(path, encoding="utf-8") as f:
+        doc = yaml.safe_load(f)
+    stations = []
+    for rec in doc["stations"]:
+[?2004hroot@98254c38-6d92-484a-af3d-75f7f6376daa:/app# python - <<'PY'
+[?2004l doy = dt.timetuple().tm_yday
+    phi = math.radians(lat_deg)
+    dr = 1 + 0.033 * math.cos(2 * math.pi * doy / 365)
+    decl = 0.409 * math.sin(2 * math.pi * doy / 365 - 1.39)
+    ws = math.acos(max(-1.0, min(1.0, -math.tan(phi) * math.tan(decl))))
+    ra = (24 * 60 / math.pi) * 0.0820 * dr * (
+        ws * math.sin(phi) * math.sin(decl) + math.cos(phi) * math.cos(decl) * math.sin(ws))
+    rso = (0.75 + 2e-5 * z) * ra
+    rel = min(rs / rso, 1.0)
+    rnl = 4.903e-9 * (((tmax + 273.16) ** 4 + (tmin + 273.16) ** 4) / 2) * (
+        0.34 - 0.14 * math.sqrt(ea)) * (1.35 * rel - 0.35)
+    rn = 0.77 * rs - rnl
+    delta = 4098 * e0(tmean) / (tmean + 237.3) ** 2
+    es = (e0(tmax) + e0(tmin)) / 2
+    return (0.408 * delta * rn + gamma * 900 / (tmean + 273) * u2 * (es - ea)) / (
+        delta + gamma * (1 + 0.34 * u2))
+
+expected = {}
+for st in stations:
+    sid = str(st['id'])
+    with open(f"data/raw/{sid}.csv", newline='') as f:
+        for row in csv.DictReader(f):
+            dt = __import__('datetime').date.fromisoformat(row['date'])
+            expected[(sid, row['date'])] = et0(row, st)
+with open('output/et0.csv', newline='') as f:
+    got = {(r['station_id'], r['date']): float(r['et0_mm_day']) for r in csv.DictReader(f)}
+assert set(got) == set(expected), (len(got), len(expected), set(got) ^ set(expected))
+diffs = [got[k] - expected[k] for k in expected]
+print(f'independent comparison: rows={len(diffs)}, max_abs={max(map(abs,diffs)):.6f}')
+assert max(map(abs, diffs)) < 0.0006
+
+ref = {}
+with open('reference/metservice_et0_2025.csv', newline='') as f:
+    for r in csv.DictReader(f):
+        ref[(r['station_id'], r['date'])] = float(r['et0_mm_day'])
+refdiffs = [got[k] - ref[k] for k in ref]
+print(f'rounded met-service comparison: rows={len(refdiffs)}, min={min(refdiffs):+.3f}, max={max(refdiffs):+.3f}')
+assert all(-0.0500001 <= d <= 0.0500001 for d in refdiffs)
+PY
+[?2004h> import csv, math, yaml
+[?2004l[?2004h> with open('config/stations.yaml') as f:
+[?2004l[?2004h>     stations = yaml.safe_load(f)['stations']
+[?2004l[?2004h> 
+[?2004l[?2004h> def lat(v):
+[?2004l[?2004h>     if isinstance(v, (int, float)):
+[?2004l[?2004h>         return float(v)
+[?2004l[?2004h>     s = str(v).strip().upper()
+[?2004l[?2004h>     return (float(s[:-1]) if s.endswith('N') else -float(s[:-1]) if s.endswith('S') else float(s))
+[?2004l[?2004h> 
+[?2004l[?2004h> def e0(t):
+[?2004l[?2004h>     return 0.6108 * math.exp(17.27 * t / (t + 237.3))
+[?2004l[?2004h> 
+[?2004l[?2004h> def et0(row, st):
+[?2004l[?2004h>     lat_deg = lat(st['latitude'])
+[?2004l[?2004h>     z = float(st['elevation_m'])
+[?2004l[?2004h>     tmax, tmin = float(row['tmax_c']), float(row['tmin_c'])
+[?2004l[?2004h>     tmean = (tmax + tmin) / 2
+[?2004l[?2004h>     zw = float(st['wind_height_m'])
+[?2004l[?2004h>     u2 = float(row['wind_ms']) * 4.87 / math.log(67.8 * zw - 5.42)
+[?2004l[?2004h>     rs = float(row['solar_rad']) * (1.0 if st['radiation_units'] == 'MJ/m2/day' else 0.0864)
+[?2004l[?2004h>     p = 101.3 * ((293 - 0.0065 * z) / 293) ** 5.26
+[?2004l[?2004h>     gamma = 0.665e-3 * p
+[?2004l[?2004h>     if st['humidity'] == 'dewpoint':
+[?2004l[?2004h>         ea = e0(float(row['tdew_c']))
+[?2004l[?2004h>     else:
+[?2004l[?2004h>         ea = (e0(tmin) * float(row['rh_max_pct']) + e0(tmax) * float(row['rh_min_pct'])) / 200
+[?2004l[?2004h>     doy = dt.timetuple().tm_yday
+[?2004l[?2004h>     phi = math.radians(lat_deg)
+[?2004l[?2004h>     dr = 1 + 0.033 * math.cos(2 * math.pi * doy / 365)
+[?2004l[?2004h>     decl = 0.409 * math.sin(2 * math.pi * doy / 365 - 1.39)
+[?2004l[?2004h>     ws = math.acos(max(-1.0, min(1.0, -math.tan(phi) * math.tan(decl))))
+[?2004l[?2004h>     ra = (24 * 60 / math.pi) * 0.0820 * dr * (
+[?2004l[?2004h>         ws * math.sin(phi) * math.sin(decl) + math.cos(phi) * math.cos(decl) * math.sin(ws))
+[?2004l[?2004h>     rso = (0.75 + 2e-5 * z) * ra
+[?2004l[?2004h>     rel = min(rs / rso, 1.0)
+[?2004l[?2004h>     rnl = 4.903e-9 * (((tmax + 273.16) ** 4 + (tmin + 273.16) ** 4) / 2) * (
+[?2004l[?2004h>         0.34 - 0.14 * math.sqrt(ea)) * (1.35 * rel - 0.35)
+[?2004l[?2004h>     rn = 0.77 * rs - rnl
+[?2004l[?2004h>     delta = 4098 * e0(tmean) / (tmean + 237.3) ** 2
+[?2004l[?2004h>     es = (e0(tmax) + e0(tmin)) / 2
+[?2004l[?2004h>     return (0.408 * delta * rn + gamma * 900 / (tmean + 273) * u2 * (es - ea)) / (
+[?2004l[?2004h>         delta + gamma * (1 + 0.34 * u2))
+[?2004l[?2004h> 
+[?2004l[?2004h> expected = {}
+[?2004l[?2004h> for st in stations:
+[?2004l[?2004h>     sid = str(st['id'])
+[?2004l[?2004h>     with open(f"data/raw/{sid}.csv", newline='') as f:
+[?2004l[?2004h>         for row in csv.DictReader(f):
+[?2004l[?2004h>             dt = __import__('datetime').date.fromisoformat(row['date'])
+[?2004l[?2004h>             expected[(sid, row['date'])] = et0(row, st)
+[?2004l[?2004h> with open('output/et0.csv', newline='') as f:
+[?2004l[?2004h>     got = {(r['station_id'], r['date']): float(r['et0_mm_day']) for r in csv.DictReader(f)}
+[?2004l[?2004h> assert set(got) == set(expected), (len(got), len(expected), set(got) ^ set(expected))
+[?2004l[?2004h> diffs = [got[k] - expected[k] for k in expected]
+[?2004l[?2004h> print(f'independent comparison: rows={len(diffs)}, max_abs={max(map(abs,diffs)):.6f}')
+[?2004l[?2004h> assert max(map(abs, diffs)) < 0.0006
+[?2004l[?2004h> 
+[?2004l[?2004h> ref = {}
+[?2004l[?2004h> with open('reference/metservice_et0_2025.csv', newline='') as f:
+[?2004l[?2004h>     for r in csv.DictReader(f):
+[?2004l[?2004h>         ref[(r['station_id'], r['date'])] = float(r['et0_mm_day'])
+[?2004l[?2004h> refdiffs = [got[k] - ref[k] for k in ref]
+[?2004l[?2004h> print(f'rounded met-service comparison: rows={len(refdiffs)}, min={min(refdiffs):+.3f}, max={max(refdiffs):+.3f}')
+[?2004l[?2004h> assert all(-0.0500001 <= d <= 0.0500001 for d in refdiffs)
+[?2004l[?2004h> PY
+[?2004lindependent comparison: rows=2920, max_abs=0.000500
+rounded met-service comparison: rows=730, min=-0.050, max=+0.050
+[?2004hroot@98254c38-6d92-484a-af3d-75f7f6376daa:/app# rm -rf /tmp/et0-relocation-test && mkdir -p /tmp/et0-relocation-test/data /tmp/et0-relocation-test/out && cp -a et0 /tmp/et0-relocation-test/ && cp config/stations.yaml /tmp/et0-relocation-test/stations.yaml && cp data/raw/PAL.csv data/raw/CDB.csv /tmp/et0-relocation-test/data/ && cd /tmp/et0-relocation-test && python -m et0.pipeline --stations stations.yaml --data data --out out/et0.csv && cd /app && python - <<'PY'
+[?2004l[?2004h> import csv
+[?2004l[?2004h> a = {(r['station_id'], r['date']): r['et0_mm_day'] for r in csv.DictReader(open('/tmp/et0-relocation-test/out/et0.csv'))}
+[?2004l[?2004h> b = {(r['station_id'], r['date']): r['et0_mm_day'] for r in csv.DictReader(open('/app/output/et0.csv'))}
+[?2004l[?2004h> a = {k: v for k, v in a.items() if k[0] in ('PAL', 'CDB')}
+[?2004l[?2004h> assert a == {k: b[k] for k in a}
+[?2004l[?2004h> print('relocation test: rows=', len(a), 'values identical')
+[?2004l[?2004h> PY
+[?2004lTraceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/tmp/et0-relocation-test/et0/pipeline.py", line 41, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/tmp/et0-relocation-test/et0/pipeline.py", line 36, in main
+    run(args.stations, args.data, args.out)
+  File "/tmp/et0-relocation-test/et0/pipeline.py", line 17, in run
+    df = ingest.load_station(st, data_dir)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/et0-relocation-test/et0/ingest.py", line 16, in load_station
+    raw = pd.read_csv(path)
+          ^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1866, in read_csv
+    return _read(filepath_or_buffer, kwds)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 423, in _read
+    parser = TextFileReader(filepath_or_buffer, **kwds)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 2721, in __init__
+    self._engine = self._make_engine(f, self.engine)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 2988, in _make_engine
+    self.handles = get_handle(
+                   ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/common.py", line 948, in get_handle
+    handle = open(handle, ioargs.mode)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'data/VNT.csv'
+[?2004hroot@98254c38-6d92-484a-af3d-75f7f6376daa:/tmp/et0-relocation-test# cd /app && python - <<'PY'
+[?2004l[?2004h> from pathlib import Path
+[?2004l[?2004h> import yaml
+[?2004l[?2004h> src = yaml.safe_load(Path('/app/config/stations.yaml').read_text())
+[?2004l[?2004h> src['stations'] = [s for s in src['stations'] if s['id'] in ('PAL', 'CDB')]
+[?2004l[?2004h> Path('/tmp/et0-relocation-test/stations-two.yaml').write_text(yaml.safe_dump(src, sort_keys=False))
+[?2004l[?2004h> PY
+[?2004l[?2004hroot@98254c38-6d92-484a-af3d-75f7f6376daa:/app# rm -rf /tmp/et0-relocation-test/out && mkdir /tmp/et0-relocation-test/out && chmod -R a+rX /tmp/et0-relocation-test && chmod a+rwX /tmp/et0-relocation-test/out
+[?2004l[?2004hroot@98254c38-6d92-484a-af3d-75f7f6376daa:/app# runuser -u nobody -- sh -c 'cd /tmp/et0-relocation-test && python -m et0.pipeline --stations stations-two.yaml --data data --out out/et0.csv'
+[?2004lPAL: 365 days, mean ET0 2.88 mm/day
+CDB: 365 days, mean ET0 3.59 mm/day
+[?2004hroot@98254c38-6d92-484a-af3d-75f7f6376daa:/app# cd /app && python - <<'PY'
+[?2004l[?2004h> import csv
+[?2004l[?2004h> p = '/tmp/et0-relocation-test/out/et0.csv'
+[?2004l[?2004h> a = {(r['station_id'], r['date']): r['et0_mm_day'] for r in csv.DictReader(open(p, newline=''))}
+[?2004l[?2004h> b = {(r['station_id'], r['date']): r['et0_mm_day'] for r in csv.DictReader(open('/app/output/et0.csv', newline=''))}
+[?2004l[?2004h> assert len(a) == 730 and a == {k: b[k] for k in a}
+[?2004l[?2004h> print('relocation/unprivileged test: rows=', len(a), 'values identical')
+[?2004l[?2004h> PY
+[?2004lrelocation/unprivileged test: rows= 730 values identical
+[?2004hroot@98254c38-6d92-484a-af3d-75f7f6376daa:/app# python - <<'PY'
+[?2004l[?2004h> import csv, collections
+[?2004l[?2004h> ref = {}
+[?2004l[?2004h> with open('reference/metservice_et0_2025.csv', newline='') as f:
+[?2004l[?2004h>     for r in csv.DictReader(f): ref[(r['station_id'], r['date'])] = float(r['et0_mm_day'])
+[?2004l[?2004h> rows = list(csv.DictReader(open('output/et0.csv', newline='')))
+[?2004l[?2004h> d = {sid: [float(r['et0_mm_day']) - ref[(r['station_id'], r['date'])] for r in rows if r['station_id'] == sid] for sid in ('PAL', 'CDB')}
+[?2004l[?2004h> assert len(rows) == 2920 and len({(r['station_id'], r['date']) for r in rows}) == 2920
+[?2004l[?2004h> assert all(all(abs(x) <= 0.0500001 for x in diffs) for diffs in d.values())
+[?2004l[?2004h> for sid, diffs in d.items(): print(sid, 'reference-rounded max_abs=', round(max(map(abs, diffs)), 3))
+[?2004l[?2004h> print('structure and rounded-reference checks: OK')
+[?2004l[?2004h> PY
+[?2004lPAL reference-rounded max_abs= 0.05
+CDB reference-rounded max_abs= 0.05
+structure and rounded-reference checks: OK
+[?2004hroot@98254c38-6d92-484a-af3d-75f7f6376daa:/app# python -m et0.selfcheck
+[?2004lFAO-56 Example 18: Ra=41.09 Rs=22.07 ea=1.409 ET0=3.880 (book 3.88) -> OK
+[?2004hroot@98254c38-6d92-484a-af3d-75f7f6376daa:/app# python -m compileall -q et0
+[?2004l[?2004hroot@98254c38-6d92-484a-af3d-75f7f6376daa:/app# grep -RIn --exclude-dir='__pycache__' '/app' et0 || true
+[?2004let0/fao56.py:4:written up in /app/docs/METHOD.md. Every function works on numpy arrays (one element per day).
+et0/meta.py:1:"""Station register: read the stations YAML into Station records (fields are described in /app/docs/METHOD.md)."""
+[?2004hroot@98254c38-6d92-484a-af3d-75f7f6376daa:/app# 

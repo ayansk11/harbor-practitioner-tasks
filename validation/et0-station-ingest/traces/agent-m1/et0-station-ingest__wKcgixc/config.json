@@ -1,0 +1,25 @@
+{
+    "task": {
+        "path": "<submission>/tasks/et0-station-ingest"
+    },
+    "trial_name": "et0-station-ingest__wKcgixc",
+    "trials_dir": "<submission>/jobs/agent-trials/et0-station-ingest-terminus2-gptoss120b-m1-2",
+    "environment_build_timeout_multiplier": 3.0,
+    "agent": {
+        "name": "terminus-2",
+        "model_name": "openai/gpt-oss-120b",
+        "kwargs": {
+            "model_info": {
+                "max_input_tokens": 131072,
+                "max_output_tokens": 32768,
+                "input_cost_per_token": 0,
+                "output_cost_per_token": 0
+            },
+            "api_base": "<model-endpoint>"
+        }
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "dc6f16d4-5d88-42d5-979c-8c6cdc1133e9"
+}

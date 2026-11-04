@@ -1,0 +1,25 @@
+{
+    "task": {
+        "path": "<submission>/jobs/feature-leakage-churn/package-v3/feature-leakage-churn"
+    },
+    "trial_name": "feature-leakage-churn__MuZJi75",
+    "trials_dir": "<submission>/jobs/agent-trials/feature-leakage-churn-terminus2-glm53flash-m1-2",
+    "environment_build_timeout_multiplier": 3.0,
+    "agent": {
+        "name": "terminus-2",
+        "model_name": "openai/glm-5.3-flash",
+        "kwargs": {
+            "model_info": {
+                "max_input_tokens": 196608,
+                "max_output_tokens": 65536,
+                "input_cost_per_token": 0,
+                "output_cost_per_token": 0
+            },
+            "api_base": "<model-endpoint>"
+        }
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "e20acfd0-2be3-4f01-9bb6-301044af8fac"
+}

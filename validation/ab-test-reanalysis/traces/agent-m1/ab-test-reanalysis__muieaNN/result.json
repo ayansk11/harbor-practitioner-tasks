@@ -1,0 +1,220 @@
+{
+    "id": "22caea70-0cc7-4164-8f15-2309878f9602",
+    "task_name": "diffuse-labs/ab-test-reanalysis",
+    "trial_name": "ab-test-reanalysis__muieaNN",
+    "trial_uri": "file://<submission>/jobs/agent-trials/ab-test-reanalysis-terminus2-gemma4-31b-m1-2/ab-test-reanalysis__muieaNN",
+    "task_id": {
+        "path": "<submission>/jobs/ab-test-reanalysis/package-rev1/ab-test-reanalysis"
+    },
+    "source": null,
+    "task_checksum": "274fcfeb9730803d14e0e19bfa6772a2f81ee82d3477737e0f3fb3e263048240",
+    "config": {
+        "task": {
+            "path": "<submission>/jobs/ab-test-reanalysis/package-rev1/ab-test-reanalysis",
+            "git_url": null,
+            "git_commit_id": null,
+            "name": null,
+            "ref": null,
+            "overwrite": false,
+            "download_dir": null,
+            "source": null
+        },
+        "trial_name": "ab-test-reanalysis__muieaNN",
+        "trials_dir": "<submission>/jobs/agent-trials/ab-test-reanalysis-terminus2-gemma4-31b-m1-2",
+        "install_only": false,
+        "timeout_multiplier": 1.0,
+        "agent_timeout_multiplier": null,
+        "verifier_timeout_multiplier": null,
+        "agent_setup_timeout_multiplier": null,
+        "environment_build_timeout_multiplier": 3.0,
+        "agent": {
+            "name": "terminus-2",
+            "import_path": null,
+            "model_name": "openai/gemma-4-31B-it",
+            "base_url": null,
+            "model_api_key_name": null,
+            "model_api_format": null,
+            "skip_model_parsing": false,
+            "n_concurrent": null,
+            "concurrency_group": null,
+            "skills": [],
+            "override_timeout_sec": null,
+            "override_setup_timeout_sec": null,
+            "max_timeout_sec": null,
+            "resume_trajectory": false,
+            "load_trajectory": null,
+            "extra_allowed_hosts": [],
+            "kwargs": {
+                "model_info": {
+                    "max_input_tokens": 262144,
+                    "max_output_tokens": 32768,
+                    "input_cost_per_token": 0,
+                    "output_cost_per_token": 0
+                },
+                "api_base": "<model-endpoint>"
+            },
+            "mcp_servers": []
+        },
+        "user_agent": null,
+        "environment": {
+            "type": "daytona",
+            "import_path": null,
+            "force_build": false,
+            "delete": true,
+            "stream": false,
+            "cpu_enforcement_policy": "auto",
+            "memory_enforcement_policy": "auto",
+            "override_cpus": null,
+            "override_memory_mb": null,
+            "override_storage_mb": null,
+            "override_gpus": null,
+            "override_tpu": null,
+            "mounts": null,
+            "extra_docker_compose": [],
+            "kwargs": {},
+            "extra_allowed_hosts": []
+        },
+        "verifier": {
+            "override_timeout_sec": null,
+            "max_timeout_sec": null,
+            "disable": false
+        },
+        "artifacts": [],
+        "extra_instruction_paths": [],
+        "extra_instructions": [],
+        "job_id": "e0e96679-fc63-419a-8906-b60a9014acb5",
+        "source_trial": null
+    },
+    "agent_info": {
+        "name": "terminus-2",
+        "version": "2.0.0",
+        "model_info": {
+            "name": "gemma-4-31B-it",
+            "provider": "openai"
+        }
+    },
+    "agent_result": {
+        "n_input_tokens": 143929,
+        "n_cache_tokens": 126496,
+        "n_output_tokens": 9865,
+        "cost_usd": null,
+        "model_usage": {
+            "gemma-4-31B-it": {
+                "n_input_tokens": 143929,
+                "n_cache_tokens": 126496,
+                "n_output_tokens": 9865,
+                "cost_usd": null
+            }
+        },
+        "rollout_details": [],
+        "metadata": {
+            "n_episodes": 12,
+            "api_request_times_msec": [
+                2794.4579124450684,
+                1904.7679901123047,
+                5589.282035827637,
+                12011.60192489624,
+                3374.007225036621,
+                3563.021183013916,
+                6061.018943786621,
+                2068.887948989868,
+                2314.587116241455,
+                2026.766061782837,
+                1653.1589031219482,
+                6890.301942825317
+            ],
+            "summarization_count": 0
+        }
+    },
+    "verifier_result": {
+        "rewards": {
+            "reward": 0.0,
+            "band_hw": 0.25,
+            "run_cap_sec": 120,
+            "res_os_cpu_count": 64,
+            "res_cpu_affinity": 64,
+            "res_cgroup_cpus": 1.0,
+            "res_cgroup_mem_mib": 2048.0,
+            "res_host_memtotal_mib": 773337.81640625,
+            "visible_ok": 0,
+            "visible_problems": 8,
+            "visible_ctr_max_err": 0.005873980657794431,
+            "visible_diff_err": 0.005873980657794431,
+            "visible_srm_p_rel_err": 0.5650909419754389,
+            "visible_ci_lo_err_hw": 1.0925056585890516,
+            "visible_ci_hi_err_hw": 1.133303982006728,
+            "h_null_run_rc": 0,
+            "h_null_run_timed_out": 0,
+            "h_null_run_seconds": 1.272,
+            "h_null_ok": 0,
+            "h_null_problems": 6,
+            "h_null_ctr_max_err": 0.0013155900279025606,
+            "h_null_diff_err": 0.0013155900279025606,
+            "h_null_srm_p_rel_err": 1.739653789961045,
+            "h_null_ci_lo_err_hw": 0.12976450197895864,
+            "h_null_ci_hi_err_hw": 0.1158537806238654,
+            "h_pos_run_rc": 0,
+            "h_pos_run_timed_out": 0,
+            "h_pos_run_seconds": 1.43,
+            "h_pos_ok": 1,
+            "h_pos_problems": 0,
+            "h_pos_ctr_max_err": 0.0,
+            "h_pos_diff_err": 0.0,
+            "h_pos_srm_p_rel_err": 1.9239355888896643e-16,
+            "h_pos_ci_lo_err_hw": 0.0,
+            "h_pos_ci_hi_err_hw": 0.0,
+            "h_srm_run_rc": 0,
+            "h_srm_run_timed_out": 0,
+            "h_srm_run_seconds": 1.375,
+            "h_srm_ok": 0,
+            "h_srm_problems": 9,
+            "h_srm_ctr_max_err": 0.003371950434953752,
+            "h_srm_diff_err": 0.003371950434953752,
+            "h_srm_srm_p_rel_err": 69631.0619681915,
+            "h_srm_ci_lo_err_hw": 0.5740707768338448,
+            "h_srm_ci_hi_err_hw": 0.6103754044113674,
+            "h_plain_run_rc": 0,
+            "h_plain_run_timed_out": 0,
+            "h_plain_run_seconds": 1.275,
+            "h_plain_ok": 1,
+            "h_plain_problems": 0,
+            "h_plain_ctr_max_err": 0.0,
+            "h_plain_diff_err": 0.0,
+            "h_plain_srm_p_rel_err": 1.4240168292155358e-14,
+            "h_plain_ci_lo_err_hw": 2.8350708528922217e-16,
+            "h_plain_ci_hi_err_hw": 0.0,
+            "h_neg_run_rc": 0,
+            "h_neg_run_timed_out": 0,
+            "h_neg_run_seconds": 1.426,
+            "h_neg_ok": 1,
+            "h_neg_problems": 0,
+            "h_neg_ctr_max_err": 0.0,
+            "h_neg_diff_err": 0.0,
+            "h_neg_srm_p_rel_err": 2.205587558053253e-16,
+            "h_neg_ci_lo_err_hw": 6.283091179353852e-16,
+            "h_neg_ci_hi_err_hw": 3.141545589676926e-16,
+            "sets_passed": 3
+        }
+    },
+    "verifier_environment_mode": "separate",
+    "exception_info": null,
+    "started_at": "2026-11-03T17:16:43.851134Z",
+    "finished_at": "2026-11-03T17:18:37.158759Z",
+    "environment_setup": {
+        "started_at": "2026-11-03T17:16:43.901586Z",
+        "finished_at": "2026-11-03T17:16:45.952161Z"
+    },
+    "agent_setup": {
+        "started_at": "2026-11-03T17:16:45.952282Z",
+        "finished_at": "2026-11-03T17:16:55.853972Z"
+    },
+    "agent_execution": {
+        "started_at": "2026-11-03T17:16:55.854707Z",
+        "finished_at": "2026-11-03T17:18:10.036411Z"
+    },
+    "verifier": {
+        "started_at": "2026-11-03T17:18:13.966580Z",
+        "finished_at": "2026-11-03T17:18:37.158690Z"
+    },
+    "step_results": null
+}

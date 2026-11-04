@@ -1,0 +1,1077 @@
+[?2004hroot@3024e448-bc90-4b48-87a5-ee4fb7e9dfb0:/app# asciinema rec --stdin /logs/agent/recording.cast
+[?2004l[0;32masciinema: recording asciicast to /logs/agent/recording.cast[0m
+[0;32masciinema: press <ctrl-d> or type "exit" when you're done[0m
+[?2004hroot@3024e448-bc90-4b48-87a5-ee4fb7e9dfb0:/app# clear
+[?2004l[H[J[3J[?2004hroot@3024e448-bc90-4b48-87a5-ee4fb7e9dfb0:/app# cat /app/INCIDENT.md
+[?2004l# INC-2291 (P1): nightly order export is missing orders
+
+**Reported** 2026-10-27 08:12 UTC by Finance Operations (month-end reconciliation)
+**Service** orders API (`/app/orders_service`), owned by the commerce backend team
+**Severity** P1: the accounting close is blocked
+
+## What happened
+The nightly export job (`/app/tools/export_orders.py`, cron 02:00 UTC) pages through `GET /orders` with
+`limit=200` and writes one CSV row per order. Last night's file has **47,961 rows**. `GET /orders/count`,
+called by the same job right before the first page, returned **48,213**. The reconciliation against the payment
+processor flags the 252 missing orders. Finance spot-checked a few of them: they exist and look normal.
+
+Nothing in the export job changed this month. The request log of last night's run is
+`/app/logs/export-2026-10-27.log`. `/app/data/orders.db` is a copy of the production database taken when the
+export started (no orders were written during that run).
+
+## What we need
+Find why the export loses orders and fix the orders API so that a client that follows `next_cursor` from the first
+page to the last gets every order exactly once, as `/app/docs/API.md` promises. The same holds for every listing that
+pages, not only `/orders`. Checkout, the POS sync and the import jobs keep writing orders into the same database
+while exports run, so the fix must hold while new orders arrive.
+
+## Notes from the on-call engineer
+- Smaller page sizes seem to lose more orders. A re-run with `limit=500` lost fewer, but still some.
+- The support tool (`GET /customers/<id>/orders`, which asks for pages of 20) showed wholesale account 5 with
+  20 orders, while its invoice history has 61. Possibly related, not confirmed.
+[?2004hroot@3024e448-bc90-4b48-87a5-ee4fb7e9dfb0:/app# cat /app/docs/API.md
+[?2004l# Orders API (v1)
+
+Read-only HTTP API over the merchant's orders database. Clients: the nightly finance export
+(`tools/export_orders.py`), the support tool and the customer account page. The API never writes orders; checkout, the
+POS sync and the import jobs insert them into the same database, also while clients are paging.
+
+Start: `python -m orders_service --db <path to orders.db> --port <port>` from `/app`. It listens on 127.0.0.1.
+All responses are JSON. An error answers `{"error": "<message>"}` with the status code given below.
+
+## The order object
+| Field | Type | Meaning |
+|---|---|---|
+| `id` | integer | order id. Ids grow in the order rows are written, not in the order orders were placed: an order synced late (for example an offline POS sale) has a high id and an old `created_at`. |
+| `customer_id` | integer | the customer who placed the order |
+| `created_at` | string | when the order was placed, UTC, `YYYY-MM-DDTHH:MM:SSZ`, whole seconds. Many orders can share one second (bulk imports write hundreds at once). |
+| `status` | string | `paid`, `shipped`, `refunded` or `cancelled` |
+| `total_cents` | integer | order total in the currency's minor unit |
+| `currency` | string | ISO 4217 code |
+
+## Listings and paging
+`GET /orders` and `GET /customers/<id>/orders` return pages of orders.
+
+- **Order.** Newest first: by `created_at` descending; orders with the same `created_at` by `id` descending.
+- **`limit`** (query parameter): page size, an integer from 1 to 500. Default 100 when the parameter is absent.
+- **`cursor`** (query parameter): leave it out for the first page; for the next page, pass the `next_cursor` value
+  of the previous page exactly as received. Cursors are opaque strings: clients do not build or read them.
+- **Response 200:** `{"orders": [<order>, ...], "next_cursor": "<string>" or null}`.
+- Every page holds exactly `limit` orders, except the last page, which holds at most `limit`.
+- `next_cursor` is null on the last page and only there. When the number of orders is a multiple of `limit`, the
+  last page may be empty.
+- Following `next_cursor` from the first page to the last returns every order of the listing exactly once, in the
+  order above.
+- **Orders written while a client pages:** every order that existed when the client asked for the first page is
+  returned exactly once. An order written after that may or may not appear in that pass, and never more than once.
+  A listing started later includes it.
+- **Errors:** `400` if `limit` is not an integer from 1 to 500; `400` if `cursor` is malformed.
+
+## Endpoints
+### `GET /orders`
+All orders, paged as above.
+
+### `GET /orders/count`
+`{"count": <number of orders>}`.
+
+### `GET /orders/<id>`
+The order object. `404` if there is no order with that id.
+
+### `GET /customers/<id>/orders`
+The customer's orders, paged and ordered as above. `404` if there is no customer with that id. A customer without
+orders gets `{"orders": [], "next_cursor": null}`.
+
+## Database (for maintainers)
+SQLite, tables `customers` and `orders` (schema: `SELECT sql FROM sqlite_master` on `data/orders.db`). Indexes: `orders_created_at`
+on `orders(created_at)`, `orders_customer` on `orders(customer_id, created_at)`. Other systems insert into `orders`
+naming its columns; they rely on the tables and columns keeping their names and meaning.
+[?2004hroot@3024e448-bc90-4b48-87a5-ee4fb7e9dfb0:/app# cat /app/README.md
+[?2004l# orders-api
+
+Read-only HTTP API over the merchant's orders database (Flask, served by waitress). Contract: `docs/API.md`.
+Open incident: `INCIDENT.md`.
+
+| Path | What |
+|---|---|
+| `orders_service/app.py` | routes |
+| `orders_service/pagination.py` | `limit` and cursor parsing, the shared keyset pagination helper |
+| `orders_service/queries.py` | customer views (account page, support tool) |
+| `orders_service/db.py` | one SQLite connection per request, the order fields |
+| `orders_service/__main__.py` | `python -m orders_service --db ... --port ...` |
+| `tools/export_orders.py` | the nightly finance export (a client of `GET /orders`) |
+| `tests/test_api.py` | API tests (pytest, Flask test client, small temporary databases) |
+| `data/orders.db` | development copy of the production database, taken when the 2026-10-27 export started |
+| `logs/export-2026-10-27.log` | request log of that export |
+
+Run the service and the export against the development copy:
+
+```
+cd /app
+python -m orders_service --db data/orders.db --port 8080 &
+python tools/export_orders.py --base http://127.0.0.1:8080 --limit 200 --out /tmp/orders.csv
+```
+
+Run the tests: `cd /app && python -m pytest -q tests`. Inspect the data: `python -c "import sqlite3; ..."` (there is
+no `sqlite3` command-line tool in the image).
+[?2004hroot@3024e448-bc90-4b48-87a5-ee4fb7e9dfb0:/app# ls -la /app/orders_service/
+[?2004ltotal 24
+drwxr-xr-x 2 root root  138 Nov  3 16:25 .
+drwxr-xr-x 1 root root  162 Nov  3 16:25 ..
+-rw-r--r-- 1 root root  147 Jan  1  1970 __init__.py
+-rw-r--r-- 1 root root  832 Jan  1  1970 __main__.py
+-rw-r--r-- 1 root root 1913 Jan  1  1970 app.py
+-rw-r--r-- 1 root root  757 Jan  1  1970 db.py
+-rw-r--r-- 1 root root 2657 Jan  1  1970 pagination.py
+-rw-r--r-- 1 root root 1099 Jan  1  1970 queries.py
+[?2004hroot@3024e448-bc90-4b48-87a5-ee4fb7e9dfb0:/app# ls -la /app/tools/
+[?2004ltotal 4
+drwxr-xr-x 2 root root   38 Nov  3 16:25 .
+drwxr-xr-x 1 root root  162 Nov  3 16:25 ..
+-rw-r--r-- 1 root root 2596 Jan  1  1970 export_orders.py
+[?2004hroot@3024e448-bc90-4b48-87a5-ee4fb7e9dfb0:/app# cat /app/orders_service/pagination.py
+[?2004l"""Keyset ("seek") pagination for order listings.
+
+We moved off LIMIT/OFFSET in 2025 (PERF-87): OFFSET re-reads every skipped row, so deep pages of the nightly export
+got slower and slower, and rows shifted between pages whenever checkout inserted a new order. A keyset page starts
+right after the last row the client has seen, so it costs the same at any depth and does not move under inserts.
+
+Listings are ordered newest first (created_at DESC, id DESC; docs/API.md). The cursor handed to clients is opaque:
+base64url of the position of the last row on the page.
+"""
+import base64
+import binascii
+import re
+from collections import namedtuple
+
+from werkzeug.exceptions import BadRequest
+
+DEFAULT_LIMIT = 100
+MAX_LIMIT = 500
+
+_TIMESTAMP = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z")
+_DIGITS = re.compile(r"[0-9]{1,6}")
+
+Cursor = namedtuple("Cursor", ["created_at"])
+
+
+def parse_limit(raw):
+    """The `limit` query parameter: an integer from 1 to MAX_LIMIT, DEFAULT_LIMIT when absent."""
+    if raw is None:
+        return DEFAULT_LIMIT
+    if not _DIGITS.fullmatch(raw) or not 1 <= int(raw) <= MAX_LIMIT:
+        raise BadRequest(f"limit must be an integer from 1 to {MAX_LIMIT}")
+    return int(raw)
+
+
+def encode_cursor(row):
+    """Cursor for the page after `row` (the last row of the current page)."""
+    return base64.urlsafe_b64encode(row["created_at"].encode("ascii")).decode("ascii").rstrip("=")
+
+
+def decode_cursor(raw):
+    """Parse the `cursor` query parameter; None when absent. A malformed cursor is a 400."""
+    if raw is None:
+        return None
+    try:
+        text = base64.urlsafe_b64decode((raw + "=" * (-len(raw) % 4)).encode("ascii")).decode("ascii")
+    except (ValueError, binascii.Error, UnicodeError):
+        raise BadRequest("invalid cursor") from None
+    if not _TIMESTAMP.fullmatch(text):
+        raise BadRequest("invalid cursor")
+    return Cursor(created_at=text)
+
+
+def paginate(con, columns, table, limit, cursor, where="", params=()):
+    """One page of `SELECT columns FROM table [WHERE where]`, newest first.
+
+    Returns (rows, next_cursor); next_cursor is None on the last page."""
+    clauses = [where] if where else []
+    args = list(params)
+    if cursor is not None:
+        clauses.append("created_at < ?")
+        args.append(cursor.created_at)
+    sql = f"SELECT {columns} FROM {table}"
+    if clauses:
+        sql += " WHERE " + " AND ".join(f"({c})" for c in clauses)
+    sql += " ORDER BY created_at DESC, id DESC LIMIT ?"
+    args.append(limit)
+    rows = con.execute(sql, args).fetchall()
+    next_cursor = encode_cursor(rows[-1]) if len(rows) == limit else None
+    return rows, next_cursor
+[?2004hroot@3024e448-bc90-4b48-87a5-ee4fb7e9dfb0:/app# cat /app/orders_service/app.py
+[?2004l"""Flask application for the orders API. Endpoints and response formats: docs/API.md."""
+from flask import Flask, abort, jsonify, request
+from werkzeug.exceptions import HTTPException
+
+from . import db, pagination, queries
+
+
+def create_app(database):
+    app = Flask(__name__)
+    app.config["DATABASE"] = database
+    app.json.sort_keys = False
+    app.teardown_appcontext(db.close_db)
+
+    @app.errorhandler(HTTPException)
+    def http_error(exc):
+        return jsonify(error=exc.description), exc.code
+
+    @app.get("/orders")
+    def list_orders():
+        limit = pagination.parse_limit(request.args.get("limit"))
+        cursor = pagination.decode_cursor(request.args.get("cursor"))
+        rows, next_cursor = pagination.paginate(db.get_db(), db.ORDER_COLUMNS, "orders", limit, cursor)
+        return jsonify(orders=[db.order_json(r) for r in rows], next_cursor=next_cursor)
+
+    @app.get("/orders/count")
+    def count_orders():
+        (n,) = db.get_db().execute("SELECT COUNT(*) FROM orders").fetchone()
+        return jsonify(count=n)
+
+    @app.get("/orders/<int:order_id>")
+    def get_order(order_id):
+        row = db.get_db().execute(f"SELECT {db.ORDER_COLUMNS} FROM orders WHERE id = ?", (order_id,)).fetchone()
+        if row is None:
+            abort(404, description="order not found")
+        return jsonify(db.order_json(row))
+
+    @app.get("/customers/<int:customer_id>/orders")
+    def customer_orders(customer_id):
+        con = db.get_db()
+        if not queries.customer_exists(con, customer_id):
+            abort(404, description="customer not found")
+        limit = pagination.parse_limit(request.args.get("limit"))
+        cursor = pagination.decode_cursor(request.args.get("cursor"))
+        rows, next_cursor = queries.customer_orders_page(con, customer_id, limit, cursor)
+        return jsonify(orders=[db.order_json(r) for r in rows], next_cursor=next_cursor)
+
+    return app
+[?2004hroot@3024e448-bc90-4b48-87a5-ee4fb7e9dfb0:/app# cat /app/orders_service/db.py
+[?2004l"""One SQLite connection per request. Other systems (checkout, the POS sync, back-office imports) write to the same
+database file, so the API never caches rows: every request reads what is committed at that moment."""
+import sqlite3
+
+from flask import current_app, g
+
+ORDER_FIELDS = ("id", "customer_id", "created_at", "status", "total_cents", "currency")
+ORDER_COLUMNS = ", ".join(ORDER_FIELDS)
+
+
+def get_db():
+    if "db" not in g:
+        con = sqlite3.connect(current_app.config["DATABASE"], timeout=10)
+        con.row_factory = sqlite3.Row
+        g.db = con
+    return g.db
+
+
+def close_db(_exc=None):
+    con = g.pop("db", None)
+    if con is not None:
+        con.close()
+
+
+def order_json(row):
+    return {name: row[name] for name in ORDER_FIELDS}
+[?2004hroot@3024e448-bc90-4b48-87a5-ee4fb7e9dfb0:/app# cat /app/orders_service/queries.py
+[?2004l"""Queries behind the customer views (account page, support tool)."""
+from .db import ORDER_COLUMNS
+from .pagination import encode_cursor
+
+
+def customer_exists(con, customer_id):
+    return con.execute("SELECT 1 FROM customers WHERE id = ?", (customer_id,)).fetchone() is not None
+
+
+def customer_orders_page(con, customer_id, limit, cursor):
+    """One page of a customer's orders, newest first. Returns (rows, next_cursor).
+
+    Same keyset scheme as pagination.paginate, written out here so that SQLite picks the orders_customer index
+    (customer_id, created_at) instead of scanning orders_created_at for big wholesale accounts (PERF-112)."""
+    sql = f"SELECT {ORDER_COLUMNS} FROM orders INDEXED BY orders_customer WHERE customer_id = ?"
+    args = [customer_id]
+    if cursor is not None:
+        sql += " AND created_at < ?"
+        args.append(cursor.created_at)
+    sql += " ORDER BY created_at DESC, id DESC LIMIT ?"
+    args.append(limit)
+    rows = con.execute(sql, args).fetchall()
+    next_cursor = encode_cursor(rows[-1]) if len(rows) == limit else None
+    return rows, next_cursor
+[?2004hroot@3024e448-bc90-4b48-87a5-ee4fb7e9dfb0:/app# cat /app/orders_service/__main__.py
+[?2004l"""Start the orders API: python -m orders_service --db data/orders.db --port 8080"""
+import argparse
+import os
+
+from waitress import serve
+
+from .app import create_app
+
+
+def main():
+    parser = argparse.ArgumentParser(prog="python -m orders_service", description=__doc__)
+    parser.add_argument("--db", required=True, help="path to the SQLite orders database")
+    parser.add_argument("--host", default="127.0.0.1")
+    parser.add_argument("--port", type=int, default=8080)
+    parser.add_argument("--threads", type=int, default=4)
+    args = parser.parse_args()
+    if not os.path.isfile(args.db):
+        parser.error(f"database not found: {args.db}")
+    app = create_app(os.path.abspath(args.db))
+    serve(app, host=args.host, port=args.port, threads=args.threads, ident="orders-api")
+
+
+if __name__ == "__main__":
+    main()
+[?2004hroot@3024e448-bc90-4b48-87a5-ee4fb7e9dfb0:/app# cat /app/orders_service/__init__.py
+[?2004l"""Orders API: read-only HTTP access to the merchant's orders database (see docs/API.md)."""
+from .app import create_app
+
+__all__ = ["create_app"]
+[?2004hroot@3024e448-bc90-4b48-87a5-ee4fb7e9dfb0:/app# cat /app/tools/export_orders.py
+[?2004l"""Nightly finance export: page through GET /orders and write one CSV row per order.
+
+    python tools/export_orders.py --base http://127.0.0.1:8080 --limit 200 --out /tmp/orders.csv [--log export.log]
+
+Runs from cron at 02:00 UTC against production. It only follows next_cursor; it never builds cursors itself.
+"""
+import argparse
+import csv
+import datetime as dt
+import json
+import sys
+import urllib.parse
+import urllib.request
+
+FIELDS = ["id", "customer_id", "created_at", "status", "total_cents", "currency"]
+
+
+def now():
+    t = dt.datetime.now(dt.timezone.utc)
+    return t.strftime("%Y-%m-%dT%H:%M:%S.") + f"{t.microsecond // 1000:03d}Z"
+
+
+def get(base, path, params=None):
+    url = base.rstrip("/") + path + ("?" + urllib.parse.urlencode(params) if params else "")
+    with urllib.request.urlopen(url, timeout=60) as resp:
+        return resp.status, json.load(resp)
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--base", default="http://127.0.0.1:8080")
+    ap.add_argument("--limit", type=int, default=200)
+    ap.add_argument("--out", required=True)
+    ap.add_argument("--log", help="append the request log here (default: stderr)")
+    args = ap.parse_args()
+    log = open(args.log, "a") if args.log else sys.stderr
+    print(f"# export_orders.py started {now()} base={args.base} limit={args.limit} out={args.out}", file=log)
+    status, body = get(args.base, "/orders/count")
+    total = body["count"]
+    print(f"{now()} GET /orders/count {status} count={total}", file=log)
+    rows = pages = 0
+    cursor = None
+    with open(args.out, "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(FIELDS)
+        while True:
+            params = {"limit": args.limit}
+            if cursor is not None:
+                params["cursor"] = cursor
+            status, body = get(args.base, "/orders", params)
+            pages += 1
+            for o in body["orders"]:
+                w.writerow([o[k] for k in FIELDS])
+            rows += len(body["orders"])
+            shown = "/orders?" + "&".join(f"{k}={v}" for k, v in params.items())
+            print(f"{now()} GET {shown} {status} rows={len(body['orders'])} next_cursor={body['next_cursor'] or 'null'}",
+                  file=log)
+            cursor = body["next_cursor"]
+            if cursor is None:
+                break
+    print(f"# done {now()}: {rows} rows written, {pages} pages, count at start was {total}", file=log)
+    if log is not sys.stderr:
+        log.close()
+
+
+if __name__ == "__main__":
+    main()
+[?2004hroot@3024e448-bc90-4b48-87a5-ee4fb7e9dfb0:/app# python3 -c "import sqlite3; conn=sqlite3.connect('/app/data/orders.db'); print(conn.execute('SELECT sql FROM sqlite_master').fetchall()); print('orders count:', conn.execute('SELECT COUNT(*) FROM orders').fetchone()); print('sample:', conn.execute('SELECT * FROM orders LIMIT 5').fetchall()); print('sample customers:', conn.execute('SELECT * FROM customers LIMIT 5').fetchall())"
+[?2004l[('CREATE TABLE customers (\n    id          INTEGER PRIMARY KEY,\n    name        TEXT NOT NULL,\n    email       TEXT NOT NULL,\n    segment     TEXT NOT NULL,            -- retail | wholesale\n    created_at  TEXT NOT NULL             -- UTC, YYYY-MM-DDTHH:MM:SSZ\n)',), ('CREATE TABLE orders (\n    id          INTEGER PRIMARY KEY AUTOINCREMENT,\n    customer_id INTEGER NOT NULL REFERENCES customers(id),\n    created_at  TEXT NOT NULL,            -- when the order was placed, UTC, YYYY-MM-DDTHH:MM:SSZ (whole seconds)\n    status      TEXT NOT NULL,            -- paid | shipped | refunded | cancelled\n    total_cents INTEGER NOT NULL,\n    currency    TEXT NOT NULL,            -- ISO 4217\n    channel     TEXT NOT NULL             -- web | pos | edi_import | marketplace_import | pos_backfill\n)',), ('CREATE TABLE sqlite_sequence(name,seq)',), ('CREATE INDEX orders_created_at ON orders(created_at)',), ('CREATE INDEX orders_customer ON orders(customer_id, created_at)',)]
+orders count: (48213,)
+sample: [(1, 3925, '2024-01-15T01:00:54Z', 'paid', 1535, 'EUR', 'pos'), (2, 3249, '2024-01-15T01:07:05Z', 'shipped', 4691, 'USD', 'pos'), (3, 3690, '2024-01-15T02:52:11Z', 'shipped', 1767, 'USD', 'web'), (4, 487, '2024-01-15T03:09:43Z', 'shipped', 4689, 'USD', 'web'), (5, 3794, '2024-01-15T03:37:41Z', 'shipped', 15250, 'USD', 'web')]
+sample customers: [(1, 'Northwind Supply #1', 'purchasing+1@northwind.example.com', 'wholesale', '2023-06-01T00:00:00Z'), (2, 'Bluebird Grocers #2', 'purchasing+2@bluebird.example.com', 'wholesale', '2023-06-01T06:29:27Z'), (3, 'Copperline Hardware #3', 'purchasing+3@copperline.example.com', 'wholesale', '2023-06-01T12:58:54Z'), (4, 'Delta Cafe Group #4', 'purchasing+4@delta.example.com', 'wholesale', '2023-06-01T19:28:21Z'), (5, 'Evergreen Florists #5', 'purchasing+5@evergreen.example.com', 'wholesale', '2023-06-02T01:57:48Z')]
+[?2004hroot@3024e448-bc90-4b48-87a5-ee4fb7e9dfb0:/app# head -20 /app/logs/export-2026-10-27.log
+[?2004l# export_orders.py started 2026-10-27T02:00:00.180Z base=http://orders-api.internal:8080 limit=200 out=/exports/orders-2026-10-27.csv
+2026-10-27T02:00:00.180Z GET /orders/count 200 count=48213
+2026-10-27T02:00:00.985Z GET /orders?limit=200 200 rows=200 next_cursor=MjAyNi0xMC0yM1QwNDo0NTo1OFo
+2026-10-27T02:00:01.499Z GET /orders?limit=200&cursor=MjAyNi0xMC0yM1QwNDo0NTo1OFo 200 rows=200 next_cursor=MjAyNi0xMC0xN1QxMzo1NzozNVo
+2026-10-27T02:00:01.908Z GET /orders?limit=200&cursor=MjAyNi0xMC0xN1QxMzo1NzozNVo 200 rows=200 next_cursor=MjAyNi0xMC0xMlQxOToxNjoxN1o
+2026-10-27T02:00:02.919Z GET /orders?limit=200&cursor=MjAyNi0xMC0xMlQxOToxNjoxN1o 200 rows=200 next_cursor=MjAyNi0xMC0wN1QyMzo0MDo0OVo
+2026-10-27T02:00:03.698Z GET /orders?limit=200&cursor=MjAyNi0xMC0wN1QyMzo0MDo0OVo 200 rows=200 next_cursor=MjAyNi0xMC0wM1QwMTowNzo0Mlo
+2026-10-27T02:00:04.466Z GET /orders?limit=200&cursor=MjAyNi0xMC0wM1QwMTowNzo0Mlo 200 rows=200 next_cursor=MjAyNi0wOS0yOFQwOTowOTo0MFo
+2026-10-27T02:00:05.174Z GET /orders?limit=200&cursor=MjAyNi0wOS0yOFQwOTowOTo0MFo 200 rows=200 next_cursor=MjAyNi0wOS0yNFQwMToxMTo1Mlo
+2026-10-27T02:00:05.835Z GET /orders?limit=200&cursor=MjAyNi0wOS0yNFQwMToxMTo1Mlo 200 rows=200 next_cursor=MjAyNi0wOS0yMVQxMTo0MTo1MVo
+2026-10-27T02:00:06.404Z GET /orders?limit=200&cursor=MjAyNi0wOS0yMVQxMTo0MTo1MVo 200 rows=200 next_cursor=MjAyNi0wOS0xN1QwMTowNjowNFo
+2026-10-27T02:00:07.311Z GET /orders?limit=200&cursor=MjAyNi0wOS0xN1QwMTowNjowNFo 200 rows=200 next_cursor=MjAyNi0wOS0xMlQwNjoxMzo1MVo
+2026-10-27T02:00:08.196Z GET /orders?limit=200&cursor=MjAyNi0wOS0xMlQwNjoxMzo1MVo 200 rows=200 next_cursor=MjAyNi0wOS0wN1QxMDo0Mzo0M1o
+2026-10-27T02:00:08.600Z GET /orders?limit=200&cursor=MjAyNi0wOS0wN1QxMDo0Mzo0M1o 200 rows=200 next_cursor=MjAyNi0wOS0wMlQyMTowODoyMlo
+2026-10-27T02:00:09.460Z GET /orders?limit=200&cursor=MjAyNi0wOS0wMlQyMTowODoyMlo 200 rows=200 next_cursor=MjAyNi0wOC0yOVQxMTo1MDowN1o
+2026-10-27T02:00:10.001Z GET /orders?limit=200&cursor=MjAyNi0wOC0yOVQxMTo1MDowN1o 200 rows=200 next_cursor=MjAyNi0wOC0yNVQxOTo0NDo0OFo
+2026-10-27T02:00:10.540Z GET /orders?limit=200&cursor=MjAyNi0wOC0yNVQxOTo0NDo0OFo 200 rows=200 next_cursor=MjAyNi0wOC0yMVQwMzowMDo1NVo
+2026-10-27T02:00:11.507Z GET /orders?limit=200&cursor=MjAyNi0wOC0yMVQwMzowMDo1NVo 200 rows=200 next_cursor=MjAyNi0wOC0xNlQxMzo0NTowNFo
+2026-10-27T02:00:12.575Z GET /orders?limit=200&cursor=MjAyNi0wOC0xNlQxMzo0NTowNFo 200 rows=200 next_cursor=MjAyNi0wOC0xMlQwODoxOTowNVo
+2026-10-27T02:00:13.442Z GET /orders?limit=200&cursor=MjAyNi0wOC0xMlQwODoxOTowNVo 200 rows=200 next_cursor=MjAyNi0wOC0wN1QxNTozMToyNVo
+[?2004hroot@3024e448-bc90-4b48-87a5-ee4fb7e9dfb0:/app# tail -20 /app/logs/export-2026-10-27.log
+[?2004l2026-10-27T02:02:45.405Z GET /orders?limit=200&cursor=MjAyNC0wMy0yOFQwODo0NDozN1o 200 rows=200 next_cursor=MjAyNC0wMy0yM1QxMDoyMjowNVo
+2026-10-27T02:02:46.484Z GET /orders?limit=200&cursor=MjAyNC0wMy0yM1QxMDoyMjowNVo 200 rows=200 next_cursor=MjAyNC0wMy0xOVQyMDozNjoxOVo
+2026-10-27T02:02:47.089Z GET /orders?limit=200&cursor=MjAyNC0wMy0xOVQyMDozNjoxOVo 200 rows=200 next_cursor=MjAyNC0wMy0xNlQxMjozNDo1MVo
+2026-10-27T02:02:48.145Z GET /orders?limit=200&cursor=MjAyNC0wMy0xNlQxMjozNDo1MVo 200 rows=200 next_cursor=MjAyNC0wMy0xM1QwNTo0Mjo1NFo
+2026-10-27T02:02:48.751Z GET /orders?limit=200&cursor=MjAyNC0wMy0xM1QwNTo0Mjo1NFo 200 rows=200 next_cursor=MjAyNC0wMy0wOVQxODozOTo1Mlo
+2026-10-27T02:02:49.495Z GET /orders?limit=200&cursor=MjAyNC0wMy0wOVQxODozOTo1Mlo 200 rows=200 next_cursor=MjAyNC0wMy0wNlQwOTo0ODoyNFo
+2026-10-27T02:02:50.380Z GET /orders?limit=200&cursor=MjAyNC0wMy0wNlQwOTo0ODoyNFo 200 rows=200 next_cursor=MjAyNC0wMy0wM1QwOToyNjo1NVo
+2026-10-27T02:02:50.866Z GET /orders?limit=200&cursor=MjAyNC0wMy0wM1QwOToyNjo1NVo 200 rows=200 next_cursor=MjAyNC0wMi0yOVQwMDoyMDoyOFo
+2026-10-27T02:02:51.541Z GET /orders?limit=200&cursor=MjAyNC0wMi0yOVQwMDoyMDoyOFo 200 rows=200 next_cursor=MjAyNC0wMi0yNFQxNDoyMTowOFo
+2026-10-27T02:02:52.451Z GET /orders?limit=200&cursor=MjAyNC0wMi0yNFQxNDoyMTowOFo 200 rows=200 next_cursor=MjAyNC0wMi0xOVQxNTo1NTo1OFo
+2026-10-27T02:02:53.523Z GET /orders?limit=200&cursor=MjAyNC0wMi0xOVQxNTo1NTo1OFo 200 rows=200 next_cursor=MjAyNC0wMi0xNlQxMDo1MToxMFo
+2026-10-27T02:02:54.147Z GET /orders?limit=200&cursor=MjAyNC0wMi0xNlQxMDo1MToxMFo 200 rows=200 next_cursor=MjAyNC0wMi0xMlQwODoyNDoyN1o
+2026-10-27T02:02:54.749Z GET /orders?limit=200&cursor=MjAyNC0wMi0xMlQwODoyNDoyN1o 200 rows=200 next_cursor=MjAyNC0wMi0wOFQxMzoxMjowMVo
+2026-10-27T02:02:55.884Z GET /orders?limit=200&cursor=MjAyNC0wMi0wOFQxMzoxMjowMVo 200 rows=200 next_cursor=MjAyNC0wMi0wNFQxMjoyOTozNVo
+2026-10-27T02:02:56.546Z GET /orders?limit=200&cursor=MjAyNC0wMi0wNFQxMjoyOTozNVo 200 rows=200 next_cursor=MjAyNC0wMS0zMVQwMzo1Mzo0N1o
+2026-10-27T02:02:57.626Z GET /orders?limit=200&cursor=MjAyNC0wMS0zMVQwMzo1Mzo0N1o 200 rows=200 next_cursor=MjAyNC0wMS0yNlQxOToxOToyOVo
+2026-10-27T02:02:58.313Z GET /orders?limit=200&cursor=MjAyNC0wMS0yNlQxOToxOToyOVo 200 rows=200 next_cursor=MjAyNC0wMS0yMlQyMToxNzoxMFo
+2026-10-27T02:02:58.750Z GET /orders?limit=200&cursor=MjAyNC0wMS0yMlQyMToxNzoxMFo 200 rows=200 next_cursor=MjAyNC0wMS0xOFQwOToxMToxN1o
+2026-10-27T02:02:59.884Z GET /orders?limit=200&cursor=MjAyNC0wMS0xOFQwOToxMToxN1o 200 rows=161 next_cursor=null
+# done 2026-10-27T02:02:59.974Z: 47961 rows written, 240 pages, count at start was 48213
+[?2004hroot@3024e448-bc90-4b48-87a5-ee4fb7e9dfb0:/app# cat /app/orders_service/queries.py
+[?2004l"""Queries behind the customer views (account page, support tool)."""
+from .db import ORDER_COLUMNS
+from .pagination import encode_cursor
+
+
+def customer_exists(con, customer_id):
+    return con.execute("SELECT 1 FROM customers WHERE id = ?", (customer_id,)).fetchone() is not None
+
+
+def customer_orders_page(con, customer_id, limit, cursor):
+    """One page of a customer's orders, newest first. Returns (rows, next_cursor).
+
+    Same keyset scheme as pagination.paginate, written out here so that SQLite picks the orders_customer index
+    (customer_id, created_at) instead of scanning orders_created_at for big wholesale accounts (PERF-112)."""
+    sql = f"SELECT {ORDER_COLUMNS} FROM orders INDEXED BY orders_customer WHERE customer_id = ?"
+    args = [customer_id]
+    if cursor is not None:
+        sql += " AND created_at < ?"
+        args.append(cursor.created_at)
+    sql += " ORDER BY created_at DESC, id DESC LIMIT ?"
+    args.append(limit)
+    rows = con.execute(sql, args).fetchall()
+    next_cursor = encode_cursor(rows[-1]) if len(rows) == limit else None
+    return rows, next_cursor
+[?2004hroot@3024e448-bc90-4b48-87a5-ee4fb7e9dfb0:/app# cat /app/orders_service/db.py
+[?2004l"""One SQLite connection per request. Other systems (checkout, the POS sync, back-office imports) write to the same
+database file, so the API never caches rows: every request reads what is committed at that moment."""
+import sqlite3
+
+from flask import current_app, g
+
+ORDER_FIELDS = ("id", "customer_id", "created_at", "status", "total_cents", "currency")
+ORDER_COLUMNS = ", ".join(ORDER_FIELDS)
+
+
+def get_db():
+    if "db" not in g:
+        con = sqlite3.connect(current_app.config["DATABASE"], timeout=10)
+        con.row_factory = sqlite3.Row
+        g.db = con
+    return g.db
+
+
+def close_db(_exc=None):
+    con = g.pop("db", None)
+    if con is not None:
+        con.close()
+
+
+def order_json(row):
+    return {name: row[name] for name in ORDER_FIELDS}
+[?2004hroot@3024e448-bc90-4b48-87a5-ee4fb7e9dfb0:/app# cat /app/tests/test_api.py
+[?2004l"""API tests for the orders service (run from /app: python -m pytest -q tests).
+
+Each test builds a small database in a temporary folder and talks to the app through Flask's test client."""
+import sqlite3
+
+import pytest
+
+from orders_service import create_app
+
+SCHEMA = """
+CREATE TABLE customers (id INTEGER PRIMARY KEY, name TEXT NOT NULL, email TEXT NOT NULL, segment TEXT NOT NULL,
+                        created_at TEXT NOT NULL);
+CREATE TABLE orders (id INTEGER PRIMARY KEY AUTOINCREMENT, customer_id INTEGER NOT NULL REFERENCES customers(id),
+                     created_at TEXT NOT NULL, status TEXT NOT NULL, total_cents INTEGER NOT NULL,
+                     currency TEXT NOT NULL, channel TEXT NOT NULL);
+CREATE INDEX orders_created_at ON orders(created_at);
+CREATE INDEX orders_customer ON orders(customer_id, created_at);
+"""
+
+
+def make_db(path, n_orders=57):
+    con = sqlite3.connect(path)
+    con.executescript(SCHEMA)
+    con.executemany("INSERT INTO customers VALUES (?, ?, ?, ?, ?)",
+                    [(c, f"Customer {c}", f"c{c}@example.org", "retail", "2025-01-01T00:00:00Z") for c in (1, 2, 3)])
+    rows = []
+    for i in range(1, n_orders + 1):
+        minute, second = divmod(i * 7, 60)
+        rows.append((i, 1 + i % 2, f"2026-03-01T10:{minute:02d}:{second:02d}Z", "paid", 1000 + i, "USD", "web"))
+    con.executemany("INSERT INTO orders VALUES (?, ?, ?, ?, ?, ?, ?)", rows)
+    con.commit()
+    con.close()
+    return rows
+
+
+@pytest.fixture()
+def client(tmp_path):
+    db = tmp_path / "orders.db"
+    make_db(db)
+    return create_app(str(db)).test_client()
+
+
+def walk(client, path, limit):
+    out, cursor = [], None
+    for _ in range(1000):
+        q = {"limit": limit} if cursor is None else {"limit": limit, "cursor": cursor}
+        body = client.get(path, query_string=q).get_json()
+        out += body["orders"]
+        cursor = body["next_cursor"]
+        if cursor is None:
+            return out
+    raise AssertionError("too many pages")
+
+
+def test_count(client):
+    assert client.get("/orders/count").get_json() == {"count": 57}
+
+
+def test_get_order(client):
+    assert client.get("/orders/5").get_json() == {"id": 5, "customer_id": 2, "created_at": "2026-03-01T10:00:35Z",
+                                                  "status": "paid", "total_cents": 1005, "currency": "USD"}
+    assert client.get("/orders/999").status_code == 404
+
+
+def test_first_page_newest_first(client):
+    body = client.get("/orders").get_json()
+    assert [o["id"] for o in body["orders"]] == list(range(57, 0, -1))
+    assert body["next_cursor"] is None
+
+
+@pytest.mark.parametrize("limit", [1, 5, 10, 57, 100])
+def test_walk_returns_every_order_once(client, limit):
+    ids = [o["id"] for o in walk(client, "/orders", limit)]
+    assert ids == list(range(57, 0, -1))
+
+
+def test_customer_orders(client):
+    ids = [o["id"] for o in walk(client, "/customers/1/orders", 4)]
+    assert ids == [i for i in range(57, 0, -1) if i % 2 == 0]
+    assert client.get("/customers/3/orders").get_json() == {"orders": [], "next_cursor": None}
+    assert client.get("/customers/42/orders").status_code == 404
+
+
+@pytest.mark.parametrize("query", ["limit=0", "limit=501", "limit=-1", "limit=ten", "cursor=not-a-cursor"])
+def test_bad_parameters(client, query):
+    assert client.get(f"/orders?{query}").status_code == 400
+[?2004hroot@3024e448-bc90-4b48-87a5-ee4fb7e9dfb0:/app# python3 -c "
+[?2004l[?2004h> import sqlite3
+[?2004l[?2004h> conn = sqlite3.connect('/app/data/orders.db')
+[?2004l[?2004h> # Check for created_at ties
+[?2004l[?2004h> print('Top 5 timestamps with most orders:')
+[?2004l[?2004h> for r in conn.execute('SELECT created_at, COUNT(*) c FROM orders GROUP BY created_at ORDER BY c DESC LIMIT 5'):
+[?2004l[?2004h>     print(r)
+[?2004l[?2004h> print()
+[?2004l[?2004h> # Check customer 5
+[?2004l[?2004h> print('Customer 5 order count:', conn.execute('SELECT COUNT(*) FROM orders WHERE customer_id=5').fetchone())
+[?2004l[?2004h> print('Total orders:', conn.execute('SELECT COUNT(*) FROM orders').fetchone())
+[?2004l[?2004h> # Check indexes
+[?2004l[?2004h> print('\nIndexes:')
+[?2004l[?2004h> for r in conn.execute('SELECT name, sql FROM sqlite_master WHERE type=\'index\''):
+[?2004l[?2004h>     print(r)
+[?2004l[?2004h> "
+[?2004lTop 5 timestamps with most orders:
+('2024-05-16T22:23:55Z', 62)
+('2024-06-29T08:09:23Z', 62)
+('2024-11-13T18:06:45Z', 60)
+('2024-12-23T06:23:22Z', 60)
+('2025-11-18T08:06:40Z', 60)
+
+Customer 5 order count: (61,)
+Total orders: (48213,)
+
+Indexes:
+('orders_created_at', 'CREATE INDEX orders_created_at ON orders(created_at)')
+('orders_customer', 'CREATE INDEX orders_customer ON orders(customer_id, created_at)')
+[?2004hroot@3024e448-bc90-4b48-87a5-ee4fb7e9dfb0:/app# cat /app/orders_service/__main__.py
+[?2004l"""Start the orders API: python -m orders_service --db data/orders.db --port 8080"""
+import argparse
+import os
+
+from waitress import serve
+
+from .app import create_app
+
+
+def main():
+    parser = argparse.ArgumentParser(prog="python -m orders_service", description=__doc__)
+    parser.add_argument("--db", required=True, help="path to the SQLite orders database")
+    parser.add_argument("--host", default="127.0.0.1")
+    parser.add_argument("--port", type=int, default=8080)
+    parser.add_argument("--threads", type=int, default=4)
+    args = parser.parse_args()
+    if not os.path.isfile(args.db):
+        parser.error(f"database not found: {args.db}")
+    app = create_app(os.path.abspath(args.db))
+    serve(app, host=args.host, port=args.port, threads=args.threads, ident="orders-api")
+
+
+if __name__ == "__main__":
+    main()
+[?2004hroot@3024e448-bc90-4b48-87a5-ee4fb7e9dfb0:/app# cat > /app/orders_service/pagination.py << 'PYEOF'
+[?2004l[?2004h> """Keyset ("seek") pagination for order listings.
+[?2004l[?2004h> 
+[?2004l[?2004h> We moved off LIMIT/OFFSET in 2025 (PERF-87): OFFSET re-reads every skipped row, so deep pages of the nightly export
+[?2004l[?2004h> got slower and slower, and rows shifted between pages whenever checkout inserted a new order. A keyset page starts
+[?2004l[?2004h> right after the last row the client has seen, so it costs the same at any depth and does not move under inserts.
+[?2004l[?2004h> 
+[?2004l[?2004h> Listings are ordered newest first (created_at DESC, id DESC; docs/API.md). The cursor handed to clients is opaque:
+[?2004l[?2004h> base64url of the position of the last row on the page.
+[?2004l[?2004h> """
+[?2004l[?2004h> import base64
+[?2004l[?2004h> import binascii
+[?2004l[?2004h> import re
+[?2004l[?2004h> from collections import namedtuple
+[?2004l[?2004h> 
+[?2004l[?2004h> from werkzeug.exceptions import BadRequest
+[?2004l[?2004h> 
+[?2004l[?2004h> DEFAULT_LIMIT = 100
+[?2004l[?2004h> MAX_LIMIT = 500
+[?2004l[?2004h> 
+[?2004l[?2004h> _TIMESTAMP = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z")
+[?2004l[?2004h> _DIGITS = re.compile(r"[0-9]{1,20}")
+[?2004l[?2004h> 
+[?2004l[?2004h> Cursor = namedtuple("Cursor", ["created_at", "id"])
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def parse_limit(raw):
+[?2004l[?2004h>     """The `limit` query parameter: an integer from 1 to MAX_LIMIT, DEFAULT_LIMIT when absent."""
+[?2004l[?2004h>     if raw is None:
+[?2004l[?2004h>         return DEFAULT_LIMIT
+[?2004l[?2004h>     if not _DIGITS.fullmatch(raw) or not 1 <= int(raw) <= MAX_LIMIT:
+[?2004l[?2004h>         raise BadRequest(f"limit must be an integer from 1 to {MAX_LIMIT}")
+[?2004l[?2004h>     return int(raw)
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def encode_cursor(row):
+[?2004l[?2004h>     """Cursor for the page after `row` (the last row of the current page)."""
+[?2004l[?2004h>     payload = f"{row['created_at']}|{row['id']}"
+[?2004l[?2004h>     return base64.urlsafe_b64encode(payload.encode("ascii")).decode("ascii").rstrip("=")
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def decode_cursor(raw):
+[?2004l[?2004h>     """Parse the `cursor` query parameter; None when absent. A malformed cursor is a 400."""
+[?2004l[?2004h>     if raw is None:
+[?2004l[?2004h>         return None
+[?2004l[?2004h>     try:
+[?2004l[?2004h>         text = base64.urlsafe_b64decode((raw + "=" * (-len(raw) % 4)).encode("ascii")).decode("ascii")
+[?2004l[?2004h>     except (ValueError, binascii.Error, UnicodeError):
+[?2004l[?2004h>         raise BadRequest("invalid cursor") from None
+[?2004l[?2004h>     parts = text.split("|")
+[?2004l[?2004h>     if len(parts) != 2:
+[?2004l[?2004h>         raise BadRequest("invalid cursor")
+[?2004l[?2004h>     created_at, id_str = parts
+[?2004l[?2004h>     if not _TIMESTAMP.fullmatch(created_at):
+[?2004l[?2004h>         raise BadRequest("invalid cursor")
+[?2004l[?2004h>     if not _DIGITS.fullmatch(id_str):
+[?2004l[?2004h>         raise BadRequest("invalid cursor")
+[?2004l[?2004h>     return Cursor(created_at=created_at, id=int(id_str))
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def paginate(con, columns, table, limit, cursor, where="", params=()):
+[?2004l[?2004h>     """One page of `SELECT columns FROM table [WHERE where]`, newest first.
+[?2004l[?2004h> 
+[?2004l[?2004h>     Returns (rows, next_cursor); next_cursor is None on the last page."""
+[?2004l[?2004h>     clauses = [where] if where else []
+[?2004l[?2004h>     args = list(params)
+[?2004l[?2004h>     if cursor is not None:
+[?2004l[?2004h>         clauses.append("(created_at < ?) OR (created_at = ? AND id < ?)")
+[?2004l[?2004h>         args.extend([cursor.created_at, cursor.created_at, cursor.id])
+[?2004l[?2004h>     sql = f"SELECT {columns} FROM {table}"
+[?2004l[?2004h>     if clauses:
+[?2004l[?2004h>         sql += " WHERE " + " AND ".join(f"({c})" for c in clauses)
+[?2004l[?2004h>     sql += " ORDER BY created_at DESC, id DESC LIMIT ?"
+[?2004l[?2004h>     args.append(limit)
+[?2004l[?2004h>     rows = con.execute(sql, args).fetchall()
+[?2004l[?2004h>     next_cursor = encode_cursor(rows[-1]) if len(rows) == limit else None
+[?2004l[?2004h>     return rows, next_cursor
+[?2004l[?2004h> PYEOF
+[?2004l[?2004hroot@3024e448-bc90-4b48-87a5-ee4fb7e9dfb0:/app# cat > /app/orders_service/queries.py << 'PYEOF'
+[?2004l[?2004h> """Queries behind the customer views (account page, support tool)."""
+[?2004l[?2004h> from .db import ORDER_COLUMNS
+[?2004l[?2004h> from .pagination import encode_cursor
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def customer_exists(con, customer_id):
+[?2004l[?2004h>     return con.execute("SELECT 1 FROM customers WHERE id = ?", (customer_id,)).fetchone() is not None
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def customer_orders_page(con, customer_id, limit, cursor):
+[?2004l[?2004h>     """One page of a customer's orders, newest first. Returns (rows, next_cursor).
+[?2004l[?2004h> 
+[?2004l[?2004h>     Same keyset scheme as pagination.paginate, written out here so that SQLite picks the orders_customer index
+[?2004l[?2004h>     (customer_id, created_at) instead of scanning orders_created_at for big wholesale accounts (PERF-112)."""
+[?2004l[?2004h>     sql = f"SELECT {ORDER_COLUMNS} FROM orders INDEXED BY orders_customer WHERE customer_id = ?"
+[?2004l[?2004h>     args = [customer_id]
+[?2004l[?2004h>     if cursor is not None:
+[?2004l[?2004h>         sql += " AND ((created_at < ?) OR (created_at = ? AND id < ?))"
+[?2004l[?2004h>         args.extend([cursor.created_at, cursor.created_at, cursor.id])
+[?2004l[?2004h>     sql += " ORDER BY created_at DESC, id DESC LIMIT ?"
+[?2004l[?2004h>     args.append(limit)
+[?2004l[?2004h>     rows = con.execute(sql, args).fetchall()
+[?2004l[?2004h>     next_cursor = encode_cursor(rows[-1]) if len(rows) == limit else None
+[?2004l[?2004h>     return rows, next_cursor
+[?2004l[?2004h> PYEOF
+[?2004l[?2004hroot@3024e448-bc90-4b48-87a5-ee4fb7e9dfb0:/app# cat > /app/orders_service/db.py << 'PYEOF'
+[?2004l[?2004h> """One SQLite connection per request. Other systems (checkout, the POS sync, back-office imports) write to the same
+[?2004l[?2004h> database file, so the API never caches rows: every request reads what is committed at that moment."""
+[?2004l[?2004h> import sqlite3
+[?2004l[?2004h> 
+[?2004l[?2004h> from flask import current_app, g
+[?2004l[?2004h> 
+[?2004l[?2004h> ORDER_FIELDS = ("id", "customer_id", "created_at", "status", "total_cents", "currency")
+[?2004l[?2004h> ORDER_COLUMNS = ", ".join(ORDER_FIELDS)
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def get_db():
+[?2004l[?2004h>     if "db" not in g:
+[?2004l[?2004h>         con = sqlite3.connect(current_app.config["DATABASE"], timeout=10)
+[?2004l[?2004h>         con.row_factory = sqlite3.Row
+[?2004l[?2004h>         g.db = con
+[?2004l[?2004h>     return g.db
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def close_db(_exc=None):
+[?2004l[?2004h>     con = g.pop("db", None)
+[?2004l[?2004h>     if con is not None:
+[?2004l[?2004h>         con.close()
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def order_json(row):
+[?2004l[?2004h>     return {name: row[name] for name in ORDER_FIELDS}
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def ensure_indexes(db_path):
+[?2004l[?2004h>     """Create composite indexes for keyset pagination if they do not exist yet."""
+[?2004l[?2004h>     con = sqlite3.connect(db_path, timeout=30)
+[?2004l[?2004h>     con.execute("CREATE INDEX IF NOT EXISTS orders_created_at_id ON orders(created_at, id)")
+[?2004l[?2004h>     con.execute("CREATE INDEX IF NOT EXISTS orders_customer_created_at_id ON orders(customer_id, created_at, id)")
+[?2004l[?2004h>     con.commit()
+[?2004l[?2004h>     con.close()
+[?2004l[?2004h> PYEOF
+[?2004l[?2004hroot@3024e448-bc90-4b48-87a5-ee4fb7e9dfb0:/app# cat > /app/orders_service/__main__.py << 'PYEOF'
+[?2004l[?2004h> """python -m orders_service --db <path to orders.db> --port <port>"""
+[?2004l[?2004h> import argparse
+[?2004l[?2004h> 
+[?2004l[?2004h> from waitress import serve
+[?2004l[?2004h> 
+[?2004l[?2004h> from .app import create_app
+[?2004l[?2004h> from .db import ensure_indexes
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def main():
+[?2004l[?2004h>     parser = argparse.ArgumentParser(description="Orders API")
+[?2004l[?2004h>     parser.add_argument("--db", required=True, help="path to orders.db")
+[?2004l[?2004h>     parser.add_argument("--port", type=int, required=True, help="port to listen on")
+[?2004l[?2004h>     args = parser.parse_args()
+[?2004l[?2004h> 
+[?2004l[?2004h>     ensure_indexes(args.db)
+[?2004l[?2004h> 
+[?2004l[?2004h>     app = create_app(args.db)
+[?2004l[?2004h>     serve(app, host="127.0.0.1", port=args.port)
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> if __name__ == "__main__":
+[?2004l[?2004h>     main()
+[?2004l[?2004h> PYEOF
+[?2004l[?2004hroot@3024e448-bc90-4b48-87a5-ee4fb7e9dfb0:/app# cd /app && python -m pytest -q tests 2>&1
+[?2004l[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m                                                                                                                                           [100%][0m
+[32m[32m[1m14 passed[0m[32m in 0.25s[0m[0m
+[?2004hroot@3024e448-bc90-4b48-87a5-ee4fb7e9dfb0:/app# cd /app && python -m orders_service --db data/orders.db --port 8080 > /tmp/svc.log 2>&1 &
+[?2004l[1] 1047
+[?2004hroot@3024e448-bc90-4b48-87a5-ee4fb7e9dfb0:/app# sleep 1; curl -s http://127.0.0.1:8080/orders/count
+[?2004lcat /tmp/svc.log
+bash: curl: command not found
+[?2004hroot@3024e448-bc90-4b48-87a5-ee4fb7e9dfb0:/app# cat /tmp/svc.log
+[?2004l[?2004hroot@3024e448-bc90-4b48-87a5-ee4fb7e9dfb0:/app# python3 -c "import sqlite3; c=sqlite3.connect('/app/data/orders.db'); print('indexes now:'); [print(r) for r in c.execute(\"SELECT name FROM sqlite_master WHERE type='index'\")]"
+[?2004lindexes now:
+('orders_created_at',)
+('orders_customer',)
+('orders_created_at_id',)
+('orders_customer_created_at_id',)
+[?2004hroot@3024e448-bc90-4b48-87a5-ee4fb7e9dfb0:/app# python3 << 'PYEOF'
+[?2004l[?2004h> import urllib.request, time, json
+[?2004l[?2004h> 
+[?2004l[?2004h> def get(url):
+[?2004l[?2004h>     t0=time.time()
+[?2004l[?2004h>     r=urllib.request.urlopen(url, timeout=15)
+[?2004l[?2004h>     body=json.loads(r.read())
+[?2004l[?2004h>     return body, r.status, time.time()-t0
+[?2004l[?2004h> 
+[?2004l[?2004h> body, status, dt = get("http://127.0.0.1:8080/orders/count")
+[?2004l[?2004h> print("count:", body, "status:", status, "dt: %.3f" % dt)
+[?2004l[?2004h> 
+[?2004l[?2004h> def walk(base, limit):
+[?2004l[?2004h>     seen=[]; cursor=None; pages=0; order_ok=True
+[?2004l[?2004h>     prev=None
+[?2004l[?2004h>     while True:
+[?2004l[?2004h>         url=f"{base}?limit={limit}"
+[?2004l[?2004h>         if cursor is not None: url+=f"&cursor={cursor}"
+[?2004l[?2004h>         b,s,dt=get(url)
+[?2004l[?2004h>         pages+=1
+[?2004l[?2004h>         for o in b["orders"]:
+[?2004l[?2004h>             if prev is not None:
+[?2004l[?2004h>                 ca, ia, cb, ib = prev["created_at"], prev["id"], o["created_at"], o["id"]
+[?2004l[?2004h>                 if (ca,ia) < (cb,ib):  # prev should be >= next in (created_at,id) desc
+[?2004l[?2004h>                     order_ok=False
+[?2004l[?2004h>             seen.append(o["id"])
+[?2004l[?2004h>             prev=o
+[?2004l[?2004h>         cursor=b["next_cursor"]
+[?2004l[?2004h>         if cursor is None: break
+[?2004l[?2004h>     return seen, pages, order_ok
+[?2004l[?2004h> 
+[?2004l[?2004h> seen, pages, order_ok = walk("http://127.0.0.1:8080/orders", 200)
+[?2004l[?2004h> print(f"/orders limit=200: {len(seen)} orders, {pages} pages, unique={len(set(seen))}, order_ok={order_ok}")
+[?2004l[?2004h> 
+[?2004l[?2004h> seen5, p5, ok5 = walk("http://127.0.0.1:8080/customers/5/orders", 20)
+[?2004l[?2004h> print(f"/customers/5/orders limit=20: {len(seen5)} orders, {p5} pages, unique={len(set(seen5))}, order_ok={ok5}")
+[?2004l[?2004h> 
+[?2004l[?2004h> # deep page timing: last cursor of a full walk to measure deep latency
+[?2004l[?2004h> t0=time.time()
+[?2004l[?2004h> b,s,dt=get("http://127.0.0.1:8080/orders?limit=500")
+[?2004l[?2004h> print(f"first page limit=500: {len(b['orders'])} rows dt={dt:.3f}")
+[?2004l[?2004h> PYEOF
+[?2004lcount: {'count': 48213} status: 200 dt: 0.043
+/orders limit=200: 48213 orders, 242 pages, unique=48213, order_ok=True
+/customers/5/orders limit=20: 61 orders, 4 pages, unique=61, order_ok=True
+first page limit=500: 500 rows dt=0.006
+[?2004hroot@3024e448-bc90-4b48-87a5-ee4fb7e9dfb0:/app# cat > /app/orders_service/__main__.py << 'PYEOF'
+[?2004l[?2004h> """Start the orders API: python -m orders_service --db data/orders.db --port 8080"""
+[?2004l[?2004h> import argparse
+[?2004l[?2004h> import os
+[?2004l[?2004h> 
+[?2004l[?2004h> from waitress import serve
+[?2004l[?2004h> 
+[?2004l[?2004h> from .app import create_app
+[?2004l[?2004h> from .db import ensure_indexes
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def main():
+[?2004l[?2004h>     parser = argparse.ArgumentParser(prog="python -m orders_service", description=__doc__)
+[?2004l[?2004h>     parser.add_argument("--db", required=True, help="path to the SQLite orders database")
+[?2004l[?2004h>     parser.add_argument("--host", default="127.0.0.1")
+[?2004l[?2004h>     parser.add_argument("--port", type=int, default=8080)
+[?2004l[?2004h>     parser.add_argument("--threads", type=int, default=4)
+[?2004l[?2004h>     args = parser.parse_args()
+[?2004l[?2004h>     if not os.path.isfile(args.db):
+[?2004l[?2004h>         parser.error(f"database not found: {args.db}")
+[?2004l[?2004h>     db_path = os.path.abspath(args.db)
+[?2004l[?2004h>     try:
+[?2004l[?2004h>         ensure_indexes(db_path)
+[?2004l[?2004h>     except Exception:
+[?2004l[?2004h>         # Index creation is an optimization; never let it block startup.
+[?2004l[?2004h>         pass
+[?2004l[?2004h>     app = create_app(db_path)
+[?2004l[?2004h>     serve(app, host=args.host, port=args.port, threads=args.threads, ident="orders-api")
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> if __name__ == "__main__":
+[?2004l[?2004h>     main()
+[?2004l[?2004h> PYEOF
+[?2004l[?2004hroot@3024e448-bc90-4b48-87a5-ee4fb7e9dfb0:/app# kill %1 2>/dev/null; sleep 1; echo killed
+[?2004l[1]+  Terminated              cd /app && python -m orders_service --db data/orders.db --port 8080 > /tmp/svc.log 2>&1
+killed
+[?2004hroot@3024e448-bc90-4b48-87a5-ee4fb7e9dfb0:/app# cd /app && python -m orders_service --db data/orders.db --port 8080 > /tmp/svc.log 2>&1 &
+[?2004l[1] 1174
+[?2004hroot@3024e448-bc90-4b48-87a5-ee4fb7e9dfb0:/app# python3 << 'PYEOF'
+[?2004lesent exactly once
+missing=[i for i in start if i not in walk_set]
+print('originals missing from walk:', len(missing), missing[:10])
+# inserted should appear at most once
+ins=[999001,999002]
+for i in ins:
+    print(f'inserted {i} count in walk:', walk_ids.count(i))
+# ordering check: strictly descending (created_at,id)
+ok=all(walk_pairs[i] > walk_pairs[i+1] for i in range(len(walk_pairs)-1))
+print('walk strictly descending (created_at,id):', ok)
+PYEOF
+[?2004h> import urllib.request, time, json, sqlite3, threading
+[?2004l[?2004h> 
+[?2004l[?2004h> def get(url):
+[?2004l[?2004h>     r=urllib.request.urlopen(url, timeout=20)
+[?2004l[?2004h>     return json.loads(r.read())
+[?2004l[?2004h> 
+[?2004l[?2004h> # Starting set
+[?2004l[?2004h> con=sqlite3.connect('data/orders.db'); con.row_factory=sqlite3.Row
+[?2004l[?2004h> start = {r['id']: (r['created_at'], r['id']) for r in con.execute('SELECT id, created_at FROM orders')}
+[?2004l[?2004h> max_id_start = max(r['id'] for r in con.execute('SELECT id FROM orders'))
+[?2004l[?2004h> print('start count:', len(start), 'max_id_start:', max_id_start)
+[?2004l[?2004h> 
+[?2004l[?2004h> cursor_holder={'cursor':None}
+[?2004l[?2004h> walk_done=threading.Event()
+[?2004l[?2004h> walk_ids=[]; walk_pairs=[]
+[?2004l[?2004h> 
+[?2004l[?2004h> def walk():
+[?2004l[?2004h>     cursor=None
+[?2004l[?2004h>     while True:
+[?2004l[?2004h>         url=f"http://127.0.0.1:8080/orders?limit=200"
+[?2004l[?2004h>         if cursor is not None: url+=f"&cursor={cursor}"
+[?2004l[?2004h>         b=get(url)
+[?2004l[?2004h>         for o in b['orders']:
+[?2004l[?2004h>             walk_ids.append(o['id']); walk_pairs.append((o['created_at'], o['id']))
+[?2004l[?2004h>         cursor=b['next_cursor']
+[?2004l[?2004h>         if cursor is None:
+[?2004l[?2004h>             walk_done.set(); return
+[?2004l[?2004h> 
+[?2004l[?2004h> wt=threading.Thread(target=walk); wt.start()
+[?2004l[?2004h> 
+[?2004l[?2004h> # wait a few pages
+[?2004l[?2004h> for _ in range(50):
+[?2004l[?2004h>     if not walk_done.is_set(): time.sleep(0.15); break
+[?2004l[?2004h>     time.sleep(0.15)
+[?2004l[?2004h> 
+[?2004l[?2004h> # now insert: new (newest) + backfilled (high id, old date)
+[?2004l[?2004h> c2=sqlite3.connect('data/orders.db', timeout=15)
+[?2004l[?2004h> new_ts='2099-01-01T00:00:00Z'
+[?2004l[?2004h> c2.execute('INSERT INTO orders (customer_id, created_at, status, total_cents, currency, channel) VALUES (1,?,?,?,?,?)',(new_ts,'paid',111,'USD','web'))
+[?2004l[?2004h> # backfilled: old date, high id
+[?2004l[?2004h> c2.execute('INSERT INTO orders (id, customer_id, created_at, status, total_cents, currency, channel) VALUES (?,?,?,?,?,?,?)',
+[?2004l[?2004h>            (999001, 2, '2020-01-01T00:00:00Z','paid',222,'USD','pos'))
+[?2004l[?2004h> # another backfill mid-range
+[?2004l[?2004h> c2.execute('INSERT INTO orders (id, customer_id, created_at, status, total_cents, currency, channel) VALUES (?,?,?,?,?,?,?)',
+[?2004l[?2004h>            (999002, 1, '2024-06-01T00:00:00Z','shipped',333,'EUR','pos'))
+[?2004l[?2004h> c2.commit(); c2.close()
+[?2004l[?2004h> print('inserted 3 orders')
+[?2004l[?2004h> 
+[?2004l[?2004h> wt.join()
+[?2004l[?2004h> walk_set=set(walk_ids)
+[?2004l[?2004h> print('walk total:', len(walk_ids), 'unique:', len(walk_set))
+[?2004l[?2004h> 
+[?2004l[?2004h> # every original must be present exactly once
+[?2004l[?2004h> missing=[i for i in start if i not in walk_set]
+[?2004l[?2004h> print('originals missing from walk:', len(missing), missing[:10])
+[?2004l[?2004h> # inserted should appear at most once
+[?2004l[?2004h> ins=[999001,999002]
+[?2004l[?2004h> for i in ins:
+[?2004l[?2004h>     print(f'inserted {i} count in walk:', walk_ids.count(i))
+[?2004l[?2004h> # ordering check: strictly descending (created_at,id)
+[?2004l[?2004h> ok=all(walk_pairs[i] > walk_pairs[i+1] for i in range(len(walk_pairs)-1))
+[?2004l[?2004h> print('walk strictly descending (created_at,id):', ok)
+[?2004l[?2004h> PYEOF
+[?2004lstart count: 48213 max_id_start: 48213
+inserted 3 orders
+walk total: 48215 unique: 48215
+originals missing from walk: 0 []
+inserted 999001 count in walk: 1
+inserted 999002 count in walk: 1
+walk strictly descending (created_at,id): True
+[?2004hroot@3024e448-bc90-4b48-87a5-ee4fb7e9dfb0:/app# python3 << 'PYEOF'
+[?2004l[?2004h> import urllib.request, json, sqlite3
+[?2004l[?2004h> def get(url):
+[?2004l[?2004h>     return json.loads(urllib.request.urlopen(url, timeout=20).read())
+[?2004l[?2004h> print('count now:', get('http://127.0.0.1:8080/orders/count'))
+[?2004l[?2004h> 
+[?2004l[?2004h> # fresh full walk
+[?2004l[?2004h> seen=set(); cursor=None
+[?2004l[?2004h> while True:
+[?2004l[?2004h>     url='http://127.0.0.1:8080/orders?limit=500'
+[?2004l[?2004h>     if cursor is not None: url+=f'&cursor={cursor}'
+[?2004l[?2004h>     b=get(url)
+[?2004l[?2004h>     for o in b['orders']: seen.add(o['id'])
+[?2004l[?2004h>     cursor=b['next_cursor']
+[?2004l[?2004h>     if cursor is None: break
+[?2004l[?2004h> print('fresh walk total:', len(seen), 'has 999001:', 999001 in seen, '999002:', 999002 in seen, '48214(newest):', 48214 in seen)
+[?2004l[?2004h> 
+[?2004l[?2004h> # customer 5 walk must include its inserts if any for customer 5
+[?2004l[?2004h> c5=set(); cursor=None
+[?2004l[?2004h> while True:
+[?2004l[?2004h>     url='http://127.0.0.1:8080/customers/5/orders?limit=10'
+[?2004l[?2004h>     if cursor is not None: url+=f'&cursor={cursor}'
+[?2004l[?2004h>     b=get(url)
+[?2004l[?2004h>     for o in b['orders']: c5.add(o['id'])
+[?2004l[?2004h>     cursor=b['next_cursor']
+[?2004l[?2004h>     if cursor is None: break
+[?2004l[?2004h> print('customer 5 walk:', sorted(c5))
+[?2004l[?2004h> PYEOF
+[?2004lcount now: {'count': 48216}
+fresh walk total: 48216 has 999001: True 999002: True 48214(newest): True
+customer 5 walk: [4284, 4285, 4286, 4287, 4288, 4289, 4290, 4291, 4292, 4293, 4294, 4295, 4296, 4297, 4298, 4299, 4300, 4301, 4302, 4303, 4304, 4305, 4306, 4307, 4308, 4309, 4310, 4311, 4312, 4313, 4314, 4315, 4316, 4317, 4318, 4319, 4320, 4321, 4322, 4323, 4324, 4325, 4326, 4327, 4328, 4329, 4330, 4331, 4332, 4333, 4334, 4335, 4336, 4337, 4338, 4339, 36261, 36262, 36263, 36264, 36265]
+[?2004hroot@3024e448-bc90-4b48-87a5-ee4fb7e9dfb0:/app# python3 -c "
+[?2004l[?2004h> import sqlite3
+[?2004l[?2004h> c=sqlite3.connect('data/orders.db')
+[?2004l[?2004h> print('total orders now:', c.execute('SELECT COUNT(*) FROM orders').fetchone()[0])
+[?2004l[?2004h> print('total customers:', c.execute('SELECT COUNT(*) FROM customers').fetchone()[0])
+[?2004l[?2004h> print('inserts present:', [r[0] for r in c.execute('SELECT id FROM orders WHERE id IN (999001,999002,48214) ORDER BY id')])
+[?2004l[?2004h> print('sample original 1:', c.execute('SELECT id,customer_id,created_at,status,total_cents,currency FROM orders WHERE id=1').fetchone())
+[?2004l[?2004h> print('sample original 48213:', c.execute('SELECT id,customer_id,created_at,status,total_cents,currency FROM orders WHERE id=48213').fetchone())
+[?2004l[?2004h> "
+[?2004ltotal orders now: 48216
+total customers: 4600
+inserts present: [48214, 999001, 999002]
+sample original 1: (1, 3925, '2024-01-15T01:00:54Z', 'paid', 1535, 'EUR')
+sample original 48213: (48213, 2067, '2024-08-15T23:39:31Z', 'shipped', 5698, 'USD')
+[?2004hroot@3024e448-bc90-4b48-87a5-ee4fb7e9dfb0:/app# cd /app && python -m pytest -q tests 2>&1 | tail -5
+[?2004l..............                                                           [100%]
+14 passed in 0.24s
+[?2004hroot@3024e448-bc90-4b48-87a5-ee4fb7e9dfb0:/app# python3 -c "import sqlite3; c=sqlite3.connect('data/orders.db'); c.execute('DELETE FROM orders WHERE id IN (999001,999002,48214)'); c.commit(); print('orders now:', c.execute('SELECT COUNT(*) FROM orders').fetchone()[0]); c.close()"
+[?2004lorders now: 48213
+[?2004hroot@3024e448-bc90-4b48-87a5-ee4fb7e9dfb0:/app# kill %1 2>/dev/null; sleep 1; echo "service stopped"
+[?2004l[1]+  Terminated              cd /app && python -m orders_service --db data/orders.db --port 8080 > /tmp/svc.log 2>&1
+service stopped
+[?2004hroot@3024e448-bc90-4b48-87a5-ee4fb7e9dfb0:/app# echo '=== pagination.py (cursor) ==='; sed -n '20,55p' /app/orders_service/pagination.py
+[?2004l=== pagination.py (cursor) ===
+_TIMESTAMP = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z")
+_DIGITS = re.compile(r"[0-9]{1,20}")
+
+Cursor = namedtuple("Cursor", ["created_at", "id"])
+
+
+def parse_limit(raw):
+    """The `limit` query parameter: an integer from 1 to MAX_LIMIT, DEFAULT_LIMIT when absent."""
+    if raw is None:
+        return DEFAULT_LIMIT
+    if not _DIGITS.fullmatch(raw) or not 1 <= int(raw) <= MAX_LIMIT:
+        raise BadRequest(f"limit must be an integer from 1 to {MAX_LIMIT}")
+    return int(raw)
+
+
+def encode_cursor(row):
+    """Cursor for the page after `row` (the last row of the current page)."""
+    payload = f"{row['created_at']}|{row['id']}"
+    return base64.urlsafe_b64encode(payload.encode("ascii")).decode("ascii").rstrip("=")
+
+
+def decode_cursor(raw):
+    """Parse the `cursor` query parameter; None when absent. A malformed cursor is a 400."""
+    if raw is None:
+        return None
+    try:
+        text = base64.urlsafe_b64decode((raw + "=" * (-len(raw) % 4)).encode("ascii")).decode("ascii")
+    except (ValueError, binascii.Error, UnicodeError):
+        raise BadRequest("invalid cursor") from None
+    parts = text.split("|")
+    if len(parts) != 2:
+        raise BadRequest("invalid cursor")
+    created_at, id_str = parts
+    if not _TIMESTAMP.fullmatch(created_at):
+        raise BadRequest("invalid cursor")
+    if not _DIGITS.fullmatch(id_str):
+[?2004hroot@3024e448-bc90-4b48-87a5-ee4fb7e9dfb0:/app# 

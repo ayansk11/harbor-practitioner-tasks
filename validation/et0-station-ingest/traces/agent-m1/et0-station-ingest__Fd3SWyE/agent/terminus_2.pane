@@ -1,0 +1,829 @@
+[?2004hroot@aa011f43-6892-48a3-9173-349d2c218f01:/app# asciinema rec --stdin /logs/agent/recording.cast
+[?2004l[0;32masciinema: recording asciicast to /logs/agent/recording.cast[0m
+[0;32masciinema: press <ctrl-d> or type "exit" when you're done[0m
+[?2004hroot@aa011f43-6892-48a3-9173-349d2c218f01:/app# clear
+[?2004l[H[J[3J[?2004hroot@aa011f43-6892-48a3-9173-349d2c218f01:/app# find /app -type f | head -60
+[?2004l/app/README.md
+/app/config/stations.yaml
+/app/data/raw/ARN.csv
+/app/data/raw/CDB.csv
+/app/data/raw/HLT.csv
+/app/data/raw/LGN.csv
+/app/data/raw/MRS.csv
+/app/data/raw/PAL.csv
+/app/data/raw/RSD.csv
+/app/data/raw/VNT.csv
+/app/docs/METHOD.md
+/app/et0/__init__.py
+/app/et0/fao56.py
+/app/et0/ingest.py
+/app/et0/meta.py
+/app/et0/pipeline.py
+/app/et0/selfcheck.py
+/app/output/et0.csv
+/app/reference/metservice_et0_2025.csv
+[?2004hroot@aa011f43-6892-48a3-9173-349d2c218f01:/app# cat /app/README.md
+[?2004l# ET0 pipeline (irrigation advice)
+
+Daily reference evapotranspiration (ET0, FAO-56 Penman-Monteith) for the stations our irrigation advice uses. The
+advice service reads `output/et0.csv` every morning and turns ET0 into watering recommendations for growers near each
+station.
+
+Run it for our stations:
+
+    cd /app
+    python -m et0.pipeline --stations config/stations.yaml --data data/raw --out output/et0.csv
+
+Check the formula against FAO-56's worked example: `python -m et0.selfcheck`.
+
+| Path | What it is |
+|---|---|
+| `et0/pipeline.py` | command line: register + raw files -> one ET0 value per station and day |
+| `et0/meta.py` | reads the station register |
+| `et0/ingest.py` | reads one station's raw daily file into the standard inputs |
+| `et0/fao56.py` | the FAO-56 daily equations |
+| `et0/selfcheck.py` | FAO-56 chapter 4, Example 18 |
+| `config/stations.yaml` | station register (8 stations from three networks) |
+| `data/raw/<id>.csv` | raw daily records for 2025 |
+| `docs/METHOD.md` | the method, every constant, and every input form we accept |
+| `reference/metservice_et0_2025.csv` | ET0 published by the national met service for two of our stations (rounded to 0.1 mm/day) |
+| `output/et0.csv` | the current published output |
+
+The register now holds stations from three networks: the original `valley-agromet` stations and, since this year,
+stations imported from the `highland-synop` and `southern-coast` networks.
+[?2004hroot@aa011f43-6892-48a3-9173-349d2c218f01:/app# cat /app/docs/METHOD.md
+[?2004l# How we compute daily ET0
+
+This is the method the `et0` package must follow. It is the daily FAO-56 Penman-Monteith procedure: FAO Irrigation
+and Drainage Paper No. 56, *Crop evapotranspiration* (Allen, Pereira, Raes and Smith, 1998), chapters 3 and 4.
+Equation numbers below are the book's, so you can look any step up there. You do not need the book: everything the
+pipeline needs is on this page.
+
+ET0 is the water a well-watered reference grass surface would lose in one day, in mm/day. We publish one value per
+station per day.
+
+## 1. Inputs, after conversion to standard form
+
+| Symbol | Meaning | Unit |
+|---|---|---|
+| Tmax, Tmin | daily maximum and minimum air temperature | deg C |
+| u2 | mean daily wind speed **at 2 m above ground** | m/s |
+| Rs | incoming solar radiation, daily total | MJ m-2 day-1 |
+| ea | actual vapour pressure | kPa |
+| J | day of the year: 1 on 1 January, up to 365 (366 in a leap year) | - |
+| latitude | decimal degrees, **north positive, south negative** | deg |
+| z | station elevation above sea level | m |
+
+Station records do not always arrive in this form. Section 3 lists every form our station register and raw files use
+and how each one is converted. The FAO-56 equations themselves (section 2) only ever see the standard form.
+
+## 2. The daily procedure
+
+Constants: solar constant Gsc = 0.0820 MJ m-2 min-1; Stefan-Boltzmann constant sigma = 4.903e-9 MJ K-4 m-2 day-1;
+albedo of the reference grass 0.23; absolute temperature in Eq. 39 is T + 273.16.
+
+1. Mean temperature (Eq. 9): Tmean = (Tmax + Tmin) / 2.
+2. Air pressure from elevation (Eq. 7): P = 101.3 * ((293 - 0.0065 z) / 293) ^ 5.26, in kPa.
+3. Psychrometric constant (Eq. 8): gamma = 0.665e-3 * P, in kPa/degC.
+4. Saturation vapour pressure at temperature T (Eq. 11): e0(T) = 0.6108 * exp(17.27 T / (T + 237.3)), in kPa.
+5. Mean saturation vapour pressure (Eq. 12): es = (e0(Tmax) + e0(Tmin)) / 2. Do not use e0(Tmean) here.
+6. Slope of the saturation curve at Tmean (Eq. 13): Delta = 4098 * e0(Tmean) / (Tmean + 237.3)^2, in kPa/degC.
+7. Actual vapour pressure ea, from whichever humidity the station reports (section 3.5):
+   - from daily maximum and minimum relative humidity (Eq. 17): ea = [e0(Tmin) RHmax/100 + e0(Tmax) RHmin/100] / 2;
+   - from the daily mean dewpoint temperature (Eq. 14): ea = e0(Tdew).
+8. Extraterrestrial radiation Ra (Eqs. 21 to 25), with phi = latitude in radians (Eq. 22, negative in the south):
+   - inverse relative Earth-Sun distance (Eq. 23): dr = 1 + 0.033 cos(2 pi J / 365);
+   - solar declination (Eq. 24): delta = 0.409 sin(2 pi J / 365 - 1.39), in radians;
+   - sunset hour angle (Eq. 25): ws = arccos(-tan(phi) tan(delta)), in radians;
+   - Ra = (24 * 60 / pi) * Gsc * dr * [ws sin(phi) sin(delta) + cos(phi) cos(delta) sin(ws)] (Eq. 21), MJ m-2 day-1.
+   The divisor is 365 in every year, leap years included; J itself runs to 366 in a leap year.
+9. Clear-sky radiation (Eq. 37): Rso = (0.75 + 2e-5 z) * Ra.
+10. Net shortwave radiation (Eq. 38): Rns = (1 - 0.23) * Rs.
+11. Net longwave radiation (Eq. 39):
+    Rnl = sigma * [(Tmax + 273.16)^4 + (Tmin + 273.16)^4] / 2 * (0.34 - 0.14 sqrt(ea)) * (1.35 Rs/Rso - 0.35),
+    where the ratio Rs/Rso is limited to at most 1.0 before it is used.
+12. Net radiation (Eq. 40): Rn = Rns - Rnl.
+13. Soil heat flux for a daily step (Eq. 42): G = 0.
+14. Reference evapotranspiration (Eq. 6):
+    ET0 = [0.408 Delta (Rn - G) + gamma * 900 / (Tmean + 273) * u2 * (es - ea)] / [Delta + gamma (1 + 0.34 u2)],
+    in mm/day. The factor 0.408 turns MJ m-2 day-1 into mm/day of evaporated water (Eq. 20).
+
+`et0/fao56.py` implements steps 1 to 14, and `python -m et0.selfcheck` checks it against the daily worked example in
+chapter 4 of the book (Example 18, ET0 = 3.88 mm/day).
+
+## 3. Station register and raw files
+
+### 3.1 The register (`config/stations.yaml`)
+A YAML file with a list `stations`. Every station has every key below; there are no other forms than the ones listed.
+
+| Key | What it holds |
+|---|---|
+| `id` | station code; the raw file is `<data folder>/<id>.csv` |
+| `name`, `network` | free text, not used in the calculation |
+| `latitude` | see 3.2 |
+| `longitude` | decimal degrees, east positive; not used by the daily method |
+| `elevation_m` | elevation above sea level in metres (z in Eqs. 7 and 37) |
+| `wind_height_m` | height of the anemometer above ground in metres; see 3.3 |
+| `radiation_units` | unit of the `solar_rad` column; see 3.4 |
+| `humidity` | which humidity columns the raw file has; see 3.5 |
+
+### 3.2 Latitude
+Two forms are used:
+- a number: signed decimal degrees, north positive, south negative (`38.42`, `-31.85`);
+- text: unsigned decimal degrees followed directly by the hemisphere letter `N` or `S` (`"36.95N"`, `"34.92S"`).
+  `"34.92S"` is the same place as `-34.92`.
+
+### 3.3 Wind sensor height
+`wind_ms` is the mean daily wind speed at the anemometer, which may be at any height (any positive value of
+`wind_height_m` between 1 m and 20 m; 2, 3 and 10 m are the most common). The equations need u2, the speed at 2 m.
+Convert with the logarithmic wind profile (Eq. 47), for every station:
+
+    u2 = uz * 4.87 / ln(67.8 z_w - 5.42)
+
+where uz is the measured speed and z_w the anemometer height in metres. At 10 m the factor is about 0.748; at 2 m it is
+1.000 (to three decimals).
+
+### 3.4 Radiation units
+- `MJ/m2/day`: daily total incoming solar radiation, already Rs.
+- `W/m2`: daily mean solar irradiance. Multiply by 0.0864 to get Rs in MJ m-2 day-1 (1 W m-2 sustained for a day is
+  86 400 J m-2 = 0.0864 MJ m-2).
+
+### 3.5 Humidity
+- `rh_minmax`: columns `rh_max_pct` and `rh_min_pct` (daily maximum and minimum relative humidity, %); use Eq. 17.
+- `dewpoint`: column `tdew_c` (daily mean dewpoint temperature, deg C); use Eq. 14.
+
+### 3.6 Raw daily files (`<data folder>/<id>.csv`)
+One row per day, no gaps and no missing values. Columns: `date` (YYYY-MM-DD), `tmax_c`, `tmin_c`, the humidity
+column(s) of 3.5, `wind_ms` (m/s at the anemometer height), `solar_rad` (in the station's `radiation_units`).
+
+## 4. Output
+CSV with a header row and the columns `station_id`, `date` (YYYY-MM-DD) and `et0_mm_day`: one row for every station
+and every day in the input. The pipeline writes three decimals.
+[?2004hroot@aa011f43-6892-48a3-9173-349d2c218f01:/app# cat /app/et0/fao56.py
+[?2004l"""FAO-56 Penman-Monteith reference evapotranspiration, daily time step.
+
+Implements the daily procedure of FAO Irrigation and Drainage Paper 56 (Allen et al., 1998), chapters 3 and 4, as
+written up in /app/docs/METHOD.md. Every function works on numpy arrays (one element per day).
+
+Inputs expected by et0_daily (already in standard form):
+    tmax, tmin   daily maximum and minimum air temperature [deg C]
+    u2           mean daily wind speed at 2 m above ground [m/s]
+    rs           incoming solar radiation [MJ m-2 day-1]
+    ea           actual vapour pressure [kPa] (see actual_vapour_pressure_*)
+    doy          day of the year, 1 = 1 January
+    latitude     decimal degrees, north positive, south negative
+    elevation    metres above sea level
+"""
+import numpy as np
+
+SOLAR_CONSTANT = 0.0820        # MJ m-2 min-1
+STEFAN_BOLTZMANN = 4.903e-9    # MJ K-4 m-2 day-1
+ALBEDO = 0.23                  # hypothetical grass reference
+
+
+def atmospheric_pressure(elevation):
+    """Eq. 7, kPa."""
+    return 101.3 * ((293.0 - 0.0065 * np.asarray(elevation, float)) / 293.0) ** 5.26
+
+
+def psychrometric_constant(pressure):
+    """Eq. 8, kPa/degC."""
+    return 0.665e-3 * pressure
+
+
+def saturation_vapour_pressure(t):
+    """Eq. 11, kPa."""
+    t = np.asarray(t, float)
+    return 0.6108 * np.exp(17.27 * t / (t + 237.3))
+
+
+def vapour_pressure_slope(t):
+    """Eq. 13, kPa/degC."""
+    t = np.asarray(t, float)
+    return 4098.0 * saturation_vapour_pressure(t) / (t + 237.3) ** 2
+
+
+def actual_vapour_pressure_rh(tmax, tmin, rh_max, rh_min):
+    """Eq. 17, kPa, from daily maximum and minimum relative humidity [%]."""
+    return (saturation_vapour_pressure(tmin) * np.asarray(rh_max, float) / 100.0
+            + saturation_vapour_pressure(tmax) * np.asarray(rh_min, float) / 100.0) / 2.0
+
+
+def actual_vapour_pressure_dewpoint(tdew):
+    """Eq. 14, kPa, from the daily mean dewpoint temperature [degC]."""
+    return saturation_vapour_pressure(tdew)
+
+
+def extraterrestrial_radiation(latitude, doy):
+    """Eqs. 21-25: Ra [MJ m-2 day-1] and the sunset hour angle ws [rad]."""
+    phi = np.deg2rad(np.asarray(latitude, float))
+    doy = np.asarray(doy, float)
+    dr = 1.0 + 0.033 * np.cos(2.0 * np.pi * doy / 365.0)
+    decl = 0.409 * np.sin(2.0 * np.pi * doy / 365.0 - 1.39)
+    ws = np.arccos(np.clip(-np.tan(phi) * np.tan(decl), -1.0, 1.0))
+    ra = (24.0 * 60.0 / np.pi) * SOLAR_CONSTANT * dr * (
+        ws * np.sin(phi) * np.sin(decl) + np.cos(phi) * np.cos(decl) * np.sin(ws))
+    return ra, ws
+
+
+def daylight_hours(ws):
+    """Eq. 34, hours."""
+    return 24.0 / np.pi * ws
+
+
+def clear_sky_radiation(ra, elevation):
+    """Eq. 37, MJ m-2 day-1."""
+    return (0.75 + 2e-5 * np.asarray(elevation, float)) * ra
+
+
+def net_longwave_radiation(tmax, tmin, ea, rs, rso):
+    """Eq. 39, MJ m-2 day-1. Rs/Rso is limited to 1.0."""
+    rel = np.minimum(np.asarray(rs, float) / rso, 1.0)
+    tk4 = ((np.asarray(tmax, float) + 273.16) ** 4 + (np.asarray(tmin, float) + 273.16) ** 4) / 2.0
+    return STEFAN_BOLTZMANN * tk4 * (0.34 - 0.14 * np.sqrt(ea)) * (1.35 * rel - 0.35)
+
+
+def et0_daily(tmax, tmin, u2, rs, ea, doy, latitude, elevation):
+    """Eq. 6, FAO-56 Penman-Monteith reference evapotranspiration [mm/day]; soil heat flux G = 0 (Eq. 42)."""
+    tmax = np.asarray(tmax, float)
+    tmin = np.asarray(tmin, float)
+    u2 = np.asarray(u2, float)
+    rs = np.asarray(rs, float)
+    ea = np.asarray(ea, float)
+    tmean = (tmax + tmin) / 2.0
+    delta = vapour_pressure_slope(tmean)
+    gamma = psychrometric_constant(atmospheric_pressure(elevation))
+    es = (saturation_vapour_pressure(tmax) + saturation_vapour_pressure(tmin)) / 2.0
+    ra, _ = extraterrestrial_radiation(latitude, doy)
+    rso = clear_sky_radiation(ra, elevation)
+    rns = (1.0 - ALBEDO) * rs
+    rnl = net_longwave_radiation(tmax, tmin, ea, rs, rso)
+    rn = rns - rnl
+    g = 0.0
+    num = 0.408 * delta * (rn - g) + gamma * (900.0 / (tmean + 273.0)) * u2 * (es - ea)
+    den = delta + gamma * (1.0 + 0.34 * u2)
+    return num / den
+[?2004hroot@aa011f43-6892-48a3-9173-349d2c218f01:/app# cat /app/et0/ingest.py
+[?2004l"""Read one station's raw daily file and turn it into the standard daily inputs used by fao56.et0_daily."""
+import os
+
+import pandas as pd
+
+from . import fao56
+
+BASE_COLUMNS = ["date", "tmax_c", "tmin_c", "wind_ms", "solar_rad"]
+HUMIDITY_COLUMNS = {"rh_minmax": ["rh_max_pct", "rh_min_pct"], "dewpoint": ["tdew_c"]}
+
+
+def load_station(station, data_dir):
+    """Return a DataFrame with columns station_id, date, doy, tmax, tmin, ea, u2, rs (standard units)."""
+    path = os.path.join(data_dir, f"{station.station_id}.csv")
+    raw = pd.read_csv(path)
+    if station.humidity not in HUMIDITY_COLUMNS:
+        raise ValueError(f"{station.station_id}: unknown humidity type {station.humidity!r}")
+    missing = [c for c in BASE_COLUMNS + HUMIDITY_COLUMNS[station.humidity] if c not in raw.columns]
+    if missing:
+        raise ValueError(f"{path}: missing columns {missing}")
+
+    dates = pd.to_datetime(raw["date"], format="%Y-%m-%d")
+    df = pd.DataFrame({
+        "station_id": station.station_id,
+        "date": dates.dt.strftime("%Y-%m-%d"),
+        "doy": dates.dt.dayofyear.astype(int),
+        "tmax": raw["tmax_c"].astype(float),
+        "tmin": raw["tmin_c"].astype(float),
+    })
+    if station.humidity == "dewpoint":
+        df["ea"] = fao56.actual_vapour_pressure_dewpoint(raw["tdew_c"].astype(float))
+    else:
+        df["ea"] = fao56.actual_vapour_pressure_rh(df["tmax"], df["tmin"], raw["rh_max_pct"].astype(float),
+                                                   raw["rh_min_pct"].astype(float))
+    df["u2"] = raw["wind_ms"].astype(float)          # m/s at 2 m
+    df["rs"] = raw["solar_rad"].astype(float)        # MJ m-2 day-1
+    return df
+[?2004hroot@aa011f43-6892-48a3-9173-349d2c218f01:/app# cat /app/et0/meta.py
+[?2004l"""Station register: read the stations YAML into Station records (fields are described in /app/docs/METHOD.md)."""
+from dataclasses import dataclass
+
+import yaml
+
+
+@dataclass(frozen=True)
+class Station:
+    station_id: str
+    name: str
+    latitude: float          # decimal degrees, north positive
+    longitude: float
+    elevation_m: float
+    wind_height_m: float
+    radiation_units: str
+    humidity: str
+    network: str
+
+
+def parse_latitude(value):
+    """Latitude in decimal degrees.
+
+    The register holds plain numbers (38.42, -31.85) and, for stations imported from the synop and coast networks,
+    text with a hemisphere letter ("36.95N").
+    """
+    if isinstance(value, (int, float)):
+        return float(value)
+    text = str(value).strip().upper()
+    return float(text.rstrip("NS"))
+
+
+def load_stations(path):
+    with open(path, encoding="utf-8") as f:
+        doc = yaml.safe_load(f)
+    stations = []
+    for rec in doc["stations"]:
+        stations.append(Station(
+            station_id=str(rec["id"]),
+            name=str(rec.get("name", "")),
+            latitude=parse_latitude(rec["latitude"]),
+            longitude=float(rec["longitude"]),
+            elevation_m=float(rec["elevation_m"]),
+            wind_height_m=float(rec["wind_height_m"]),
+            radiation_units=str(rec["radiation_units"]),
+            humidity=str(rec["humidity"]),
+            network=str(rec.get("network", "")),
+        ))
+    return stations
+[?2004hroot@aa011f43-6892-48a3-9173-349d2c218f01:/app# cat /app/et0/pipeline.py
+[?2004l"""Daily ET0 for every station in a register.
+
+    python -m et0.pipeline --stations config/stations.yaml --data data/raw --out output/et0.csv
+"""
+import argparse
+import os
+import sys
+
+import pandas as pd
+
+from . import fao56, ingest, meta
+
+
+def run(stations_path, data_dir, out_path):
+    frames = []
+    for st in meta.load_stations(stations_path):
+        df = ingest.load_station(st, data_dir)
+        df["et0_mm_day"] = fao56.et0_daily(df["tmax"], df["tmin"], df["u2"], df["rs"], df["ea"], df["doy"],
+                                           st.latitude, st.elevation_m)
+        frames.append(df[["station_id", "date", "et0_mm_day"]])
+        print(f"{st.station_id}: {len(df)} days, mean ET0 {df['et0_mm_day'].mean():.2f} mm/day")
+    out = pd.concat(frames, ignore_index=True)
+    parent = os.path.dirname(out_path)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+    out.to_csv(out_path, index=False, float_format="%.3f")
+    return out
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--stations", required=True, help="station register (YAML)")
+    ap.add_argument("--data", required=True, help="folder with one <station_id>.csv per station")
+    ap.add_argument("--out", required=True, help="output CSV")
+    args = ap.parse_args(argv)
+    run(args.stations, args.data, args.out)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+[?2004hroot@aa011f43-6892-48a3-9173-349d2c218f01:/app# cat /app/et0/selfcheck.py
+[?2004l"""Check fao56.et0_daily against the daily worked example of FAO-56 (chapter 4, Example 18).
+
+    python -m et0.selfcheck
+
+Uccle (Brussels), 6 July, 50 deg 48 min N, 100 m: Tmax 21.5, Tmin 12.3 degC, RHmax 84 %, RHmin 63 %, sunshine 9.25 h,
+wind 2.078 m/s at 2 m (the book first converts its 10 m reading). The book's answer is ETo = 3.88 mm/day (3.9 rounded).
+"""
+import sys
+
+from . import fao56
+
+BOOK_ET0 = 3.88
+
+
+def main():
+    lat, elev, doy = 50.0 + 48.0 / 60.0, 100.0, 187
+    tmax, tmin, rh_max, rh_min, sunshine, u2 = 21.5, 12.3, 84.0, 63.0, 9.25, 2.078
+    ra, ws = fao56.extraterrestrial_radiation(lat, doy)
+    rs = (0.25 + 0.50 * sunshine / fao56.daylight_hours(ws)) * ra      # Angstrom formula (Eq. 35), as in the book
+    ea = fao56.actual_vapour_pressure_rh(tmax, tmin, rh_max, rh_min)
+    et0 = float(fao56.et0_daily(tmax, tmin, u2, rs, ea, doy, lat, elev))
+    ok = abs(et0 - BOOK_ET0) <= 0.01
+    print(f"FAO-56 Example 18: Ra={float(ra):.2f} Rs={float(rs):.2f} ea={float(ea):.3f} ET0={et0:.3f} "
+          f"(book {BOOK_ET0}) -> {'OK' if ok else 'MISMATCH'}")
+    return 0 if ok else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+[?2004hroot@aa011f43-6892-48a3-9173-349d2c218f01:/app# cat /app/et0/__init__.py
+[?2004l"""ET0 pipeline for the irrigation-advice service (FAO-56 Penman-Monteith, daily)."""
+__version__ = "1.4.2"
+[?2004hroot@aa011f43-6892-48a3-9173-349d2c218f01:/app# cat -n /app/et0/ingest.py
+[?2004l     1	"""Read one station's raw daily file and turn it into the standard daily inputs used by fao56.et0_daily."""
+     2	import os
+     3	
+     4	import pandas as pd
+     5	
+     6	from . import fao56
+     7	
+     8	BASE_COLUMNS = ["date", "tmax_c", "tmin_c", "wind_ms", "solar_rad"]
+     9	HUMIDITY_COLUMNS = {"rh_minmax": ["rh_max_pct", "rh_min_pct"], "dewpoint": ["tdew_c"]}
+    10	
+    11	
+    12	def load_station(station, data_dir):
+    13	    """Return a DataFrame with columns station_id, date, doy, tmax, tmin, ea, u2, rs (standard units)."""
+    14	    path = os.path.join(data_dir, f"{station.station_id}.csv")
+    15	    raw = pd.read_csv(path)
+    16	    if station.humidity not in HUMIDITY_COLUMNS:
+    17	        raise ValueError(f"{station.station_id}: unknown humidity type {station.humidity!r}")
+    18	    missing = [c for c in BASE_COLUMNS + HUMIDITY_COLUMNS[station.humidity] if c not in raw.columns]
+    19	    if missing:
+    20	        raise ValueError(f"{path}: missing columns {missing}")
+    21	
+    22	    dates = pd.to_datetime(raw["date"], format="%Y-%m-%d")
+    23	    df = pd.DataFrame({
+    24	        "station_id": station.station_id,
+    25	        "date": dates.dt.strftime("%Y-%m-%d"),
+    26	        "doy": dates.dt.dayofyear.astype(int),
+    27	        "tmax": raw["tmax_c"].astype(float),
+    28	        "tmin": raw["tmin_c"].astype(float),
+    29	    })
+    30	    if station.humidity == "dewpoint":
+    31	        df["ea"] = fao56.actual_vapour_pressure_dewpoint(raw["tdew_c"].astype(float))
+    32	    else:
+    33	        df["ea"] = fao56.actual_vapour_pressure_rh(df["tmax"], df["tmin"], raw["rh_max_pct"].astype(float),
+    34	                                                   raw["rh_min_pct"].astype(float))
+    35	    df["u2"] = raw["wind_ms"].astype(float)          # m/s at 2 m
+    36	    df["rs"] = raw["solar_rad"].astype(float)        # MJ m-2 day-1
+    37	    return df
+[?2004hroot@aa011f43-6892-48a3-9173-349d2c218f01:/app# cat /app/config/stations.yaml
+[?2004l# Station register for the irrigation-advice ET0 run (see /app/docs/METHOD.md for every field).
+stations:
+  - id: VNT
+    name: Valle Norte
+    latitude: 38.42
+    longitude: -3.71
+    elevation_m: 85
+    wind_height_m: 2.0
+    radiation_units: "MJ/m2/day"
+    humidity: rh_minmax
+    network: valley-agromet
+  - id: PAL
+    name: Paso Alto
+    latitude: "36.95N"
+    longitude: -3.02
+    elevation_m: 1840
+    wind_height_m: 10.0
+    radiation_units: "MJ/m2/day"
+    humidity: rh_minmax
+    network: highland-synop
+  - id: CDB
+    name: Costa del Bajo
+    latitude: "34.92S"
+    longitude: 138.6
+    elevation_m: 48
+    wind_height_m: 2.0
+    radiation_units: "MJ/m2/day"
+    humidity: dewpoint
+    network: southern-coast
+  - id: LGN
+    name: Laguna Grande
+    latitude: -31.85
+    longitude: 116.02
+    elevation_m: 420
+    wind_height_m: 3.0
+    radiation_units: "W/m2"
+    humidity: rh_minmax
+    network: southern-coast
+  - id: RSD
+    name: Ribera Seca
+    latitude: "41.73N"
+    longitude: -1.02
+    elevation_m: 230
+    wind_height_m: 2.0
+    radiation_units: "W/m2"
+    humidity: dewpoint
+    network: highland-synop
+  - id: MRS
+    name: Marisma
+    latitude: 35.1
+    longitude: -6.15
+    elevation_m: 12
+    wind_height_m: 3.0
+    radiation_units: "MJ/m2/day"
+    humidity: rh_minmax
+    network: valley-agromet
+  - id: HLT
+    name: Altiplano Sur
+    latitude: "33.40S"
+    longitude: -70.55
+    elevation_m: 610
+    wind_height_m: 10.0
+    radiation_units: "W/m2"
+    humidity: dewpoint
+    network: highland-synop
+  - id: ARN
+    name: Arenales
+    latitude: 40.05
+    longitude: -4.4
+    elevation_m: 690
+    wind_height_m: 2.0
+    radiation_units: "MJ/m2/day"
+    humidity: dewpoint
+    network: valley-agromet
+[?2004hroot@aa011f43-6892-48a3-9173-349d2c218f01:/app# head -5 /app/data/raw/ARN.csv
+[?2004ldate,tmax_c,tmin_c,tdew_c,wind_ms,solar_rad
+2025-01-01,10.1,-5.2,-6.2,1.7,8.81
+2025-01-02,9.9,-5.6,-9.4,1.5,6.24
+2025-01-03,11.7,-2.2,-18.8,1.5,7.63
+2025-01-04,9.5,-5.6,-15.3,1.9,8.86
+[?2004hroot@aa011f43-6892-48a3-9173-349d2c218f01:/app# head -5 /app/data/raw/HLT.csv
+[?2004ldate,tmax_c,tmin_c,tdew_c,wind_ms,solar_rad
+2025-01-01,25.1,12.1,9.0,2.8,211.3
+2025-01-02,22.5,8.9,-1.8,2.1,370.0
+2025-01-03,22.3,10.3,0.3,3.1,269.1
+2025-01-04,26.7,11.9,0.5,4.9,308.2
+[?2004hroot@aa011f43-6892-48a3-9173-349d2c218f01:/app# head -5 /app/data/raw/CDB.csv
+[?2004ldate,tmax_c,tmin_c,tdew_c,wind_ms,solar_rad
+2025-01-01,28.2,19.4,18.6,1.9,15.53
+2025-01-02,26.8,16.7,12.5,3.3,22.78
+2025-01-03,27.4,18.7,18.1,1.9,22.10
+2025-01-04,26.3,16.4,16.0,2.1,22.25
+[?2004hroot@aa011f43-6892-48a3-9173-349d2c218f01:/app# cat /app/reference/metservice_et0_2025.csv | head -10
+[?2004lstation_id,date,et0_mm_day
+PAL,2025-01-01,0.9
+PAL,2025-01-02,1.5
+PAL,2025-01-03,1.9
+PAL,2025-01-04,1.9
+PAL,2025-01-05,1.3
+PAL,2025-01-06,1.0
+PAL,2025-01-07,1.2
+PAL,2025-01-08,1.3
+PAL,2025-01-09,1.2
+[?2004hroot@aa011f43-6892-48a3-9173-349d2c218f01:/app# cat /app/output/et0.csv | head -10
+[?2004lstation_id,date,et0_mm_day
+VNT,2025-01-01,1.768
+VNT,2025-01-02,1.999
+VNT,2025-01-03,1.778
+VNT,2025-01-04,1.666
+VNT,2025-01-05,1.856
+VNT,2025-01-06,1.989
+VNT,2025-01-07,1.625
+VNT,2025-01-08,1.857
+VNT,2025-01-09,1.598
+[?2004hroot@aa011f43-6892-48a3-9173-349d2c218f01:/app# cat > /app/et0/meta.py << 'EOF'
+[?2004l[?2004h> """Station register: read the stations YAML into Station records (fields are described in /app/docs/METHOD.md)."""
+[?2004l[?2004h> from dataclasses import dataclass
+[?2004l[?2004h> 
+[?2004l[?2004h> import yaml
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> @dataclass(frozen=True)
+[?2004l[?2004h> class Station:
+[?2004l[?2004h>     station_id: str
+[?2004l[?2004h>     name: str
+[?2004l[?2004h>     latitude: float          # decimal degrees, north positive
+[?2004l[?2004h>     longitude: float
+[?2004l[?2004h>     elevation_m: float
+[?2004l[?2004h>     wind_height_m: float
+[?2004l[?2004h>     radiation_units: str
+[?2004l[?2004h>     humidity: str
+[?2004l[?2004h>     network: str
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def parse_latitude(value):
+[?2004l[?2004h>     """Latitude in decimal degrees, north positive, south negative.
+[?2004l[?2004h> 
+[?2004l[?2004h>     The register holds plain numbers (38.42, -31.85) and, for stations imported from the synop and coast networks,
+[?2004l[?2004h>     text with a hemisphere letter ("36.95N", "34.92S").
+[?2004l[?2004h>     """
+[?2004l[?2004h>     if isinstance(value, (int, float)):
+[?2004l[?2004h>         return float(value)
+[?2004l[?2004h>     text = str(value).strip().upper()
+[?2004l[?2004h>     if text.endswith("S"):
+[?2004l[?2004h>         return -float(text.rstrip("S"))
+[?2004l[?2004h>     elif text.endswith("N"):
+[?2004l[?2004h>         return float(text.rstrip("N"))
+[?2004l[?2004h>     else:
+[?2004l[?2004h>         return float(text)
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def load_stations(path):
+[?2004l[?2004h>     with open(path, encoding="utf-8") as f:
+[?2004l[?2004h>         doc = yaml.safe_load(f)
+[?2004l[?2004h>     stations = []
+[?2004l[?2004h>     for rec in doc["stations"]:
+[?2004l[?2004h>         stations.append(Station(
+[?2004l[?2004h>             station_id=str(rec["id"]),
+[?2004l[?2004h>             name=str(rec.get("name", "")),
+[?2004l[?2004h>             latitude=parse_latitude(rec["latitude"]),
+[?2004l[?2004h>             longitude=float(rec["longitude"]),
+[?2004l[?2004h>             elevation_m=float(rec["elevation_m"]),
+[?2004l[?2004h>             wind_height_m=float(rec["wind_height_m"]),
+[?2004l[?2004h>             radiation_units=str(rec["radiation_units"]),
+[?2004l[?2004h>             humidity=str(rec["humidity"]),
+[?2004l[?2004h>             network=str(rec.get("network", "")),
+[?2004l[?2004h>         ))
+[?2004l[?2004h>     return stations
+[?2004l[?2004h> EOF
+[?2004l[?2004hroot@aa011f43-6892-48a3-9173-349d2c218f01:/app# cat > /app/et0/ingest.py << 'EOF'
+[?2004l[?2004h> """Read one station's raw daily file and turn it into the standard daily inputs used by fao56.et0_daily."""
+[?2004l[?2004h> import os
+[?2004l[?2004h> 
+[?2004l[?2004h> import numpy as np
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> 
+[?2004l[?2004h> from . import fao56
+[?2004l[?2004h> 
+[?2004l[?2004h> BASE_COLUMNS = ["date", "tmax_c", "tmin_c", "wind_ms", "solar_rad"]
+[?2004l[?2004h> HUMIDITY_COLUMNS = {"rh_minmax": ["rh_max_pct", "rh_min_pct"], "dewpoint": ["tdew_c"]}
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def wind_speed_to_2m(uz, zw):
+[?2004l[?2004h>     """Eq. 47: convert wind speed from height zw to 2 m using the logarithmic wind profile."""
+[?2004l[?2004h>     return uz * 4.87 / np.log(67.8 * zw - 5.42)
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def load_station(station, data_dir):
+[?2004l[?2004h>     """Return a DataFrame with columns station_id, date, doy, tmax, tmin, ea, u2, rs (standard units)."""
+[?2004l[?2004h>     path = os.path.join(data_dir, f"{station.station_id}.csv")
+[?2004l[?2004h>     raw = pd.read_csv(path)
+[?2004l[?2004h>     if station.humidity not in HUMIDITY_COLUMNS:
+[?2004l[?2004h>         raise ValueError(f"{station.station_id}: unknown humidity type {station.humidity!r}")
+[?2004l[?2004h>     missing = [c for c in BASE_COLUMNS + HUMIDITY_COLUMNS[station.humidity] if c not in raw.columns]
+[?2004l[?2004h>     if missing:
+[?2004l[?2004h>         raise ValueError(f"{path}: missing columns {missing}")
+[?2004l[?2004h> 
+[?2004l[?2004h>     dates = pd.to_datetime(raw["date"], format="%Y-%m-%d")
+[?2004l[?2004h>     df = pd.DataFrame({
+[?2004l[?2004h>         "station_id": station.station_id,
+[?2004l[?2004h>         "date": dates.dt.strftime("%Y-%m-%d"),
+[?2004l[?2004h>         "doy": dates.dt.dayofyear.astype(int),
+[?2004l[?2004h>         "tmax": raw["tmax_c"].astype(float),
+[?2004l[?2004h>         "tmin": raw["tmin_c"].astype(float),
+[?2004l[?2004h>     })
+[?2004l[?2004h>     if station.humidity == "dewpoint":
+[?2004l[?2004h>         df["ea"] = fao56.actual_vapour_pressure_dewpoint(raw["tdew_c"].astype(float))
+[?2004l[?2004h>     else:
+[?2004l[?2004h>         df["ea"] = fao56.actual_vapour_pressure_rh(df["tmax"], df["tmin"], raw["rh_max_pct"].astype(float),
+[?2004l[?2004h>                                                    raw["rh_min_pct"].astype(float))
+[?2004l[?2004h>     # Convert wind speed from anemometer height to 2 m (Eq. 47)
+[?2004l[?2004h>     df["u2"] = wind_speed_to_2m(raw["wind_ms"].astype(float), station.wind_height_m)
+[?2004l[?2004h>     # Convert solar radiation to MJ m-2 day-1
+[?2004l[?2004h>     rs = raw["solar_rad"].astype(float)
+[?2004l[?2004h>     if station.radiation_units == "W/m2":
+[?2004l[?2004h>         rs = rs * 0.0864
+[?2004l[?2004h>     df["rs"] = rs
+[?2004l[?2004h>     return df
+[?2004l[?2004h> EOF
+[?2004l[?2004hroot@aa011f43-6892-48a3-9173-349d2c218f01:/app# cd /app && python -m et0.selfcheck
+[?2004lFAO-56 Example 18: Ra=41.09 Rs=22.07 ea=1.409 ET0=3.880 (book 3.88) -> OK
+[?2004hroot@aa011f43-6892-48a3-9173-349d2c218f01:/app# cd /app && python -m et0.pipeline --stations config/stations.yaml --data data/raw --out output/et0.csv
+[?2004lVNT: 365 days, mean ET0 3.55 mm/day
+PAL: 365 days, mean ET0 2.88 mm/day
+CDB: 365 days, mean ET0 3.59 mm/day
+LGN: 365 days, mean ET0 4.23 mm/day
+RSD: 365 days, mean ET0 3.70 mm/day
+MRS: 365 days, mean ET0 4.01 mm/day
+HLT: 365 days, mean ET0 3.71 mm/day
+ARN: 365 days, mean ET0 3.21 mm/day
+[?2004hroot@aa011f43-6892-48a3-9173-349d2c218f01:/app# cut -d, -f1 /app/reference/metservice_et0_2025.csv | sort -u
+[?2004lCDB
+PAL
+station_id
+[?2004hroot@aa011f43-6892-48a3-9173-349d2c218f01:/app# head -5 /app/output/et0.csv
+[?2004lstation_id,date,et0_mm_day
+VNT,2025-01-01,1.768
+VNT,2025-01-02,1.999
+VNT,2025-01-03,1.779
+VNT,2025-01-04,1.666
+[?2004hroot@aa011f43-6892-48a3-9173-349d2c218f01:/app# grep '^PAL' /app/output/et0.csv | head -10
+[?2004lPAL,2025-01-01,0.859
+PAL,2025-01-02,1.462
+PAL,2025-01-03,1.945
+PAL,2025-01-04,1.896
+PAL,2025-01-05,1.279
+PAL,2025-01-06,0.992
+PAL,2025-01-07,1.152
+PAL,2025-01-08,1.299
+PAL,2025-01-09,1.197
+PAL,2025-01-10,1.029
+[?2004hroot@aa011f43-6892-48a3-9173-349d2c218f01:/app# grep '^HLT' /app/output/et0.csv | head -10
+[?2004lHLT,2025-01-01,4.530
+HLT,2025-01-02,5.807
+HLT,2025-01-03,5.427
+HLT,2025-01-04,7.538
+HLT,2025-01-05,5.848
+HLT,2025-01-06,4.940
+HLT,2025-01-07,5.231
+HLT,2025-01-08,5.711
+HLT,2025-01-09,5.641
+HLT,2025-01-10,5.827
+[?2004hroot@aa011f43-6892-48a3-9173-349d2c218f01:/app# python3 -c "
+[?2004l[?2004h> import csv
+[?2004l[?2004h> ref = {}
+[?2004l[?2004h> with open('/app/reference/metservice_et0_2025.csv') as f:
+[?2004l[?2004h>     for row in csv.DictReader(f):
+[?2004l[?2004h>         ref[(row['station_id'], row['date'])] = float(row['et0_mm_day'])
+[?2004l[?2004h> our = {}
+[?2004l[?2004h> with open('/app/output/et0.csv') as f:
+[?2004l[?2004h>     for row in csv.DictReader(f):
+[?2004l[?2004h>         our[(row['station_id'], row['date'])] = float(row['et0_mm_day'])
+[?2004l[?2004h> max_diff = 0
+[?2004l[?2004h> for k, v in ref.items():
+[?2004l[?2004h>     d = abs(v - our[k])
+[?2004l[?2004h>     max_diff = max(max_diff, d)
+[?2004l[?2004h>     if d > 0.05:
+[?2004l[?2004h>         print(f'  {k}: ref={v} our={our[k]} diff={d:.3f}')
+[?2004l[?2004h> print(f'Reference rows: {len(ref)}, max abs diff: {max_diff:.4f}')
+[?2004l[?2004h> print(f'Total output rows: {len(our)}')
+[?2004l[?2004h> "
+[?2004l  ('PAL', '2025-01-15'): ref=1.3 our=1.35 diff=0.050
+  ('CDB', '2025-06-03'): ref=2.2 our=2.15 diff=0.050
+  ('CDB', '2025-06-19'): ref=2.8 our=2.85 diff=0.050
+  ('CDB', '2025-10-17'): ref=5.1 our=5.15 diff=0.050
+Reference rows: 730, max abs diff: 0.0500
+Total output rows: 2920
+[?2004hroot@aa011f43-6892-48a3-9173-349d2c218f01:/app# grep -rn '/app' /app/et0/
+[?2004l/app/et0/fao56.py:4:written up in /app/docs/METHOD.md. Every function works on numpy arrays (one element per day).
+/app/et0/meta.py:1:"""Station register: read the stations YAML into Station records (fields are described in /app/docs/METHOD.md)."""
+grep: /app/et0/__pycache__/__init__.cpython-312.pyc: binary file matches
+grep: /app/et0/__pycache__/selfcheck.cpython-312.pyc: binary file matches
+grep: /app/et0/__pycache__/fao56.cpython-312.pyc: binary file matches
+grep: /app/et0/__pycache__/pipeline.cpython-312.pyc: binary file matches
+grep: /app/et0/__pycache__/ingest.cpython-312.pyc: binary file matches
+grep: /app/et0/__pycache__/meta.cpython-312.pyc: binary file matches
+[?2004hroot@aa011f43-6892-48a3-9173-349d2c218f01:/app# wc -l /app/output/et0.csv
+[?2004l2921 /app/output/et0.csv
+[?2004hroot@aa011f43-6892-48a3-9173-349d2c218f01:/app# python3 -c "import numpy, pandas, yaml; print('deps ok')"
+[?2004ldeps ok
+[?2004hroot@aa011f43-6892-48a3-9173-349d2c218f01:/app# sed -i 's|written up in /app/docs/METHOD.md|written up in docs/METHOD.md|' /app/et0/fao56.py
+[?2004l[?2004hroot@aa011f43-6892-48a3-9173-349d2c218f01:/app# sed -i 's|described in /app/docs/METHOD.md|described in docs/METHOD.md|' /app/et0/meta.py
+[?2004l[?2004hroot@aa011f43-6892-48a3-9173-349d2c218f01:/app# grep -rn '/app' /app/et0/*.py
+[?2004l[?2004hroot@aa011f43-6892-48a3-9173-349d2c218f01:/app# rm -rf /tmp/et0test && cp -r /app /tmp/et0test && find /tmp/et0test -name __pycache__ -type d -exec rm -rf {} + 2>/dev/null; find /tmp/et0test -name 'data' -type d -exec rm -rf {} + 2>/dev/null; ls /tmp/et0test
+[?2004lREADME.md  config  docs  et0  output  reference
+[?2004hroot@aa011f43-6892-48a3-9173-349d2c218f01:/app# cd /tmp/et0test && python -m et0.pipeline --stations config/stations.yaml --data data/raw --out out_test.csv && echo "EXIT: $?" && head -3 out_test.csv
+[?2004lTraceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/tmp/et0test/et0/pipeline.py", line 41, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/tmp/et0test/et0/pipeline.py", line 36, in main
+    run(args.stations, args.data, args.out)
+  File "/tmp/et0test/et0/pipeline.py", line 17, in run
+    df = ingest.load_station(st, data_dir)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/et0test/et0/ingest.py", line 21, in load_station
+    raw = pd.read_csv(path)
+          ^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 1866, in read_csv
+    return _read(filepath_or_buffer, kwds)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 423, in _read
+    parser = TextFileReader(filepath_or_buffer, **kwds)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 2721, in __init__
+    self._engine = self._make_engine(f, self.engine)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/parsers/readers.py", line 2988, in _make_engine
+    self.handles = get_handle(
+                   ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/pandas/io/common.py", line 948, in get_handle
+    handle = open(handle, ioargs.mode)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'data/raw/VNT.csv'
+[?2004hroot@aa011f43-6892-48a3-9173-349d2c218f01:/tmp/et0test# cd /tmp && rm -rf /tmp/et0test && cp -r /app /tmp/et0test && find /tmp/et0test -name __pycache__ -type d -exec rm -rf {} + 2>/dev/null; find /tmp/et0test -name '.venv' -type d -exec rm -rf {} + 2>/dev/null; ls /tmp/et0test
+[?2004lREADME.md  config  data  docs  et0  output  reference
+[?2004hroot@aa011f43-6892-48a3-9173-349d2c218f01:/tmp# cd /tmp/et0test && python -m et0.pipeline --stations config/stations.yaml --data data/raw --out /tmp/et0test/out_test.csv; echo "EXIT: $?"
+[?2004lVNT: 365 days, mean ET0 3.55 mm/day
+PAL: 365 days, mean ET0 2.88 mm/day
+CDB: 365 days, mean ET0 3.59 mm/day
+LGN: 365 days, mean ET0 4.23 mm/day
+RSD: 365 days, mean ET0 3.70 mm/day
+MRS: 365 days, mean ET0 4.01 mm/day
+HLT: 365 days, mean ET0 3.71 mm/day
+ARN: 365 days, mean ET0 3.21 mm/day
+EXIT: 0
+[?2004hroot@aa011f43-6892-48a3-9173-349d2c218f01:/tmp/et0test# cd /tmp/et0test && head -3 out_test.csv && wc -l out_test.csv
+[?2004lstation_id,date,et0_mm_day
+VNT,2025-01-01,1.768
+VNT,2025-01-02,1.999
+2921 out_test.csv
+[?2004hroot@aa011f43-6892-48a3-9173-349d2c218f01:/tmp/et0test# cd /tmp/et0test && diff <(tail -n +2 out_test.csv | sort) <(tail -n +2 /app/output/et0.csv | sort) && echo "OUTPUTS MATCH"
+[?2004lOUTPUTS MATCH
+[?2004hroot@aa011f43-6892-48a3-9173-349d2c218f01:/tmp/et0test# find /app -name __pycache__ -type d -exec rm -rf {} + 2>/dev/null; echo 'cleaned'
+[?2004lcleaned
+[?2004hroot@aa011f43-6892-48a3-9173-349d2c218f01:/tmp/et0test# head -3 /app/output/et0.csv && wc -l /app/output/et0.csv
+[?2004lstation_id,date,et0_mm_day
+VNT,2025-01-01,1.768
+VNT,2025-01-02,1.999
+2921 /app/output/et0.csv
+[?2004hroot@aa011f43-6892-48a3-9173-349d2c218f01:/tmp/et0test# 

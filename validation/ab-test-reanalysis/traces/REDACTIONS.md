@@ -1,6 +1,12 @@
-# Redactions in this traces folder (2026-10-31)
+# Redactions in this traces folder (2026-10-31; `agent-m1/` added 2026-11-03)
 
-Every file here is a copy of a Harbor trial or job file of run `rev1` or of the Claude Code trials. Machine-specific paths were replaced; nothing else was changed (no reward, count or timing). The copy script checked this: each JSON file parses to the original with only the path strings replaced and identical numbers, and each text file differs from the original only on lines that held one of these paths. It also checked that no file holds a model service's key or the sandbox provider's key.
+Every file here outside `agent-m1/` is a copy of a Harbor trial or job file of run `rev1` or of the Claude Code
+trials. Machine-specific paths were replaced; nothing else was changed (no reward, count or timing). The copy script
+checked this: each JSON file parses to the original with only the path strings replaced and identical numbers, and
+each text file differs from the original only on lines that held one of these paths. It also checked that no file
+holds a model service's key or the sandbox provider's key.
+
+The agent trials of run m1 (2026-11-03) are in `agent-m1/`, which has its own `REDACTIONS.md`.
 
 The Claude Code trial folders (`agent-claude-code/`) hold the trajectory Harbor wrote (`agent/trajectory.json`) and Claude Code's own stream output (`agent/claude-code.txt`). Claude Code's raw session folder (`agent/sessions/`), which records its full requests, its own system prompt included, is not copied.
 
@@ -85,4 +91,5 @@ Text files that changed carry one extra first line saying so. JSON files cannot 
 | `agent-claude-code/ab-test-reanalysis__SpwbpTd/trial.log` (text; first line added) | `<submission>` x2 |
 | `agent-claude-code/ab-test-reanalysis__SpwbpTd/job_lock.json` | `<submission>` x2 |
 
-Files with no machine-specific path (copied byte for byte): 110.
+Files with no machine-specific path (copied byte for byte): 110, not counting `agent-m1/`, whose own `REDACTIONS.md`
+counts 64.

@@ -1,0 +1,129 @@
+{
+    "id": "98d4187f-3a8c-4375-bf63-58fc306af69c",
+    "started_at": "2026-11-03T13:34:47.210188",
+    "updated_at": "2026-11-03T13:48:03.394093",
+    "finished_at": "2026-11-03T13:48:03.394093",
+    "n_total_trials": 1,
+    "stats": {
+        "n_completed_trials": 1,
+        "n_errored_trials": 0,
+        "n_running_trials": 0,
+        "n_pending_trials": 0,
+        "n_cancelled_trials": 0,
+        "n_retries": 0,
+        "evals": {
+            "terminus-2__gemma-4-31B-it__adhoc": {
+                "n_trials": 1,
+                "n_errors": 0,
+                "metrics": [
+                    {
+                        "check_A": 0.0,
+                        "check_B_cut1": 0.0,
+                        "check_B_cut2": 0.0,
+                        "net_private_H": 1.0,
+                        "residual_runner_paths_H": 0.0,
+                        "reward": 0.0,
+                        "run_failed_H": 1.0,
+                        "seconds_H": 60.101,
+                        "seconds_grade_total": 60.98279255628586,
+                        "seconds_sweep_H": 0.758,
+                        "sweep_errors_H": 0.0,
+                        "swept_runner_paths_H": 1.0,
+                        "verifier_cpu_quota": 2.0,
+                        "verifier_cpus_visible": 48.0,
+                        "verifier_memory_limit_mib": 4096.0,
+                        "verifier_memtotal_mib": 386466.6
+                    }
+                ],
+                "pass_at_k": {},
+                "reward_stats": {
+                    "reward": {
+                        "0.0": [
+                            "feature-leakage-churn__5ZCVEie"
+                        ]
+                    },
+                    "check_A": {
+                        "0": [
+                            "feature-leakage-churn__5ZCVEie"
+                        ]
+                    },
+                    "check_B_cut1": {
+                        "0": [
+                            "feature-leakage-churn__5ZCVEie"
+                        ]
+                    },
+                    "check_B_cut2": {
+                        "0": [
+                            "feature-leakage-churn__5ZCVEie"
+                        ]
+                    },
+                    "verifier_cpus_visible": {
+                        "48": [
+                            "feature-leakage-churn__5ZCVEie"
+                        ]
+                    },
+                    "verifier_cpu_quota": {
+                        "2.0": [
+                            "feature-leakage-churn__5ZCVEie"
+                        ]
+                    },
+                    "verifier_memory_limit_mib": {
+                        "4096.0": [
+                            "feature-leakage-churn__5ZCVEie"
+                        ]
+                    },
+                    "verifier_memtotal_mib": {
+                        "386466.6": [
+                            "feature-leakage-churn__5ZCVEie"
+                        ]
+                    },
+                    "swept_runner_paths_H": {
+                        "1": [
+                            "feature-leakage-churn__5ZCVEie"
+                        ]
+                    },
+                    "residual_runner_paths_H": {
+                        "0": [
+                            "feature-leakage-churn__5ZCVEie"
+                        ]
+                    },
+                    "seconds_sweep_H": {
+                        "0.758": [
+                            "feature-leakage-churn__5ZCVEie"
+                        ]
+                    },
+                    "sweep_errors_H": {
+                        "0": [
+                            "feature-leakage-churn__5ZCVEie"
+                        ]
+                    },
+                    "seconds_H": {
+                        "60.101": [
+                            "feature-leakage-churn__5ZCVEie"
+                        ]
+                    },
+                    "net_private_H": {
+                        "1": [
+                            "feature-leakage-churn__5ZCVEie"
+                        ]
+                    },
+                    "run_failed_H": {
+                        "1": [
+                            "feature-leakage-churn__5ZCVEie"
+                        ]
+                    },
+                    "seconds_grade_total": {
+                        "60.98279255628586": [
+                            "feature-leakage-churn__5ZCVEie"
+                        ]
+                    }
+                },
+                "exception_stats": {}
+            }
+        },
+        "n_input_tokens": 509271,
+        "n_cache_tokens": 332320,
+        "n_output_tokens": 43485,
+        "cost_usd": null
+    }
+}

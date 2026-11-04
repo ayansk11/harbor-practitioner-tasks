@@ -1,0 +1,105 @@
+{
+    "id": "696ce80a-feaf-415a-b4cb-5042d758a0a8",
+    "started_at": "2026-11-03T09:31:42.422257",
+    "updated_at": "2026-11-03T09:35:33.825847",
+    "finished_at": "2026-11-03T09:35:33.825847",
+    "n_total_trials": 1,
+    "stats": {
+        "n_completed_trials": 1,
+        "n_errored_trials": 0,
+        "n_running_trials": 0,
+        "n_pending_trials": 0,
+        "n_cancelled_trials": 0,
+        "n_retries": 0,
+        "evals": {
+            "terminus-2__gpt-oss-120b__adhoc": {
+                "n_trials": 1,
+                "n_errors": 0,
+                "metrics": [
+                    {
+                        "agent_seconds": 6.49,
+                        "c1_order_ok": 0.0,
+                        "c2_pages_ok": 1.0,
+                        "c3_customers_ok": 0.0,
+                        "c4_inserts_ok": 0.0,
+                        "c5_errors_ok": 1.0,
+                        "c6_fields_ok": 1.0,
+                        "c7_public_ok": 1.0,
+                        "db_ok": 1.0,
+                        "failed_checks": 23.0,
+                        "grading_seconds": 7.34,
+                        "reward": 0.0
+                    }
+                ],
+                "pass_at_k": {},
+                "reward_stats": {
+                    "reward": {
+                        "0.0": [
+                            "orders-export-missing-rows__TGjE5Un"
+                        ]
+                    },
+                    "c1_order_ok": {
+                        "0": [
+                            "orders-export-missing-rows__TGjE5Un"
+                        ]
+                    },
+                    "c2_pages_ok": {
+                        "1": [
+                            "orders-export-missing-rows__TGjE5Un"
+                        ]
+                    },
+                    "c3_customers_ok": {
+                        "0": [
+                            "orders-export-missing-rows__TGjE5Un"
+                        ]
+                    },
+                    "c4_inserts_ok": {
+                        "0": [
+                            "orders-export-missing-rows__TGjE5Un"
+                        ]
+                    },
+                    "c5_errors_ok": {
+                        "1": [
+                            "orders-export-missing-rows__TGjE5Un"
+                        ]
+                    },
+                    "c6_fields_ok": {
+                        "1": [
+                            "orders-export-missing-rows__TGjE5Un"
+                        ]
+                    },
+                    "c7_public_ok": {
+                        "1": [
+                            "orders-export-missing-rows__TGjE5Un"
+                        ]
+                    },
+                    "db_ok": {
+                        "1": [
+                            "orders-export-missing-rows__TGjE5Un"
+                        ]
+                    },
+                    "failed_checks": {
+                        "23": [
+                            "orders-export-missing-rows__TGjE5Un"
+                        ]
+                    },
+                    "agent_seconds": {
+                        "6.49": [
+                            "orders-export-missing-rows__TGjE5Un"
+                        ]
+                    },
+                    "grading_seconds": {
+                        "7.34": [
+                            "orders-export-missing-rows__TGjE5Un"
+                        ]
+                    }
+                },
+                "exception_stats": {}
+            }
+        },
+        "n_input_tokens": 158929,
+        "n_cache_tokens": 0,
+        "n_output_tokens": 16108,
+        "cost_usd": null
+    }
+}

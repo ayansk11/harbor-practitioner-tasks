@@ -1,0 +1,25 @@
+{
+    "task": {
+        "path": "<submission>/tasks/orders-export-missing-rows"
+    },
+    "trial_name": "orders-export-missing-rows__wFkwALt",
+    "trials_dir": "<submission>/jobs/agent-trials/orders-export-missing-rows-terminus2-glm53flash-m1-1",
+    "environment_build_timeout_multiplier": 3.0,
+    "agent": {
+        "name": "terminus-2",
+        "model_name": "openai/glm-5.3-flash",
+        "kwargs": {
+            "model_info": {
+                "max_input_tokens": 196608,
+                "max_output_tokens": 65536,
+                "input_cost_per_token": 0,
+                "output_cost_per_token": 0
+            },
+            "api_base": "<model-endpoint>"
+        }
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "9b9dd6ab-7e0f-4d6f-b00c-a9a8c63ba398"
+}

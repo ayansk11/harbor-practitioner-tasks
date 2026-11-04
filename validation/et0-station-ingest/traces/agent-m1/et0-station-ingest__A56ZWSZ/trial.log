@@ -1,0 +1,61 @@
+# Redacted 2026-11-03: machine-specific paths replaced (<submission> x21). <submission> = the submission folder on the authoring Mac, <home> = the author's home folder, <local-scratch> = the session scratch folder, <model-endpoint> = the URL of the model service the agent called. Nothing else changed: no reward, count or timing.
+Selected strategy: _DaytonaDirect
+Building environment from <submission>/tasks/et0-station-ingest/environment/Dockerfile
+Parser warnings: - Extra text detected before JSON object
+- Extra text detected after JSON object
+Trajectory dumped to <submission>/jobs/agent-trials/et0-station-ingest-terminus2-gemma4-31b-m1-2/et0-station-ingest__A56ZWSZ/agent/trajectory.json
+Parser warnings: - Extra text detected before JSON object
+- Extra text detected after JSON object
+Trajectory dumped to <submission>/jobs/agent-trials/et0-station-ingest-terminus2-gemma4-31b-m1-2/et0-station-ingest__A56ZWSZ/agent/trajectory.json
+Parser warnings: - Extra text detected before JSON object
+- Extra text detected after JSON object
+Trajectory dumped to <submission>/jobs/agent-trials/et0-station-ingest-terminus2-gemma4-31b-m1-2/et0-station-ingest__A56ZWSZ/agent/trajectory.json
+Parser warnings: - Extra text detected before JSON object
+- Extra text detected after JSON object
+Trajectory dumped to <submission>/jobs/agent-trials/et0-station-ingest-terminus2-gemma4-31b-m1-2/et0-station-ingest__A56ZWSZ/agent/trajectory.json
+Parser warnings: - Extra text detected before JSON object
+- Extra text detected after JSON object
+Trajectory dumped to <submission>/jobs/agent-trials/et0-station-ingest-terminus2-gemma4-31b-m1-2/et0-station-ingest__A56ZWSZ/agent/trajectory.json
+Parser warnings: - Extra text detected before JSON object
+- Extra text detected after JSON object
+Trajectory dumped to <submission>/jobs/agent-trials/et0-station-ingest-terminus2-gemma4-31b-m1-2/et0-station-ingest__A56ZWSZ/agent/trajectory.json
+Parser warnings: - Extra text detected before JSON object
+- Extra text detected after JSON object
+Trajectory dumped to <submission>/jobs/agent-trials/et0-station-ingest-terminus2-gemma4-31b-m1-2/et0-station-ingest__A56ZWSZ/agent/trajectory.json
+Parser warnings: - Extra text detected before JSON object
+- Extra text detected after JSON object
+Trajectory dumped to <submission>/jobs/agent-trials/et0-station-ingest-terminus2-gemma4-31b-m1-2/et0-station-ingest__A56ZWSZ/agent/trajectory.json
+Parser warnings: - Extra text detected before JSON object
+- Extra text detected after JSON object
+Trajectory dumped to <submission>/jobs/agent-trials/et0-station-ingest-terminus2-gemma4-31b-m1-2/et0-station-ingest__A56ZWSZ/agent/trajectory.json
+Parser warnings: - Extra text detected before JSON object
+- Extra text detected after JSON object
+Trajectory dumped to <submission>/jobs/agent-trials/et0-station-ingest-terminus2-gemma4-31b-m1-2/et0-station-ingest__A56ZWSZ/agent/trajectory.json
+Parser warnings: - Extra text detected before JSON object
+- Extra text detected after JSON object
+Trajectory dumped to <submission>/jobs/agent-trials/et0-station-ingest-terminus2-gemma4-31b-m1-2/et0-station-ingest__A56ZWSZ/agent/trajectory.json
+Parser warnings: - Extra text detected before JSON object
+- Extra text detected after JSON object
+Trajectory dumped to <submission>/jobs/agent-trials/et0-station-ingest-terminus2-gemma4-31b-m1-2/et0-station-ingest__A56ZWSZ/agent/trajectory.json
+Parser warnings: - Extra text detected before JSON object
+- Extra text detected after JSON object
+Trajectory dumped to <submission>/jobs/agent-trials/et0-station-ingest-terminus2-gemma4-31b-m1-2/et0-station-ingest__A56ZWSZ/agent/trajectory.json
+Parser warnings: - Extra text detected before JSON object
+- Extra text detected after JSON object
+Trajectory dumped to <submission>/jobs/agent-trials/et0-station-ingest-terminus2-gemma4-31b-m1-2/et0-station-ingest__A56ZWSZ/agent/trajectory.json
+Parser warnings: - Extra text detected before JSON object
+- Extra text detected after JSON object
+Trajectory dumped to <submission>/jobs/agent-trials/et0-station-ingest-terminus2-gemma4-31b-m1-2/et0-station-ingest__A56ZWSZ/agent/trajectory.json
+Parser warnings: - Extra text detected before JSON object
+- Extra text detected after JSON object
+Trajectory dumped to <submission>/jobs/agent-trials/et0-station-ingest-terminus2-gemma4-31b-m1-2/et0-station-ingest__A56ZWSZ/agent/trajectory.json
+Parser warnings: - Extra text detected before JSON object
+- Extra text detected after JSON object
+Trajectory dumped to <submission>/jobs/agent-trials/et0-station-ingest-terminus2-gemma4-31b-m1-2/et0-station-ingest__A56ZWSZ/agent/trajectory.json
+Parser warnings: - Extra text detected before JSON object
+- Extra text detected after JSON object
+Trajectory dumped to <submission>/jobs/agent-trials/et0-station-ingest-terminus2-gemma4-31b-m1-2/et0-station-ingest__A56ZWSZ/agent/trajectory.json
+Trajectory dumped to <submission>/jobs/agent-trials/et0-station-ingest-terminus2-gemma4-31b-m1-2/et0-station-ingest__A56ZWSZ/agent/trajectory.json
+Collecting main service artifacts
+Selected strategy: _DaytonaDirect
+Building environment from <submission>/tasks/et0-station-ingest/tests/Dockerfile

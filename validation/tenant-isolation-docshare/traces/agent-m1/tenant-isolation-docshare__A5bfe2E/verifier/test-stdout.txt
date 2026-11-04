@@ -1,0 +1,22 @@
+[test.sh] lock ok: /logs/verifier 0:0 755, /logs 0:0 755, owner before 0:0; protected_symlinks=1 protected_hardlinks=1 protected_regular=2; setid files left: 0
+[kit] submission copied to /work/sub; removed 0 auto-run entries; skipped 0 special files
+[kit] 2012 refusal cases, 402 permitted reads; 264 refused writes held back for run 2
+[kit] staged /tests/original for uid 1001 at /work/wfc8969e8
+[kit] staged /tests/hidden/seed.db for uid 1001 at /work/w0a162f03
+[kit] service on 127.0.0.1:36059 answered after 0.20s
+[kit] service from /work/wfc8969e8 on port 36059: up in 0.21s
+[kit] phase original: 356 checks, 0 failed, 0.54s; failed by check: {}
+[kit] staged /tests/hidden/seed.db for uid 1001 at /work/web79369f
+[kit] service on 127.0.0.1:56871 answered after 0.20s
+[kit] service from /work/sub on port 56871: up in 0.21s
+[kit] network isolation: ON (private namespace, loopback only); probe rc=0 out=b'NETNS-OK' err=b''
+[kit] ran ['/usr/local/bin/python3', '-I', '-c', "import sqlite3, sys, urllib.parse\nc = sqlite3.connect('file:' + urllib.parse.quote(sys.argv[1]) + '?mode=rw', uri=True)\nr = c.execute('PRAGMA wal_checkpoint(TRUNCATE)').fetchone()\nc.close()\nsys.exit(0 if r[0] == 0 else 3)\n"]... rc=0 timed_out=False 0.035s net=private strays_killed=0
+[kit] phase run1: 2211 checks, 0 failed, 2.56s; failed by check: {}
+[kit] staged /tests/hidden/seed.db for uid 1001 at /work/w218f88f8
+[kit] service on 127.0.0.1:42353 answered after 0.20s
+[kit] service from /work/sub on port 42353: up in 0.21s
+[kit] write list: 50 requests, with 379 refused requests and 264 held-back refused writes mixed in; 0 steps skipped
+[kit] held back from run 1: 264 refused writes; sent in run 2: 264 (264 in the write list, 0 after it)
+[kit] held-back writes read back: 41 files and 4 seed links; 14 files they act on were used by the write list and not read back
+[kit] phase run2: 1540 checks, 0 failed, 1.77s; failed by check: {}
+[kit] reward=1.0 (killed 0 runner processes) metrics={'reward': 1.0, 'run1_checks': 2211, 'run1_failed': 0, 'run2_checks': 1540, 'run2_failed': 0, 'leaking_refusals': 0, 'held_back': 264, 'held_back_sent': 264, 'grading_seconds': 4.9}

@@ -1,6 +1,11 @@
-# Redactions in this traces folder (2026-10-29; `agent-r3/` added 2026-10-31)
+# Redactions in this traces folder (2026-10-29; `agent-r3/` added 2026-10-31; `agent-m1/` added 2026-11-03)
 
-Every file here is a copy of a Harbor trial or job file. Machine-specific paths were replaced, and in `agent-r3/` also the URL of the model service the agents called; nothing else was changed (no reward, count or timing). The copy script checked this: each JSON file parses to the original with only the path strings replaced and identical numbers, and each text file differs from the original only on lines that held one of these paths.
+Every file here outside `agent-m1/` is a copy of a Harbor trial or job file. Machine-specific paths were replaced,
+and in `agent-r3/` also the URL of the model service the agents called; nothing else was changed (no reward, count or
+timing). The copy script checked this: each JSON file parses to the original with only the path strings replaced and
+identical numbers, and each text file differs from the original only on lines that held one of these paths.
+
+The agent trials of run m1 (2026-11-03) are in `agent-m1/`, which has its own `REDACTIONS.md`.
 
 | Placeholder | What it replaces |
 |---|---|
@@ -92,4 +97,5 @@ In each `agent-r3/<trial>/agent/` (`recording.cast`, `terminus_2.pane`, `traject
 | `agent-r3/orders-export-missing-rows__jmkPRP3/trial.log` (text; first line added) | `<submission>` x2 |
 | `agent-r3/orders-export-missing-rows__jmkPRP3/job_lock.json` | `<model-endpoint>` x3 |
 
-Files with no machine-specific path or model URL (copied byte for byte): 119 (95, plus 24 in `agent-r3/`).
+Files with no machine-specific path or model URL (copied byte for byte): 119 (95, plus 24 in `agent-r3/`), not
+counting `agent-m1/`, whose own `REDACTIONS.md` counts 64.

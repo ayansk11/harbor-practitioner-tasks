@@ -1,0 +1,36 @@
+# Redacted 2026-11-03: machine-specific paths replaced (<submission> x12). <submission> = the submission folder on the authoring Mac, <home> = the author's home folder, <local-scratch> = the session scratch folder, <model-endpoint> = the URL of the model service the agent called. Nothing else changed: no reward, count or timing.
+Selected strategy: _DaytonaDirect
+Building environment from <submission>/tasks/orders-export-missing-rows/environment/Dockerfile
+Parser warnings: - Extra text detected before JSON object
+- Extra text detected after JSON object
+Trajectory dumped to <submission>/jobs/agent-trials/orders-export-missing-rows-terminus2-gemma4-31b-m1-1/orders-export-missing-rows__tWo8AoG/agent/trajectory.json
+Parser warnings: - Extra text detected before JSON object
+- Extra text detected after JSON object
+Trajectory dumped to <submission>/jobs/agent-trials/orders-export-missing-rows-terminus2-gemma4-31b-m1-1/orders-export-missing-rows__tWo8AoG/agent/trajectory.json
+Parser warnings: - Extra text detected before JSON object
+- Extra text detected after JSON object
+Trajectory dumped to <submission>/jobs/agent-trials/orders-export-missing-rows-terminus2-gemma4-31b-m1-1/orders-export-missing-rows__tWo8AoG/agent/trajectory.json
+Parser warnings: - Extra text detected before JSON object
+- Extra text detected after JSON object
+Trajectory dumped to <submission>/jobs/agent-trials/orders-export-missing-rows-terminus2-gemma4-31b-m1-1/orders-export-missing-rows__tWo8AoG/agent/trajectory.json
+Parser warnings: - Extra text detected before JSON object
+- Extra text detected after JSON object
+Parser warnings: - Extra text detected before JSON object
+- Extra text detected after JSON object
+Trajectory dumped to <submission>/jobs/agent-trials/orders-export-missing-rows-terminus2-gemma4-31b-m1-1/orders-export-missing-rows__tWo8AoG/agent/trajectory.json
+Parser warnings: - Extra text detected before JSON object
+- Extra text detected after JSON object
+Trajectory dumped to <submission>/jobs/agent-trials/orders-export-missing-rows-terminus2-gemma4-31b-m1-1/orders-export-missing-rows__tWo8AoG/agent/trajectory.json
+Parser warnings: - Extra text detected before JSON object
+- Extra text detected after JSON object
+Trajectory dumped to <submission>/jobs/agent-trials/orders-export-missing-rows-terminus2-gemma4-31b-m1-1/orders-export-missing-rows__tWo8AoG/agent/trajectory.json
+Parser warnings: - Extra text detected before JSON object
+- Extra text detected after JSON object
+Trajectory dumped to <submission>/jobs/agent-trials/orders-export-missing-rows-terminus2-gemma4-31b-m1-1/orders-export-missing-rows__tWo8AoG/agent/trajectory.json
+Parser warnings: - Extra text detected before JSON object
+- Extra text detected after JSON object
+Trajectory dumped to <submission>/jobs/agent-trials/orders-export-missing-rows-terminus2-gemma4-31b-m1-1/orders-export-missing-rows__tWo8AoG/agent/trajectory.json
+Trajectory dumped to <submission>/jobs/agent-trials/orders-export-missing-rows-terminus2-gemma4-31b-m1-1/orders-export-missing-rows__tWo8AoG/agent/trajectory.json
+Collecting main service artifacts
+Selected strategy: _DaytonaDirect
+Building environment from <submission>/tasks/orders-export-missing-rows/tests/Dockerfile

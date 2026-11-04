@@ -1,0 +1,25 @@
+{
+    "task": {
+        "path": "<submission>/jobs/feature-leakage-churn/package-v3/feature-leakage-churn"
+    },
+    "trial_name": "feature-leakage-churn__pdidSxk",
+    "trials_dir": "<submission>/jobs/agent-trials/feature-leakage-churn-terminus2-qwen38-27b-m1-1",
+    "environment_build_timeout_multiplier": 3.0,
+    "agent": {
+        "name": "terminus-2",
+        "model_name": "openai/qwen3.8-27b",
+        "kwargs": {
+            "model_info": {
+                "max_input_tokens": 229376,
+                "max_output_tokens": 32768,
+                "input_cost_per_token": 0,
+                "output_cost_per_token": 0
+            },
+            "api_base": "<model-endpoint>"
+        }
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "04130a52-79ee-4529-9f2a-2895871a080c"
+}

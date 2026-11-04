@@ -1,6 +1,11 @@
 # Validation: tenant-isolation-docshare
 
-Last updated: 2026-11-03, 08:10 MST (Mac clock): the section "Agent trials" reports the three `terminus-2` trials only;
+Last updated: 2026-11-03, 17:21 MST (Mac clock; late edits to 20:39 MST by the file's time): the section "Agent trials"
+adds run m1 of 2026-11-03, the first agent trials on the current grader (eight `terminus-2` trials with four models, 6
+of 8 pass, traces in `traces/agent-m1/`), and no longer says that no agent trial has run on the current grader or that
+how an agent fares on it is not known; the introduction, the file list and the trace notes now name run m1 and its
+traces.
+Before that, 2026-11-03, 08:10 MST (Mac clock): the section "Agent trials" reports the three `terminus-2` trials only;
 the external reviewer's two trials, known only from the reviewer's feedback, which is not in this repository, are no
 longer reported here (the authors' choice).
 Before that, 2026-11-03, 06:37 MST (Mac clock): fixes after a pre-commit check (no count or result changed): the
@@ -21,8 +26,8 @@ This task has had two graders. The first is in the package of the repository's c
 (section "First version (earlier grader)"). The current one is the `tests/grade.py` of the package in
 `tasks/tenant-isolation-docshare/`, fixed on 2026-11-03, when the attempt `solution/attempts/replay_memo/` was added
 too; nothing else in the package changed. Everything above the section "Agent trials" is about the current package.
-That section reports trials that ran on the first version's package, and the section "First version (earlier grader)"
-is about that version.
+That section reports run m1 of 2026-11-03, whose eight trials ran on the current package, and three earlier trials
+that ran on the first version's package; the section "First version (earlier grader)" is about that version.
 
 **Final run: `full2`.** Harbor 0.25.0 on Daytona, 2026-11-03 from 03:36:31 to 03:44:49 (Mac clock, MST; the first
 row's `started` in `proof_results_full2.json`, and the time the run's three files were written; in the shipped
@@ -43,12 +48,15 @@ carries the same `task_checksum`, `998eb650aed0821084d4db603d067cbed81ff6210396d
   `tools/proof_matrix.py` (`run_full2.log` is its console output).
 - `traces/<variant>/`: one Harbor trial per variant of run `full2` (table below; their files, section "What each
   trace folder holds").
+- `traces/agent-m1/<trial>/`: the eight agent trials of run m1 (section "Agent trials"), with their own
+  `traces/agent-m1/REDACTIONS.md`.
 - `first-version/`: the evidence of the earlier grader (section "First version (earlier grader)"), among it the three
   agent trials in `first-version/traces/agent-r3/` (section "Agent trials").
 
-Each traces folder carries a `REDACTIONS.md` that lists what was replaced in its copies; no reward, count or timing
-was changed. The "Job folder" column of `PROOF_RESULTS_full2.md` points into `jobs/`, the raw Harbor output, which is
-git-ignored and not part of the repository; the trace folders are the shipped copy.
+Each traces folder, `traces/agent-m1/` among them, carries a `REDACTIONS.md` that lists what was replaced in its copies
+(in `traces/agent-m1/`, also the model service's URL); no reward, count or timing was changed. The "Job folder"
+column of `PROOF_RESULTS_full2.md` points into `jobs/`, the raw Harbor output, which is git-ignored and not part of the
+repository; the trace folders are the shipped copy.
 
 ## Results and traces (run `full2`)
 
@@ -118,6 +126,10 @@ never published, not the earlier grader of the section "First version (earlier g
 | `artifacts/manifest.json` | what Harbor downloaded from the agent sandbox for the verifier (the downloaded copy of `/app` itself is not shipped) |
 | `job_result.json` | the job-level `result.json`: every trial of that job with its reward (for canonical, all ten), and job start and end times (Mac clock, MST, no zone suffix) |
 | `job_lock.json` | the job-level `lock.json`: `harbor.version` (0.25.0), the task digest and the trial settings |
+
+The agent traces in `traces/agent-m1/<trial>/` hold the same files except `agent/oracle.txt`: their `agent/` holds
+`trajectory.json` (the prompt and every agent step), `terminus_2.pane` (the terminal pane) and `recording.cast` (a
+terminal recording) instead, and their `config.json` names the agent, `terminus-2`, and its model.
 
 ## What the proof shows
 
@@ -221,17 +233,111 @@ in each `job_lock.json`):
 
 ## Agent trials
 
-No agent (model) trial has run on the current grader. Three trials of Harbor's `terminus-2` agent with the model
-`openai/gpt-oss-120b` ran on this task as published in commits `79286dc` to `f5fba52`, on 2026-10-30, so the earlier
-grader graded them (section "First version (earlier grader)"): 0 of 3 (below). Their traces are in
-`first-version/traces/agent-r3/`.
+Two sets of agent (model) trials ran on this task, outside the proof matrix: run m1 of 2026-11-03 on the current
+package, the first agent trials on the current grader (6 of 8 passed), and three trials of 2026-10-30 on the first
+version's package, which the earlier grader graded (0 of 3; subsection "Earlier trials (2026-10-30): the earlier
+grader").
 
-How an agent fares on the current grader is not known: none of these trials was re-run. INFERENCE (from the three
-`terminus-2` trials' `reward.json` and the design record, section 4, where run 1 of the current grader is the earlier
-run 1 without the held-back writes, request for request): each of the three failed checks on reads in run 1 (460,
-1,280 and 908 of its failed run-1 checks, in the order of the table below), so each would fail the current grader
-too. Canonical and alt pass both graders (runs `full1` and `full2`), and four more valid fixes pass the current one
-locally (design record, section 7).
+### Run m1 (2026-11-03): the current grader
+
+Eight trials of Harbor 0.25.0's `terminus-2` agent: two attempts with each of four models of an OpenAI-compatible
+model service (its URL is `<model-endpoint>` in the traces). The models are named as the service names them (each
+`config.json` gives the name with LiteLLM's `openai/` prefix); which weights served them is UNVERIFIED. `terminus-2`
+runs its loop on the machine that runs Harbor, which calls the model service, and the model's commands in the task's
+Daytona sandbox. Each trial is a job of its own, `tenant-isolation-docshare-terminus2-<tag>-m1-<attempt>` (`<tag>` a
+short model tag such as `gemma4-31b`, `glm53flash`, `gptoss120b` or `qwen38-27b`; each `config.json` gives the job's
+`trials_dir`; `n_concurrent_trials` 1 in each `job_lock.json`); the eight jobs ran from 08:51:56 to 09:15:22 (Mac
+clock, MST; each `job_result.json`), up to four at a time. Agent and verifier timeouts were those of `task.toml`
+(agent 1,800 s; `timeout_multiplier` 1.0), and Harbor waited up to three times its default image-build time
+(`environment_build_timeout_multiplier` 3.0). The task digest in every `job_lock.json` is the current package's
+(`sha256:bf647a0e...`, given in full above, as in run `full2`), and every `result.json` carries run `full2`'s
+`task_checksum`. Every trial finished without an exception (`result.json`).
+Six passed: 6 of 8. The run's rows for all five tasks are in `../agent_trials_m1.json`;
+[`traces/agent-m1/REDACTIONS.md`](traces/agent-m1/REDACTIONS.md) lists what was replaced in these copies.
+
+| Trial | Model | Attempt | Episodes | Agent seconds | Reward | What the trial's files show | Trace |
+|---|---|---|---|---|---|---|---|
+| `tenant-isolation-docshare__ZK8erWp` | gemma-4-31B-it | 1 | 7 | 103 | 1.0 | pass: all six flaws closed (the membership and org-exists checks in `auth.py`; one file check called by every file endpoint, each export id and link creation; delete for org_admin only); checked with the 9 visible tests only | [`traces/agent-m1/tenant-isolation-docshare__ZK8erWp/`](traces/agent-m1/tenant-isolation-docshare__ZK8erWp/) |
+| `tenant-isolation-docshare__HofavrE` | gemma-4-31B-it | 2 | 14 | 129 | 1.0 | pass: all six closed with one shared file loader (`get_file_authorized`) and the membership check in `auth.py`; checked its running service with a script of its own | [`traces/agent-m1/tenant-isolation-docshare__HofavrE/`](traces/agent-m1/tenant-isolation-docshare__HofavrE/) |
+| `tenant-isolation-docshare__JZyjz7i` | glm-5.3-flash | 1 | 16 | 568 | 1.0 | pass: all six closed by scoping each file query by organisation, plus a login check for every `/api` path but the health check and an all-or-nothing export; checked with a script of its own and a service started as `nobody` | [`traces/agent-m1/tenant-isolation-docshare__JZyjz7i/`](traces/agent-m1/tenant-isolation-docshare__JZyjz7i/) |
+| `tenant-isolation-docshare__EVFSvc5` | glm-5.3-flash | 2 | 22 | 968 | 1.0 | pass: all six closed with a `require_readable_file` helper, every export id checked before any content is sent; most of its time went to a policy matrix of its own | [`traces/agent-m1/tenant-isolation-docshare__EVFSvc5/`](traces/agent-m1/tenant-isolation-docshare__EVFSvc5/) |
+| `tenant-isolation-docshare__futjyTA` | gpt-oss-120b | 1 | 13 | 175 | 0.0 | fail: only an active-org check added to `auth.py`, for members and not for support (flaw 2 half closed); flaws 1, 3, 4, 5 and 6 open; never started the service; done after the 9 visible tests. Run 1: 435 of 2,211 checks failed; run 2: 218 of 1,491; 214 leaking refusals | [`traces/agent-m1/tenant-isolation-docshare__futjyTA/`](traces/agent-m1/tenant-isolation-docshare__futjyTA/) |
+| `tenant-isolation-docshare__5k57eE3` | gpt-oss-120b | 2 | 14 | 200 | 0.0 | fail: org checks added to download, rename, delete and link creation, but against an unchecked `X-Org-Id` (`auth.py` untouched, flaw 2 open); `thumbs.py` never read, the first-id export check judged fine, the metadata read and the delete role left; done after the 9 visible tests. Run 1: 1,166 of 2,211 failed; run 2: 581 of 1,527; 637 leaking refusals | [`traces/agent-m1/tenant-isolation-docshare__5k57eE3/`](traces/agent-m1/tenant-isolation-docshare__5k57eE3/) |
+| `tenant-isolation-docshare__DNwnWr5` | qwen3.8-27b | 1 | 13 | 373 | 1.0 | pass: all six closed with one policy function, given the action, in `files.py` and the membership check in `auth.py`; 37 checks of its own against its running service | [`traces/agent-m1/tenant-isolation-docshare__DNwnWr5/`](traces/agent-m1/tenant-isolation-docshare__DNwnWr5/) |
+| `tenant-isolation-docshare__A5bfe2E` | qwen3.8-27b | 2 | 10 | 175 | 1.0 | pass: all six closed with an org check in each route and the membership check in `auth.py`; 9 checks of its own against its running service | [`traces/agent-m1/tenant-isolation-docshare__A5bfe2E/`](traces/agent-m1/tenant-isolation-docshare__A5bfe2E/) |
+
+Episodes are `n_episodes` (`agent_result.metadata`) and agent seconds the agent phase, from
+`agent_execution.started_at` to `finished_at`, rounded as in `../agent_trials_m1.json`, both from each trial's
+`result.json`; the check counts are from `verifier/reward.json`. Flaw numbers are those of the six planted flaws in
+`../../docs/tenant-isolation-docshare/DESIGN.md` section 3. The column "What the trial's files show" condenses the
+authors' review of the run (by model agents, recorded outside this repository), which read every trajectory, compared
+each final `/app` with the package and replayed the agents' services.
+
+What run m1 shows:
+- The six passes: each `reward.json` shows 0 of 2,211 run-1 and 0 of 1,540 run-2 checks failed, `leaking_refusals` 0,
+  `held_back` 264 and `held_back_sent` 264. Each closed all six planted flaws, each in its own code (table). Reading
+  (INFERENCE, from each trial's final code against the task's `environment/app`, its commands, and the review's
+  replay of each final service in process with `tests/policy.py` as the oracle, which found 0 failures in each pass on
+  the visible and on the hidden data and failed the original service and four shipped wrong attempts; the review's
+  scripts and outputs are not shipped): every pass is a genuine fix, with no id or token literal in the service code,
+  no read of `/tests` or the hidden data and no state kept between the grader's runs. Six different fixes scoring 1.0
+  also show the grader accepting valid solutions other than the references.
+- The two failures (`gpt-oss-120b`) fail as the three earlier trials did: an incomplete audit, the identity layer half
+  fixed (`futjyTA`) or untouched (`5k57eE3`), and the task marked complete after the 9 visible tests, which pass on the
+  unfixed service too (`../../docs/tenant-isolation-docshare/DESIGN.md` section 2). Each left about 1,600 s of its
+  1,800 s unused. Every failed refused request in their `verifier/test-stdout.txt` got 200, 201 or 204, a real leak
+  (INFERENCE, from the examples in the logs: the permitted write-list steps that failed broke because refused writes
+  had gone through before them). Over both graders `gpt-oss-120b` has passed 0 of 5 trials of this task.
+- Reading (INFERENCE, from these counts): for `gemma-4-31B-it`, `glm-5.3-flash` and `qwen3.8-27b` this task is not
+  hard (6 of 6, in 103 to 968 s of the 1,800 s); it separates only `gpt-oss-120b`. The same three models passed the
+  four tasks other than `feature-leakage-churn` in 23 of 24 attempts (`../agent_trials_m1.json`). Two attempts per
+  model are counts, not pass rates. The design record allowed that strong agents may pass often (its section 9), and a
+  low pass rate is not the goal in itself; what the trials support is that the instruction is clear and the grading
+  fair: no failure came from an unclear instruction or a grader defect.
+- Friction that cost steps, not outcomes (INFERENCE, from the trajectories): the image has no `curl` (the report's own
+  repro uses it, `tasks/tenant-isolation-docshare/environment/app/SECURITY_REPORT.md` line 15), `ps`, `pkill` or
+  `apply_patch`, and a bare `pytest -q` cannot import the service, where the app's `README.md` gives
+  `python -m pytest -q tests`. `HofavrE` left its check script in `/app` (`verify_fix.py`, never imported by the
+  service); `5k57eE3` added `/app/conftest.py`, which the shared kit removed before grading (`removed 1 auto-run
+  entries` in its `verifier/test-stdout.txt`).
+- Two corners the grader does not test, found by the review, both present in the shipped service too and listed
+  under the known limitations of `../../docs/tenant-isolation-docshare/DESIGN.md` section 9: a JSON body that is not
+  an object (a non-empty list, a non-empty string, a non-zero number or `true`; an empty list, an empty string, `0`,
+  `false` and `null` get 400) sent to `PATCH /api/files/<id>` or `POST /api/export` gets 500, not the 400 that the
+  app's `docs/API.md` (`tasks/tenant-isolation-docshare/environment/app/docs/API.md`, line 44) promises for malformed
+  bodies, in four of the six passes, in the shipped service and in both reference fixes (the two `glm-5.3-flash`
+  passes answer 400); and the alt reference fix answers 500 to such a body on a rename of another organisation's
+  file, where a refusal is due. No pass relied on either. A third, found by the same review and not in the shipped
+  service: both `glm-5.3-flash` passes refuse a request whose `X-Org-Id` header is present but empty, support users'
+  requests included, where the original, both reference fixes and the other four passes treat it as absent; the
+  app's `docs/PERMISSIONS.md` section 2 does not say what an empty header means, and the grader never sends one
+  (`tests/grade.py` lines 253-254).
+- A harness note: Harbor 0.25.0's `terminus-2` cuts each long observation twice, so the size its marker reports
+  understates what was cut (`_limit_output_length` in `harbor/agents/terminus_2/terminus_2.py`). The review found no
+  cut observation in this task's two failing trials; no verdict depends on it.
+
+Network: this task's `task.toml` sets no network line, so the trials ran with Harbor 0.25.0's default public network,
+long after this repository became public, and a fetch of the public hidden tests was possible. The agent's loop ran on
+the machine that runs Harbor and called the model service from there; only the model's commands ran in the sandbox.
+Every trajectory, terminal pane and recording was read for network use: no command or output reached any host but
+`127.0.0.1`, where the agents ran their own services; `curl` is not in the image, so the agents' `curl` calls, all to
+`127.0.0.1`, did not run; no GitHub host (`github.com`, `*.github.com`, `*.githubusercontent.com`) and neither the
+repository's nor its owner's name appears in any of them; the only other URL, `http://www.w3.org/2000/svg`, is the SVG
+namespace string of the thumbnail code, not a request. No command read `/tests`, the hidden data or the grader. No
+trial was excluded.
+
+### Earlier trials (2026-10-30): the earlier grader
+
+Three trials of Harbor's `terminus-2` agent with the model `openai/gpt-oss-120b` ran on this task as published in
+commits `79286dc` to `f5fba52`, on 2026-10-30, so the earlier grader graded them (section "First version (earlier
+grader)"): 0 of 3 (below). Their traces are in `first-version/traces/agent-r3/`.
+
+None of these three trials was re-run on the current grader. INFERENCE (from the three `terminus-2` trials'
+`reward.json` and the design record, section 4, where run 1 of the current grader is the earlier run 1 without the
+held-back writes, request for request): each of the three failed checks on reads in run 1 (460, 1,280 and 908 of its
+failed run-1 checks, in the order of the table below), so each would fail the current grader too. Canonical and alt
+pass both graders (runs `full1` and `full2`), and four more valid fixes pass the current one locally (design record,
+section 7).
 
 The `terminus-2` trials ran outside the proof matrix: Harbor's `terminus-2` agent with the model
 `openai/gpt-oss-120b`, served by an OpenAI-compatible model service (its URL is `<model-endpoint>` in the traces), on

@@ -1,0 +1,26 @@
+[test.sh] lock ok: /logs/verifier 0:0 755, /logs 0:0 755, owner before 0:0; protected_symlinks=1 protected_hardlinks=1 protected_regular=2; setid files left: 0
+[kit] /app copied to the root-only /tmp/kit-scratch-6i_gp039/app; skipped 0 special files
+[kit] resources: verifier_cpus_visible=48, verifier_cpu_quota=2.0, verifier_memory_limit_mib=4096.0, verifier_memtotal_mib=386466.6
+[kit] sweep before H: removed 1 uid-1001 entries and IPC objects , 0 left, 0 unreadable, 0.715s
+[kit] submission copied to /work/sub; removed 0 auto-run entries; skipped 0 special files
+[kit] staged /tmp/kit-scratch-6i_gp039/H for uid 1001 at /work/in
+[kit] staged (empty) for uid 1001 at /work/out
+[kit] network isolation: ON (private namespace, loopback only); probe rc=0 out=b'NETNS-OK' err=b''
+[kit] ran ['/usr/local/bin/python3', '-m', 'churn.build_features', '--data']... rc=1 timed_out=False 9.392s net=private strays_killed=0
+[kit] H: run failed (timed_out=False, rc=1); stderr tail: Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/work/sub/churn/build_features.py", line 90, in <module>
+    main()
+  File "/work/sub/churn/build_features.py", line 82, in main
+    features = build(args.data)
+               ^^^^^^^^^^^^^^^^
+  File "/work/sub/churn/build_features.py", line 62, in build
+    plan, login, keep_plan, keep_login = customer_features(
+                                         ^^^^^^^^^^^^^^^^^^
+  File "/work/sub/churn/live_features.py", line 385, in customer_features
+    point_ids = points["customer_id"].to_numpy(dtype="object")[point_positions]
+                                                               ^^^^^^^^^^^^^^^
+NameError: name 'point_positions' is not defined. Did you mean: 'change_positions'?
+
+[kit] reward=0.0 (killed 0 runner processes) metrics={'reward': 0.0, 'check_A': 0, 'check_B_cut1': 0, 'check_B_cut2': 0, 'verifier_cpus_visible': 48, 'verifier_cpu_quota': 2.0, 'verifier_memory_limit_mib': 4096.0, 'verifier_memtotal_mib': 386466.6, 'swept_runner_paths_H': 1, 'residual_runner_paths_H': 0, 'seconds_sweep_H': 0.715, 'sweep_errors_H': 0, 'seconds_H': 9.392, 'net_private_H': 1, 'run_failed_H': 1, 'seconds_grade_total': 10.212656952440739}

@@ -1,0 +1,1204 @@
+[?2004hroot@44f3b013-1907-4734-b87d-e77db71013da:/app# asciinema rec --stdin /logs/agent/recording.cast
+[?2004l[0;32masciinema: recording asciicast to /logs/agent/recording.cast[0m
+[0;32masciinema: press <ctrl-d> or type "exit" when you're done[0m
+[?2004hroot@44f3b013-1907-4734-b87d-e77db71013da:/app# clear
+[?2004l[H[J[3J[?2004hroot@44f3b013-1907-4734-b87d-e77db71013da:/app# ls -R /app
+[?2004l/app:
+CHANGELOG.md  INCIDENT.md  README.md  churn  data  docs  live  logs
+
+/app/churn:
+__init__.py  attributes.py  build_features.py  encoding.py  extract.py	impute.py  status.py  train.py	windows.py
+
+/app/data:
+_ops  customers.csv  labels.csv  orders.csv  plan_changes.csv  scoring_points.csv  status_snapshots.csv  tickets.csv
+
+/app/data/_ops:
+commits.jsonl  scheduler.log
+
+/app/docs:
+WAREHOUSE.md
+
+/app/live:
+features.py
+
+/app/logs:
+live_2026-01_sample.jsonl
+[?2004hroot@44f3b013-1907-4734-b87d-e77db71013da:/app# cat /app/INCIDENT.md
+[?2004l# INC-2077: churn-hgb-v3 scores far worse live than in validation
+
+Status: open. Owner: ML platform on-call. Opened 2026-03-04, updated 2026-03-05.
+
+## What happened
+- `churn-hgb-v3` is trained on the feature table that the offline pipeline builds (`churn/`, v3 in `CHANGELOG.md`).
+  Built from this brand's extract (`data/`, the warehouse at 2026-03-05T00:00:00Z), that table gives
+  **offline validation AUC 0.805** in `python -m churn.train` (trained on the predictions before 2025-09-01,
+  validated on those of 2025-09-01 to 2025-11-30).
+- The model went live on 2026-01-01. The live scoring service computes the features of each request itself, from the
+  warehouse at the moment of the request (`live/features.py`). On the 3,415 predictions of January 2026, whose 30-day
+  outcomes have all landed in `labels`: **live AUC 0.656**.
+- The model and its hyperparameters did not change between validation and launch.
+
+## Tried so far
+- Retrained with much stronger regularization and shallower trees (`--l2 50 --max-depth 2`): offline AUC 0.813. The
+  offline number did not fall, so this is not ordinary overfitting.
+- Compared the live service with `live/features.py` by hand on 200 January requests: the service computes exactly what
+  its queries say.
+- Pulled a random sample of about 10% of the requests of January 2026, with the values the service computed:
+  `logs/live_2026-01_sample.jsonl`, 365 requests, one JSON object per line with `customer_id`, `as_of`, `trigger`, the
+  11 `features` and the model's `score`.
+
+## Next step (model team)
+`churn-hgb-v4` is to be trained on a feature table that matches what the live service computed for every past
+prediction. Every feature whose live value can be matched for every prediction is kept; any feature whose live value
+cannot be matched is dropped from v4.
+[?2004hroot@44f3b013-1907-4734-b87d-e77db71013da:/app# cat /app/CHANGELOG.md
+[?2004l# Changelog: the offline feature pipeline (`churn/`)
+
+## v3 (2025-12-19): the training table of churn-hgb-v3
+Fixes INC-2041: in four places, v2 used events stamped at or after the prediction time `t`.
+- `windows.py`: the order, spend and ticket windows are `[t - W days, t)` on the exact event timestamps. v2 summed
+  whole UTC days, the day of `t` included, so events later on the prediction day were counted.
+- `status.py`: the latest snapshot dated before `date(t)`. A snapshot dated D records the status at the end of day D;
+  v2 took the customer's latest snapshot in the extract, which is often dated after `t`.
+- `impute.py`: a missing `app_minutes_7d` takes the customer's most recent earlier reading only. v2 filled backward
+  first, from a later reading.
+- `encoding.py`: `te_district` counts only labels whose 30-day window had closed before `t` (`as_of + 30 days < t`),
+  for the district and for the prior alike. v2 used every label in the extract, the prediction's own and later ones
+  included.
+
+Also in v3:
+- `attributes.py` (new): `plan` and `days_since_last_login` from the customer record, the two features of the live
+  service that v2 did not build. A last login at or after `t` is ignored (the feature is null then).
+- `extract.py` loads the seven tables described in `docs/WAREHOUSE.md`.
+- `train.py`: every column of the feature table other than `customer_id` and `as_of` is a model input, and string
+  columns are one-hot encoded (v2 encoded `status` only); a column that holds no value at all is skipped.
+[?2004hroot@44f3b013-1907-4734-b87d-e77db71013da:/app# cat /app/docs/WAREHOUSE.md
+[?2004l# Warehouse tables (churn scoring)
+
+Written 2025-02-14 by the data platform for the warehouse and its nightly loaders as they were on that date, and not
+updated since. The scheduler's own records of every job run and transaction, later changes included, are in each
+extract's `_ops/` folder (below).
+
+The seven tables below are the warehouse tables that the live scoring service (`live/features.py`) and the churn
+pipeline (`churn/`) read. This page says what each table holds and which system writes it. Every brand of the company
+runs the same warehouse and jobs; each brand's job runs, failures and changes are its own.
+
+## Reading the warehouse
+- A query that starts at a moment t sees exactly the rows and values committed before t: a row committed at or after
+  t is not seen, and a value overwritten at or after t is seen as it was before the overwrite, whatever the date of
+  the event the row records.
+- A query reads each table by the name it has when the query starts.
+- `_loaded_at` is the commit time of the load that wrote the row; in `orders`, `_load_job` names that load.
+- An extract is a copy of every table as the warehouse held it at one moment: the rows and values committed before
+  that moment, with the `_ops/` records written before it.
+- Timestamps are UTC, written as ISO 8601 with a `Z` suffix and whole seconds (`2025-02-04T06:00:00Z`);
+  `snapshot_date` is a UTC date (`YYYY-MM-DD`); amounts are integer cents. Columns whose names start with `_` are
+  written by the loaders, not by the source systems.
+
+## The scheduler's records (`_ops/`)
+- `_ops/scheduler.log` has one UTC event per line, `<time> <job> run=<run> <event>`: each task's start
+  (`state=running`) and end (`state=success` or `state=failed`), and between them the lines the task writes, such as
+  the rows it selected or copied, the transaction it sent (`sent txn <n> to commit`), the statements it ran and the
+  checks it made.
+- `_ops/commits.jsonl` has one JSON object per transaction a scheduled job sent: `txn`, `at`, `outcome` (`commit` or
+  `rollback`), `table` and `rows` (the table the transaction writes rows into and how many; null for schema
+  statements).
+- `_ops/commits.jsonl` is the commit log of the scheduled jobs: a transaction is committed if and only if its outcome
+  is `commit`, and it is committed at its `at`; the scheduler's task states describe tasks, not commits.
+- Change data capture (`tickets`), the sign-up service and the scoring service write without the scheduler and are not
+  in `_ops/`.
+
+## Tables
+
+### `customers`
+`customer_id, signup_at, plan, postcode_district, last_login_at, _updated_at`: one row per customer.
+- The sign-up service writes the row at `signup_at`: the plan chosen at sign-up (`basic`, `plus` or `family`), the
+  postcode district, an empty `last_login_at`, and `_updated_at` = `signup_at`. `signup_at` and `postcode_district`
+  never change.
+- `crm_sync` reads the CRM at its start. For each customer whose plan or last login in the CRM (the latest login to
+  the app or website before the sync's start) differs from the row, it overwrites `plan` and `last_login_at` with the
+  CRM's values and sets `_updated_at` to the sync's commit time.
+- Only plan changes are logged (`plan_changes`); no history of `last_login_at` is kept.
+
+### `plan_changes`
+`customer_id, changed_at, old_plan, new_plan, _loaded_at`: one row per plan change that `crm_sync` has applied. Each
+sync writes one row for every change made in the CRM before its start that no earlier sync applied; `changed_at` is
+when the customer made the change in the CRM, `_loaded_at` the commit of the sync that applied it. A customer's rows
+are every change applied since sign-up, so the earliest row's `old_plan` is the plan chosen at sign-up. When one sync
+applies several changes of a customer, the plan after that sync is the `new_plan` of the latest of them (by
+`changed_at`), the CRM's plan at the sync's start.
+
+### `scoring_points`
+`customer_id, as_of, trigger, app_minutes_7d`: one row per scoring request, written by the scoring service at the
+moment of the request, `as_of`. `trigger` is `batch` (the 06:00 run, which scores a customer every 14 days, on the
+customer's billing weekday) or `ticket` (a request the support desk sends when a ticket is opened, for some of the
+tickets, at the ticket's `opened_at`). `app_minutes_7d` is the product-analytics reading that came with the request (the customer's minutes in
+the app over the last 7 days), empty when the request came without one (analytics export outages, devices offline).
+`(customer_id, as_of)` is unique.
+
+### `orders`
+`order_id, customer_id, ordered_at, kind, amount_cents, _load_job, _loaded_at`. `kind` is `box` (the weekly box,
+charged by billing at 05:30 on the customer's billing weekday; `ordered_at` is the charge) or `addon` (an extra item,
+ordered at any time). Each order exists in the order system, which the loaders read, from its `ordered_at` on.
+The nightly `legacy_orders` job writes the table: each run selects orders from the order system and sends them to
+`orders` in one transaction.
+
+### `tickets`
+`ticket_id, customer_id, opened_at, topic, _loaded_at`: support tickets, written by change data capture from the
+support desk 1 to 30 seconds after `opened_at`.
+
+### `status_snapshots`
+`customer_id, snapshot_date, status, _loaded_at`: the billing system's account status (`active`, `paused`,
+`payment_failed` or `cancelled`) at the end of day `snapshot_date`. Billing records a row for a customer on the
+sign-up day, on every day the status changed, and on the first day of every month, up to the cancellation (a
+`cancelled` row is the customer's last); there is at most one row per customer and date.
+`billing_export` writes each day's partition (all the rows dated D) in one transaction.
+
+### `labels`
+`customer_id, as_of, churned_30d, _loaded_at`: the outcome of a prediction (`customer_id` and `as_of` as in
+`scoring_points`): `churned_30d` is 1 if the customer cancelled in `(as_of, as_of + 30 days]`, else 0. The outcome
+becomes known at the cancellation, or when the 30 days have passed without one.
+`label_job` writes, in one transaction per run, a row for each prediction whose outcome became known before the run
+started and that has no row yet.
+[?2004hroot@44f3b013-1907-4734-b87d-e77db71013da:/app# cat /app/live/features.py
+[?2004l"""Feature queries of the live churn scoring service: a read-only copy of the service's `features` module.
+
+This copy is the contract between the live service and the offline pipeline in `churn/`. It is kept for reference:
+nothing in this repository imports or runs it, there is no warehouse connection here, and editing it changes nothing.
+
+How the service uses it. A scoring request names a customer and a moment: the 06:00 batch run (trigger `batch`), or
+the support desk when a ticket is opened (trigger `ticket`, at the ticket's `opened_at`). For each request the service
+runs every query in QUERIES once, at the moment of the request, against the warehouse tables as they stand at that
+moment, and takes the first column of the first row as the feature's value; a query that returns no row, or NULL,
+gives a null value. The service then scores the 11 values with the deployed model, if one is attached, and logs them
+with the request.
+
+Parameters of every query:
+    :customer_id     the request's customer
+    :now             the moment of the request (the `as_of` the scoring service records for it)
+    :app_minutes_7d  the product-analytics reading that came with the request, NULL when it came without one
+
+The warehouse is PostgreSQL. Timestamps are `timestamptz` and sessions run in UTC, so INTERVAL '7 days' is exactly
+7 x 86,400 seconds and EXTRACT(EPOCH FROM <interval>) is a number of seconds. The tables, and when their rows and
+values are committed: docs/WAREHOUSE.md.
+"""
+
+QUERIES = {
+    # orders in the 7 days before the request
+    "orders_7d": """
+        SELECT COUNT(*)
+        FROM orders
+        WHERE customer_id = :customer_id
+          AND ordered_at >= :now - INTERVAL '7 days'
+          AND ordered_at < :now
+    """,
+    # orders in the 30 days before the request
+    "orders_30d": """
+        SELECT COUNT(*)
+        FROM orders
+        WHERE customer_id = :customer_id
+          AND ordered_at >= :now - INTERVAL '30 days'
+          AND ordered_at < :now
+    """,
+    # amount of those orders, in cents (0 when there are none)
+    "spend_30d_cents": """
+        SELECT COALESCE(SUM(amount_cents), 0)
+        FROM orders
+        WHERE customer_id = :customer_id
+          AND ordered_at >= :now - INTERVAL '30 days'
+          AND ordered_at < :now
+    """,
+    # support tickets opened in the 30 days before the request
+    "tickets_30d": """
+        SELECT COUNT(*)
+        FROM tickets
+        WHERE customer_id = :customer_id
+          AND opened_at >= :now - INTERVAL '30 days'
+          AND opened_at < :now
+    """,
+    # days since the latest order before the request (NULL when there is none)
+    "days_since_last_order": """
+        SELECT EXTRACT(EPOCH FROM (:now - MAX(ordered_at))) / 86400.0
+        FROM orders
+        WHERE customer_id = :customer_id
+          AND ordered_at < :now
+    """,
+    # days since sign-up
+    "tenure_days": """
+        SELECT EXTRACT(EPOCH FROM (:now - signup_at)) / 86400.0
+        FROM customers
+        WHERE customer_id = :customer_id
+    """,
+    # account status of the latest snapshot (no row: NULL)
+    "status": """
+        SELECT status
+        FROM status_snapshots
+        WHERE customer_id = :customer_id
+        ORDER BY snapshot_date DESC
+        LIMIT 1
+    """,
+    # subscription plan on the customer record
+    "plan": """
+        SELECT plan
+        FROM customers
+        WHERE customer_id = :customer_id
+    """,
+    # days since the last login on the customer record (NULL when the record has none)
+    "days_since_last_login": """
+        SELECT EXTRACT(EPOCH FROM (:now - last_login_at)) / 86400.0
+        FROM customers
+        WHERE customer_id = :customer_id
+    """,
+    # app minutes over the last 7 days: the request's own reading, else the reading of the customer's latest earlier
+    # request that had one (NULL when there is none)
+    "app_minutes_7d": """
+        SELECT COALESCE(
+            CAST(:app_minutes_7d AS double precision),
+            (SELECT app_minutes_7d
+             FROM scoring_points
+             WHERE customer_id = :customer_id
+               AND as_of < :now
+               AND app_minutes_7d IS NOT NULL
+             ORDER BY as_of DESC
+             LIMIT 1))
+    """,
+    # smoothed churn rate of the customer's postcode district: (s + 20 p) / (n + 20), where p is the mean churned_30d
+    # of all label rows (0.05 when there are none), and n and s are the number of label rows of customers in the same
+    # district and the sum of their churned_30d
+    "te_district": """
+        WITH lab AS (
+            SELECT l.churned_30d, c.postcode_district
+            FROM labels l
+            JOIN customers c ON c.customer_id = l.customer_id
+        ),
+        own AS (
+            SELECT postcode_district
+            FROM customers
+            WHERE customer_id = :customer_id
+        )
+        SELECT (COALESCE(SUM(lab.churned_30d) FILTER (WHERE lab.postcode_district = own.postcode_district), 0)
+                + 20 * COALESCE(AVG(lab.churned_30d), 0.05))
+               / (COUNT(*) FILTER (WHERE lab.postcode_district = own.postcode_district) + 20)
+        FROM lab CROSS JOIN own
+    """,
+}
+
+FEATURES = list(QUERIES)
+[?2004hroot@44f3b013-1907-4734-b87d-e77db71013da:/app# cat /app/churn/build_features.py
+[?2004l"""Build the churn feature table: python -m churn.build_features --data <dir> --out <file.parquet>"""
+import argparse
+import os
+
+from churn.attributes import days_since_last_login, plan
+from churn.encoding import district_encoding
+from churn.extract import load_extract
+from churn.impute import fill_app_minutes
+from churn.status import latest_status
+from churn.windows import activity_features, tenure_days
+
+FEATURE_COLUMNS = ["orders_7d", "orders_30d", "spend_30d_cents", "tickets_30d", "days_since_last_order",
+                   "tenure_days", "status", "plan", "days_since_last_login", "app_minutes_7d", "te_district"]
+
+
+def build(data_dir):
+    t = load_extract(data_dir)
+    points = t["scoring_points"].reset_index(drop=True)
+    feats = activity_features(points, t["orders"], t["tickets"])
+    feats["tenure_days"] = tenure_days(points, t["customers"])
+    feats["status"] = latest_status(points, t["status_snapshots"])
+    feats["plan"] = plan(points, t["customers"])
+    feats["days_since_last_login"] = days_since_last_login(points, t["customers"])
+    feats["app_minutes_7d"] = fill_app_minutes(points)
+    feats["te_district"] = district_encoding(points, t["labels"], t["customers"])
+    return feats[["customer_id", "as_of"] + FEATURE_COLUMNS]
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--data", required=True, help="folder with the extract CSVs")
+    ap.add_argument("--out", required=True, help="output parquet file")
+    a = ap.parse_args()
+    feats = build(a.data)
+    os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
+    feats.to_parquet(a.out, index=False)
+    print(f"wrote {len(feats)} rows x {feats.shape[1]} columns to {a.out}")
+
+
+if __name__ == "__main__":
+    main()
+[?2004hroot@44f3b013-1907-4734-b87d-e77db71013da:/app# cat /app/churn/extract.py
+[?2004l"""Load a warehouse extract (the seven CSV files described in docs/WAREHOUSE.md) into pandas frames.
+
+Every timestamp column is parsed to a UTC timestamp, the load metadata columns included, so each frame carries
+everything its CSV file has.
+"""
+import os
+import pandas as pd
+
+TIMESTAMPS = {
+    "customers": ["signup_at", "last_login_at", "_updated_at"],
+    "plan_changes": ["changed_at", "_loaded_at"],
+    "scoring_points": ["as_of"],
+    "orders": ["ordered_at", "_loaded_at"],
+    "tickets": ["opened_at", "_loaded_at"],
+    "status_snapshots": ["snapshot_date", "_loaded_at"],
+    "labels": ["as_of", "_loaded_at"],
+}
+
+
+def load_extract(data_dir):
+    tables = {}
+    for name, cols in TIMESTAMPS.items():
+        df = pd.read_csv(os.path.join(data_dir, f"{name}.csv"), dtype={"postcode_district": "str"})
+        for c in cols:
+            df[c] = pd.to_datetime(df[c], utc=True)
+        tables[name] = df
+    tables["scoring_points"]["app_minutes_7d"] = tables["scoring_points"]["app_minutes_7d"].astype("float64")
+    return tables
+[?2004hroot@44f3b013-1907-4734-b87d-e77db71013da:/app# head -n 20 /app/data/_ops/commits.jsonl
+[?2004l{"txn": 7000001, "at": "2024-01-01T03:45:07Z", "outcome": "commit", "table": "labels", "rows": 0}
+{"txn": 7000002, "at": "2024-01-02T03:02:23Z", "outcome": "commit", "table": "orders", "rows": 0}
+{"txn": 7000003, "at": "2024-01-02T03:41:41Z", "outcome": "commit", "table": "labels", "rows": 0}
+{"txn": 7000004, "at": "2024-01-02T06:38:54Z", "outcome": "commit", "table": "status_snapshots", "rows": 1}
+{"txn": 7000005, "at": "2024-01-03T03:13:57Z", "outcome": "commit", "table": "orders", "rows": 0}
+{"txn": 7000006, "at": "2024-01-03T03:33:08Z", "outcome": "commit", "table": "labels", "rows": 0}
+{"txn": 7000007, "at": "2024-01-03T06:39:29Z", "outcome": "commit", "table": "status_snapshots", "rows": 4}
+{"txn": 7000008, "at": "2024-01-04T02:48:57Z", "outcome": "rollback", "table": "orders", "rows": 2}
+{"txn": 7000009, "at": "2024-01-04T03:46:43Z", "outcome": "commit", "table": "labels", "rows": 0}
+{"txn": 7000010, "at": "2024-01-04T06:28:19Z", "outcome": "commit", "table": "status_snapshots", "rows": 6}
+{"txn": 7000011, "at": "2024-01-05T03:15:00Z", "outcome": "commit", "table": "orders", "rows": 4}
+{"txn": 7000012, "at": "2024-01-05T03:42:34Z", "outcome": "commit", "table": "labels", "rows": 0}
+{"txn": 7000013, "at": "2024-01-05T06:30:47Z", "outcome": "commit", "table": "status_snapshots", "rows": 3}
+{"txn": 7000014, "at": "2024-01-06T02:57:07Z", "outcome": "commit", "table": "orders", "rows": 3}
+{"txn": 7000015, "at": "2024-01-06T03:53:46Z", "outcome": "commit", "table": "labels", "rows": 0}
+{"txn": 7000016, "at": "2024-01-06T06:37:44Z", "outcome": "commit", "table": "status_snapshots", "rows": 4}
+{"txn": 7000017, "at": "2024-01-07T03:03:14Z", "outcome": "commit", "table": "orders", "rows": 1}
+{"txn": 7000018, "at": "2024-01-07T03:51:11Z", "outcome": "commit", "table": "labels", "rows": 0}
+{"txn": 7000019, "at": "2024-01-07T06:44:54Z", "outcome": "commit", "table": "status_snapshots", "rows": 7}
+{"txn": 7000020, "at": "2024-01-07T23:16:03Z", "outcome": "commit", "table": "plan_changes", "rows": 0}
+[?2004hroot@44f3b013-1907-4734-b87d-e77db71013da:/app# head -n 20 /app/data/_ops/scheduler.log
+[?2004l2024-01-01T03:30:00Z label_job run=2024-01-01 state=running
+2024-01-01T03:44:50Z label_job run=2024-01-01 wrote 0 rows into labels; sent txn 7000001 to commit
+2024-01-01T03:45:08Z label_job run=2024-01-01 state=success
+2024-01-02T02:30:15Z legacy_orders run=2024-01-02 state=running
+2024-01-02T03:02:19Z legacy_orders run=2024-01-02 selected orders where ordered_at >= 2024-01-01T00:00:00Z and ordered_at < 2024-01-02T00:00:00Z: 0 rows; sent txn 7000002 to commit into orders
+2024-01-02T03:02:29Z legacy_orders run=2024-01-02 analyze orders
+2024-01-02T03:14:50Z legacy_orders run=2024-01-02 state=success
+2024-01-02T03:30:00Z label_job run=2024-01-02 state=running
+2024-01-02T03:41:25Z label_job run=2024-01-02 wrote 0 rows into labels; sent txn 7000003 to commit
+2024-01-02T03:41:44Z label_job run=2024-01-02 state=success
+2024-01-02T06:33:44Z billing_export run=2024-01-01 state=running
+2024-01-02T06:38:44Z billing_export run=2024-01-01 wrote 1 rows into status_snapshots; sent txn 7000004 to commit
+2024-01-02T06:38:58Z billing_export run=2024-01-01 state=success
+2024-01-03T02:30:23Z legacy_orders run=2024-01-03 state=running
+2024-01-03T03:13:55Z legacy_orders run=2024-01-03 selected orders where ordered_at >= 2024-01-02T00:00:00Z and ordered_at < 2024-01-03T00:00:00Z: 0 rows; sent txn 7000005 to commit into orders
+2024-01-03T03:14:07Z legacy_orders run=2024-01-03 analyze orders
+2024-01-03T03:30:00Z label_job run=2024-01-03 state=running
+2024-01-03T03:31:07Z legacy_orders run=2024-01-03 state=success
+2024-01-03T03:32:55Z label_job run=2024-01-03 wrote 0 rows into labels; sent txn 7000006 to commit
+2024-01-03T03:33:11Z label_job run=2024-01-03 state=success
+[?2004hroot@44f3b013-1907-4734-b87d-e77db71013da:/app# cat /app/churn/windows.py
+[?2004l"""Activity features over trailing windows (orders, spend, tickets) and simple time-since features.
+
+Point in time (INC-2041): a window is [t - W days, t) on the exact event timestamps, so an event stamped at or after
+the prediction time is never counted and nothing later in the day leaks in.
+"""
+import numpy as np
+import pandas as pd
+
+EPOCH = pd.Timestamp("1970-01-01", tz="UTC")
+STRIDE = 10 ** 10  # composite key customer_id * STRIDE + epoch seconds (seconds stay below 1e10 until 2286)
+
+
+def _seconds(ts):
+    return ((ts - EPOCH) // pd.Timedelta(seconds=1)).to_numpy(dtype="int64")
+
+
+def _window(points, events, ts_col, days, amount_col=None):
+    """Per prediction: number (and amount sum) of the customer's events with t - days <= ts < t."""
+    ev_key = events["customer_id"].to_numpy(dtype="int64") * STRIDE + _seconds(events[ts_col])
+    order = np.argsort(ev_key, kind="stable")
+    ev_key = ev_key[order]
+    cid = points["customer_id"].to_numpy(dtype="int64") * STRIDE
+    t = _seconds(points["as_of"])
+    hi = np.searchsorted(ev_key, cid + t, side="left")
+    lo = np.searchsorted(ev_key, cid + t - days * 86400, side="left")
+    count = hi - lo
+    if amount_col is None:
+        return count, None
+    pref = np.concatenate([[0], np.cumsum(events[amount_col].to_numpy(dtype="int64")[order])])
+    return count, pref[hi] - pref[lo]
+
+
+def activity_features(points, orders, tickets):
+    out = points[["customer_id", "as_of"]].copy()
+    out["orders_7d"], _ = _window(points, orders, "ordered_at", 7)
+    out["orders_30d"], out["spend_30d_cents"] = _window(points, orders, "ordered_at", 30, "amount_cents")
+    out["tickets_30d"], _ = _window(points, tickets, "opened_at", 30)
+
+    # time since the last order strictly before the prediction
+    o = orders.sort_values("ordered_at")[["customer_id", "ordered_at"]]
+    left = out[["customer_id", "as_of"]].reset_index().sort_values("as_of")
+    last = pd.merge_asof(left, o, left_on="as_of", right_on="ordered_at", by="customer_id",
+                         allow_exact_matches=False).set_index("index").sort_index()["ordered_at"]
+    out["days_since_last_order"] = (out["as_of"] - last).dt.total_seconds() / 86400
+    return out
+
+
+def tenure_days(points, customers):
+    signup = points["customer_id"].map(customers.set_index("customer_id")["signup_at"])
+    return (points["as_of"] - signup).dt.total_seconds() / 86400
+[?2004hroot@44f3b013-1907-4734-b87d-e77db71013da:/app# cat /app/churn/status.py
+[?2004l"""Account status from the billing system's status snapshots, point in time (INC-2041).
+
+A snapshot dated D records the status at the end of day D, so a prediction at t may only use snapshots dated before
+date(t).
+"""
+import pandas as pd
+
+
+def latest_status(points, snapshots):
+    """Status of the customer's latest snapshot dated before the prediction's UTC date (null if none)."""
+    left = points[["customer_id"]].assign(day=points["as_of"].dt.floor("D")).reset_index()
+    left = left.sort_values("day", kind="mergesort")
+    snaps = snapshots.sort_values("snapshot_date", kind="mergesort")[["customer_id", "snapshot_date", "status"]]
+    snaps = snaps.assign(snapshot_date=snaps["snapshot_date"].astype(left["day"].dtype))
+    m = pd.merge_asof(left, snaps, left_on="day", right_on="snapshot_date", by="customer_id",
+                      allow_exact_matches=False)
+    return m.set_index("index")["status"].reindex(points.index)
+[?2004hroot@44f3b013-1907-4734-b87d-e77db71013da:/app# cat /app/churn/impute.py
+[?2004l"""Gap filling for upstream readings that arrive with holes (analytics export outages, devices offline).
+
+Point in time (INC-2041): a missing reading takes the customer's most recent earlier reading, never a later one; with
+no earlier reading it stays null.
+"""
+
+
+def fill_app_minutes(points):
+    """Fill missing app_minutes_7d from the same customer's last earlier reading."""
+    pts = points.sort_values(["customer_id", "as_of"], kind="mergesort")
+    filled = pts.groupby("customer_id")["app_minutes_7d"].ffill()
+    return filled.reindex(points.index)
+[?2004hroot@44f3b013-1907-4734-b87d-e77db71013da:/app# cat /app/churn/encoding.py
+[?2004l"""Target encoding of high-cardinality categoricals, point in time (INC-2041).
+
+A label row records whether the customer churned in the 30 days after its own prediction, so its outcome is final only
+once that window has closed (as_of + 30 days). A prediction at t uses only labels whose window closed before t, for the
+district counts and for the prior alike; its own label and every later one are never seen.
+"""
+import numpy as np
+import pandas as pd
+
+PRIOR_WEIGHT = 20
+DEFAULT_PRIOR = 0.05
+LABEL_WINDOW_DAYS = 30
+EPOCH = pd.Timestamp("1970-01-01", tz="UTC")
+STRIDE = 10 ** 10
+
+
+def _seconds(ts):
+    return ((ts - EPOCH) // pd.Timedelta(seconds=1)).to_numpy(dtype="int64")
+
+
+def district_encoding(points, labels, customers, m=PRIOR_WEIGHT):
+    """Smoothed churn rate of the customer's postcode district, from labels whose window closed before t."""
+    district = customers.set_index("customer_id")["postcode_district"]
+    lab_d = labels["customer_id"].map(district)
+    pt_d = points["customer_id"].map(district)
+    codes, _ = pd.factorize(pd.concat([lab_d, pt_d], ignore_index=True))
+    lab_code, pt_code = codes[:len(labels)].astype("int64"), codes[len(labels):].astype("int64")
+    closed = _seconds(labels["as_of"]) + LABEL_WINDOW_DAYS * 86400
+    y = labels["churned_30d"].to_numpy(dtype="int64")
+    t = _seconds(points["as_of"])
+
+    order = np.argsort(closed, kind="stable")
+    ycum = np.concatenate([[0], np.cumsum(y[order])])
+    N = np.searchsorted(closed[order], t, side="left")
+    S = ycum[N]
+    prior = np.full(len(t), DEFAULT_PRIOR)
+    has = N > 0
+    prior[has] = S[has] / N[has]
+
+    key = lab_code * STRIDE + closed
+    o2 = np.argsort(key, kind="stable")
+    ycum2 = np.concatenate([[0], np.cumsum(y[o2])])
+    hi = np.searchsorted(key[o2], pt_code * STRIDE + t, side="left")
+    lo = np.searchsorted(key[o2], pt_code * STRIDE, side="left")
+    n, s = hi - lo, ycum2[hi] - ycum2[lo]
+    return pd.Series((s + m * prior) / (n + m), index=points.index, dtype="float64")
+[?2004hroot@44f3b013-1907-4734-b87d-e77db71013da:/app# cat /app/churn/attributes.py
+[?2004l"""Customer attributes from the customer record (new in v3): the subscription plan and the days since the last login.
+
+Point in time: a last login at or after the prediction time is ignored (the feature is null then), so the feature
+never looks ahead of t.
+"""
+
+
+def plan(points, customers):
+    """The customer's subscription plan."""
+    return points["customer_id"].map(customers.set_index("customer_id")["plan"])
+
+
+def days_since_last_login(points, customers):
+    """t minus the customer's last login, in days; null when the record has no login before t."""
+    last = points["customer_id"].map(customers.set_index("customer_id")["last_login_at"])
+    days = (points["as_of"] - last).dt.total_seconds() / 86400
+    return days.where(last < points["as_of"])
+[?2004hroot@44f3b013-1907-4734-b87d-e77db71013da:/app# python3 -c "import pandas as pd; df = pd.read_csv('data/customers.csv'); df['signup_at'] = pd.to_datetime(df['signup_at']); df['_updated_at'] = pd.to_datetime(df['_updated_at']); pts = pd.read_csv('data/scoring_points.csv'); pts['as_of'] = pd.to_datetime(pts['as_of']); print(pts.merge(df[['customer_id', '_updated_at']], on='customer_id').query('_updated_at >= as_of').shape)"
+[?2004l(56663, 5)
+[?2004hroot@44f3b013-1907-4734-b87d-e77db71013da:/app# cat /app/churn/attributes.py
+[?2004l"""Customer attributes from the customer record (new in v3): the subscription plan and the days since the last login.
+
+Point in time: a last login at or after the prediction time is ignored (the feature is null then), so the feature
+never looks ahead of t.
+"""
+
+
+def plan(points, customers):
+    """The customer's subscription plan."""
+    return points["customer_id"].map(customers.set_index("customer_id")["plan"])
+
+
+def days_since_last_login(points, customers):
+    """t minus the customer's last login, in days; null when the record has no login before t."""
+    last = points["customer_id"].map(customers.set_index("customer_id")["last_login_at"])
+    days = (points["as_of"] - last).dt.total_seconds() / 86400
+    return days.where(last < points["as_of"])
+[?2004hroot@44f3b013-1907-4734-b87d-e77db71013da:/app# cat /app/churn/windows.py
+[?2004l"""Activity features over trailing windows (orders, spend, tickets) and simple time-since features.
+
+Point in time (INC-2041): a window is [t - W days, t) on the exact event timestamps, so an event stamped at or after
+the prediction time is never counted and nothing later in the day leaks in.
+"""
+import numpy as np
+import pandas as pd
+
+EPOCH = pd.Timestamp("1970-01-01", tz="UTC")
+STRIDE = 10 ** 10  # composite key customer_id * STRIDE + epoch seconds (seconds stay below 1e10 until 2286)
+
+
+def _seconds(ts):
+    return ((ts - EPOCH) // pd.Timedelta(seconds=1)).to_numpy(dtype="int64")
+
+
+def _window(points, events, ts_col, days, amount_col=None):
+    """Per prediction: number (and amount sum) of the customer's events with t - days <= ts < t."""
+    ev_key = events["customer_id"].to_numpy(dtype="int64") * STRIDE + _seconds(events[ts_col])
+    order = np.argsort(ev_key, kind="stable")
+    ev_key = ev_key[order]
+    cid = points["customer_id"].to_numpy(dtype="int64") * STRIDE
+    t = _seconds(points["as_of"])
+    hi = np.searchsorted(ev_key, cid + t, side="left")
+    lo = np.searchsorted(ev_key, cid + t - days * 86400, side="left")
+    count = hi - lo
+    if amount_col is None:
+        return count, None
+    pref = np.concatenate([[0], np.cumsum(events[amount_col].to_numpy(dtype="int64")[order])])
+    return count, pref[hi] - pref[lo]
+
+
+def activity_features(points, orders, tickets):
+    out = points[["customer_id", "as_of"]].copy()
+    out["orders_7d"], _ = _window(points, orders, "ordered_at", 7)
+    out["orders_30d"], out["spend_30d_cents"] = _window(points, orders, "ordered_at", 30, "amount_cents")
+    out["tickets_30d"], _ = _window(points, tickets, "opened_at", 30)
+
+    # time since the last order strictly before the prediction
+    o = orders.sort_values("ordered_at")[["customer_id", "ordered_at"]]
+    left = out[["customer_id", "as_of"]].reset_index().sort_values("as_of")
+    last = pd.merge_asof(left, o, left_on="as_of", right_on="ordered_at", by="customer_id",
+                         allow_exact_matches=False).set_index("index").sort_index()["ordered_at"]
+    out["days_since_last_order"] = (out["as_of"] - last).dt.total_seconds() / 86400
+    return out
+
+
+def tenure_days(points, customers):
+    signup = points["customer_id"].map(customers.set_index("customer_id")["signup_at"])
+    return (points["as_of"] - signup).dt.total_seconds() / 86400
+[?2004hroot@44f3b013-1907-4734-b87d-e77db71013da:/app# wc -l /app/data/scoring_points.csv /app/data/orders.csv /app/data/tickets.csv
+[?2004l   57910 /app/data/scoring_points.csv
+  130004 /app/data/orders.csv
+   14906 /app/data/tickets.csv
+  202820 total
+[?2004hroot@44f3b013-1907-4734-b87d-e77db71013da:/app# python3 -c "import pandas as pd; print(pd.read_csv('data/scoring_points.csv')['customer_id'].nunique())"
+[?2004l2745
+[?2004hroot@44f3b013-1907-4734-b87d-e77db71013da:/app# cat /app/churn/windows.py
+[?2004l"""Activity features over trailing windows (orders, spend, tickets) and simple time-since features.
+
+Point in time (INC-2041): a window is [t - W days, t) on the exact event timestamps, so an event stamped at or after
+the prediction time is never counted and nothing later in the day leaks in.
+"""
+import numpy as np
+import pandas as pd
+
+EPOCH = pd.Timestamp("1970-01-01", tz="UTC")
+STRIDE = 10 ** 10  # composite key customer_id * STRIDE + epoch seconds (seconds stay below 1e10 until 2286)
+
+
+def _seconds(ts):
+    return ((ts - EPOCH) // pd.Timedelta(seconds=1)).to_numpy(dtype="int64")
+
+
+def _window(points, events, ts_col, days, amount_col=None):
+    """Per prediction: number (and amount sum) of the customer's events with t - days <= ts < t."""
+    ev_key = events["customer_id"].to_numpy(dtype="int64") * STRIDE + _seconds(events[ts_col])
+    order = np.argsort(ev_key, kind="stable")
+    ev_key = ev_key[order]
+    cid = points["customer_id"].to_numpy(dtype="int64") * STRIDE
+    t = _seconds(points["as_of"])
+    hi = np.searchsorted(ev_key, cid + t, side="left")
+    lo = np.searchsorted(ev_key, cid + t - days * 86400, side="left")
+    count = hi - lo
+    if amount_col is None:
+        return count, None
+    pref = np.concatenate([[0], np.cumsum(events[amount_col].to_numpy(dtype="int64")[order])])
+    return count, pref[hi] - pref[lo]
+
+
+def activity_features(points, orders, tickets):
+    out = points[["customer_id", "as_of"]].copy()
+    out["orders_7d"], _ = _window(points, orders, "ordered_at", 7)
+    out["orders_30d"], out["spend_30d_cents"] = _window(points, orders, "ordered_at", 30, "amount_cents")
+    out["tickets_30d"], _ = _window(points, tickets, "opened_at", 30)
+
+    # time since the last order strictly before the prediction
+    o = orders.sort_values("ordered_at")[["customer_id", "ordered_at"]]
+    left = out[["customer_id", "as_of"]].reset_index().sort_values("as_of")
+    last = pd.merge_asof(left, o, left_on="as_of", right_on="ordered_at", by="customer_id",
+                         allow_exact_matches=False).set_index("index").sort_index()["ordered_at"]
+    out["days_since_last_order"] = (out["as_of"] - last).dt.total_seconds() / 86400
+    return out
+
+
+def tenure_days(points, customers):
+    signup = points["customer_id"].map(customers.set_index("customer_id")["signup_at"])
+    return (points["as_of"] - signup).dt.total_seconds() / 86400
+[?2004hroot@44f3b013-1907-4734-b87d-e77db71013da:/app# cat /app/churn/status.py
+[?2004l"""Account status from the billing system's status snapshots, point in time (INC-2041).
+
+A snapshot dated D records the status at the end of day D, so a prediction at t may only use snapshots dated before
+date(t).
+"""
+import pandas as pd
+
+
+def latest_status(points, snapshots):
+    """Status of the customer's latest snapshot dated before the prediction's UTC date (null if none)."""
+    left = points[["customer_id"]].assign(day=points["as_of"].dt.floor("D")).reset_index()
+    left = left.sort_values("day", kind="mergesort")
+    snaps = snapshots.sort_values("snapshot_date", kind="mergesort")[["customer_id", "snapshot_date", "status"]]
+    snaps = snaps.assign(snapshot_date=snaps["snapshot_date"].astype(left["day"].dtype))
+    m = pd.merge_asof(left, snaps, left_on="day", right_on="snapshot_date", by="customer_id",
+                      allow_exact_matches=False)
+    return m.set_index("index")["status"].reindex(points.index)
+[?2004hroot@44f3b013-1907-4734-b87d-e77db71013da:/app# cat /app/churn/encoding.py
+[?2004l"""Target encoding of high-cardinality categoricals, point in time (INC-2041).
+
+A label row records whether the customer churned in the 30 days after its own prediction, so its outcome is final only
+once that window has closed (as_of + 30 days). A prediction at t uses only labels whose window closed before t, for the
+district counts and for the prior alike; its own label and every later one are never seen.
+"""
+import numpy as np
+import pandas as pd
+
+PRIOR_WEIGHT = 20
+DEFAULT_PRIOR = 0.05
+LABEL_WINDOW_DAYS = 30
+EPOCH = pd.Timestamp("1970-01-01", tz="UTC")
+STRIDE = 10 ** 10
+
+
+def _seconds(ts):
+    return ((ts - EPOCH) // pd.Timedelta(seconds=1)).to_numpy(dtype="int64")
+
+
+def district_encoding(points, labels, customers, m=PRIOR_WEIGHT):
+    """Smoothed churn rate of the customer's postcode district, from labels whose window closed before t."""
+    district = customers.set_index("customer_id")["postcode_district"]
+    lab_d = labels["customer_id"].map(district)
+    pt_d = points["customer_id"].map(district)
+    codes, _ = pd.factorize(pd.concat([lab_d, pt_d], ignore_index=True))
+    lab_code, pt_code = codes[:len(labels)].astype("int64"), codes[len(labels):].astype("int64")
+    closed = _seconds(labels["as_of"]) + LABEL_WINDOW_DAYS * 86400
+    y = labels["churned_30d"].to_numpy(dtype="int64")
+    t = _seconds(points["as_of"])
+
+    order = np.argsort(closed, kind="stable")
+    ycum = np.concatenate([[0], np.cumsum(y[order])])
+    N = np.searchsorted(closed[order], t, side="left")
+    S = ycum[N]
+    prior = np.full(len(t), DEFAULT_PRIOR)
+    has = N > 0
+    prior[has] = S[has] / N[has]
+
+    key = lab_code * STRIDE + closed
+    o2 = np.argsort(key, kind="stable")
+    ycum2 = np.concatenate([[0], np.cumsum(y[o2])])
+    hi = np.searchsorted(key[o2], pt_code * STRIDE + t, side="left")
+    lo = np.searchsorted(key[o2], pt_code * STRIDE, side="left")
+    n, s = hi - lo, ycum2[hi] - ycum2[lo]
+    return pd.Series((s + m * prior) / (n + m), index=points.index, dtype="float64")
+[?2004hroot@44f3b013-1907-4734-b87d-e77db71013da:/app# cat /app/churn/attributes.py
+[?2004l"""Customer attributes from the customer record (new in v3): the subscription plan and the days since the last login.
+
+Point in time: a last login at or after the prediction time is ignored (the feature is null then), so the feature
+never looks ahead of t.
+"""
+
+
+def plan(points, customers):
+    """The customer's subscription plan."""
+    return points["customer_id"].map(customers.set_index("customer_id")["plan"])
+
+
+def days_since_last_login(points, customers):
+    """t minus the customer's last login, in days; null when the record has no login before t."""
+    last = points["customer_id"].map(customers.set_index("customer_id")["last_login_at"])
+    days = (points["as_of"] - last).dt.total_seconds() / 86400
+    return days.where(last < points["as_of"])
+[?2004hroot@44f3b013-1907-4734-b87d-e77db71013da:/app# cat /app/churn/build_features.py
+[?2004l"""Build the churn feature table: python -m churn.build_features --data <dir> --out <file.parquet>"""
+import argparse
+import os
+
+from churn.attributes import days_since_last_login, plan
+from churn.encoding import district_encoding
+from churn.extract import load_extract
+from churn.impute import fill_app_minutes
+from churn.status import latest_status
+from churn.windows import activity_features, tenure_days
+
+FEATURE_COLUMNS = ["orders_7d", "orders_30d", "spend_30d_cents", "tickets_30d", "days_since_last_order",
+                   "tenure_days", "status", "plan", "days_since_last_login", "app_minutes_7d", "te_district"]
+
+
+def build(data_dir):
+    t = load_extract(data_dir)
+    points = t["scoring_points"].reset_index(drop=True)
+    feats = activity_features(points, t["orders"], t["tickets"])
+    feats["tenure_days"] = tenure_days(points, t["customers"])
+    feats["status"] = latest_status(points, t["status_snapshots"])
+    feats["plan"] = plan(points, t["customers"])
+    feats["days_since_last_login"] = days_since_last_login(points, t["customers"])
+    feats["app_minutes_7d"] = fill_app_minutes(points)
+    feats["te_district"] = district_encoding(points, t["labels"], t["customers"])
+    return feats[["customer_id", "as_of"] + FEATURE_COLUMNS]
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--data", required=True, help="folder with the extract CSVs")
+    ap.add_argument("--out", required=True, help="output parquet file")
+    a = ap.parse_args()
+    feats = build(a.data)
+    os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
+    feats.to_parquet(a.out, index=False)
+    print(f"wrote {len(feats)} rows x {feats.shape[1]} columns to {a.out}")
+
+
+if __name__ == "__main__":
+    main()
+[?2004hroot@44f3b013-1907-4734-b87d-e77db71013da:/app# cat <<EOF > /app/churn/encoding.py
+[?2004lloat64")
+EOF
+[?2004h> """Target encoding of high-cardinality categoricals, point in time (INC-2041).
+[?2004l[?2004h> 
+[?2004l[?2004h> A label row records whether the customer churned in the 30 days after its own prediction, so its outcome is final only
+[?2004l[?2004h> once that window has closed (as_of + 30 days). A prediction at t uses only labels whose window closed before t, for
+[?2004l[?2004h> the district counts and for the prior alike; its own label and every later one are never seen.
+[?2004l[?2004h> """
+[?2004l[?2004h> import numpy as np
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> 
+[?2004l[?2004h> PRIOR_WEIGHT = 20
+[?2004l[?2004h> DEFAULT_PRIOR = 0.05
+[?2004l[?2004h> EPOCH = pd.Timestamp("1970-01-01", tz="UTC")
+[?2004l[?2004h> STRIDE = 10 ** 10
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def _seconds(ts):
+[?2004l[?2004h>     return ((ts - EPOCH) // pd.Timedelta(seconds=1)).to_numpy(dtype="int64")
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def district_encoding(points, labels, customers, m=PRIOR_WEIGHT):
+[?2004l[?2004h>     """Smoothed churn rate of the customer's postcode district, from labels committed before t."""
+[?2004l[?2004h>     district = customers.set_index("customer_id")["postcode_district"]
+[?2004l[?2004h>     lab_d = labels["customer_id"].map(district)
+[?2004l[?2004h>     pt_d = points["customer_id"].map(district)
+[?2004l[?2004h>     codes, _ = pd.factorize(pd.concat([lab_d, pt_d], ignore_index=True))
+[?2004l[?2004h>     lab_code, pt_code = codes[:len(labels)].astype("int64"), codes[len(labels):].astype("int64")
+[?2004l[?2004h>     
+[?2004l[?2004h>     # The live service sees a label once it is committed to the warehouse
+[?2004l[?2004h>     closed = _seconds(labels["_loaded_at"])
+[?2004l[?2004h>     y = labels["churned_30d"].to_numpy(dtype="int64")
+[?2004l[?2004h>     t = _seconds(points["as_of"])
+[?2004l[?2004h> 
+[?2004l[?2004h>     order = np.argsort(closed, kind="stable")
+[?2004l[?2004h>     ycum = np.concatenate([[0], np.cumsum(y[order])])
+[?2004l[?2004h>     N = np.searchsorted(closed[order], t, side="left")
+[?2004l[?2004h>     S = ycum[N]
+[?2004l[?2004h>     prior = np.full(len(t), DEFAULT_PRIOR)
+[?2004l[?2004h>     has = N > 0
+[?2004l[?2004h>     prior[has] = S[has] / N[has]
+[?2004l[?2004h> 
+[?2004l[?2004h>     key = lab_code * STRIDE + closed
+[?2004l[?2004h>     o2 = np.argsort(key, kind="stable")
+[?2004l[?2004h>     ycum2 = np.concatenate([[0], np.cumsum(y[o2])])
+[?2004l[?2004h>     hi = np.searchsorted(key[o2], pt_code * STRIDE + t, side="left")
+[?2004l[?2004h>     lo = np.searchsorted(key[o2], pt_code * STRIDE, side="left")
+[?2004l[?2004h>     n, s = hi - lo, ycum2[hi] - ycum2[lo]
+[?2004l[?2004h>     return pd.Series((s + m * prior) / (n + m), index=points.index, dtype="float64")
+[?2004l[?2004h> EOF
+[?2004l[?2004hroot@44f3b013-1907-4734-b87d-e77db71013da:/app# cat <<EOF > /app/churn/attributes.py
+[?2004l[?2004h> """Customer attributes from the customer record (new in v3): the subscription plan.
+[?2004l[?2004h> """
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> import numpy as np
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def plan(points, customers, plan_changes):
+[?2004l[?2004h>     """The customer's subscription plan at the moment of prediction."""
+[?2004l[?2004h>     out = pd.Series(index=points.index, dtype="string")
+[?2004l[?2004h>     
+[?2004l[?2004h>     # Get initial plans
+[?2004l[?2004h>     # If plan_changes exist, the first old_plan is the sign-up plan.
+[?2004l[?2004h>     # Otherwise, the current plan in customers is the sign-up plan.
+[?2004l[?2004h>     initial_plans = {}
+[?2004l[?2004h>     for cid, group in plan_changes.groupby("customer_id"):
+[?2004l[?2004h>         initial_plans[cid] = group.sort_values("changed_at").iloc[0]["old_plan"]
+[?2004l[?2004h>     
+[?2004l[?2004h>     cust_current_plans = customers.set_index("customer_id")["plan"]
+[?2004l[?2004h>     
+[?2004l[?2004h>     # Group points by customer to avoid repeated lookups
+[?2004l[?2004h>     for cid, group in points.groupby("customer_id"):
+[?2004l[?2004h>         # Initial plan for this customer
+[?2004l[?2004h>         init_p = initial_plans.get(cid, cust_current_plans.get(cid))
+[?2004l[?2004h>         
+[?2004l[?2004h>         # Plan changes for this customer, sorted by commit time
+[?2004l[?2004h>         changes = plan_changes[plan_changes["customer_id"] == cid].sort_values("_loaded_at")
+[?2004l[?2004h>         
+[?2004l[?2004h>         for idx, row in group.iterrows():
+[?2004l[?2004h>             t = row["as_of"]
+[?2004l[?2004h>             # Find the latest change committed before t
+[?2004l[?2004h>             visible = changes[changes["_loaded_at"] < t]
+[?2004l[?2004h>             if not visible.empty:
+[?2004l[?2004h>                 out.iloc[idx] = visible.iloc[-1]["new_plan"]
+[?2004l[?2004h>             else:
+[?2004l[?2004h>                 out.iloc[idx] = init_p
+[?2004l[?2004h>                 
+[?2004l[?2004h>     return out
+[?2004l[?2004h> EOF
+[?2004l[?2004hroot@44f3b013-1907-4734-b87d-e77db71013da:/app# cat /app/churn/encoding.py
+[?2004l"""Target encoding of high-cardinality categoricals, point in time (INC-2041).
+
+A label row records whether the customer churned in the 30 days after its own prediction, so its outcome is final only
+once that window has closed (as_of + 30 days). A prediction at t uses only labels whose window closed before t, for
+the district counts and for the prior alike; its own label and every later one are never seen.
+"""
+import numpy as np
+import pandas as pd
+
+PRIOR_WEIGHT = 20
+DEFAULT_PRIOR = 0.05
+EPOCH = pd.Timestamp("1970-01-01", tz="UTC")
+STRIDE = 10 ** 10
+
+
+def _seconds(ts):
+    return ((ts - EPOCH) // pd.Timedelta(seconds=1)).to_numpy(dtype="int64")
+
+
+def district_encoding(points, labels, customers, m=PRIOR_WEIGHT):
+    """Smoothed churn rate of the customer's postcode district, from labels committed before t."""
+    district = customers.set_index("customer_id")["postcode_district"]
+    lab_d = labels["customer_id"].map(district)
+    pt_d = points["customer_id"].map(district)
+    codes, _ = pd.factorize(pd.concat([lab_d, pt_d], ignore_index=True))
+    lab_code, pt_code = codes[:len(labels)].astype("int64"), codes[len(labels):].astype("int64")
+    
+    # The live service sees a label once it is committed to the warehouse
+    closed = _seconds(labels["_loaded_at"])
+    y = labels["churned_30d"].to_numpy(dtype="int64")
+    t = _seconds(points["as_of"])
+
+    order = np.argsort(closed, kind="stable")
+    ycum = np.concatenate([[0], np.cumsum(y[order])])
+    N = np.searchsorted(closed[order], t, side="left")
+    S = ycum[N]
+    prior = np.full(len(t), DEFAULT_PRIOR)
+    has = N > 0
+    prior[has] = S[has] / N[has]
+
+    key = lab_code * STRIDE + closed
+    o2 = np.argsort(key, kind="stable")
+    ycum2 = np.concatenate([[0], np.cumsum(y[o2])])
+    hi = np.searchsorted(key[o2], pt_code * STRIDE + t, side="left")
+    lo = np.searchsorted(key[o2], pt_code * STRIDE, side="left")
+    n, s = hi - lo, ycum2[hi] - ycum2[lo]
+    return pd.Series((s + m * prior) / (n + m), index=points.index, dtype="float64")
+[?2004hroot@44f3b013-1907-4734-b87d-e77db71013da:/app# cat /app/churn/attributes.py
+[?2004l"""Customer attributes from the customer record (new in v3): the subscription plan.
+"""
+import pandas as pd
+import numpy as np
+
+
+def plan(points, customers, plan_changes):
+    """The customer's subscription plan at the moment of prediction."""
+    out = pd.Series(index=points.index, dtype="string")
+    
+    # Get initial plans
+    # If plan_changes exist, the first old_plan is the sign-up plan.
+    # Otherwise, the current plan in customers is the sign-up plan.
+    initial_plans = {}
+    for cid, group in plan_changes.groupby("customer_id"):
+        initial_plans[cid] = group.sort_values("changed_at").iloc[0]["old_plan"]
+    
+    cust_current_plans = customers.set_index("customer_id")["plan"]
+    
+    # Group points by customer to avoid repeated lookups
+    for cid, group in points.groupby("customer_id"):
+        # Initial plan for this customer
+        init_p = initial_plans.get(cid, cust_current_plans.get(cid))
+        
+        # Plan changes for this customer, sorted by commit time
+        changes = plan_changes[plan_changes["customer_id"] == cid].sort_values("_loaded_at")
+        
+        for idx, row in group.iterrows():
+            t = row["as_of"]
+            # Find the latest change committed before t
+            visible = changes[changes["_loaded_at"] < t]
+            if not visible.empty:
+                out.iloc[idx] = visible.iloc[-1]["new_plan"]
+            else:
+                out.iloc[idx] = init_p
+                
+    return out
+[?2004hroot@44f3b013-1907-4734-b87d-e77db71013da:/app# cat <<EOF > /app/churn/status.py
+[?2004l[?2004h> """Account status from the billing system's status snapshots, point in time.
+[?2004l[?2004h> """
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def latest_status(points, snapshots):
+[?2004l[?2004h>     """Status of the customer's latest snapshot committed before the prediction time (null if none)."""
+[?2004l[?2004h>     out = pd.Series(index=points.index, dtype="string")
+[?2004l[?2004h>     for cid, group in points.groupby("customer_id"):
+[?2004l[?2004h>         cust_snaps = snapshots[snapshots["customer_id"] == cid].sort_values("snapshot_date")
+[?2004l[?2004h>         for idx, row in group.iterrows():
+[?2004l[?2004h>             t = row["as_of"]
+[?2004l[?2004h>             visible = cust_snaps[cust_snaps["_loaded_at"] < t]
+[?2004l[?2004h>             if not visible.empty:
+[?2004l[?2004h>                 out.iloc[idx] = visible.iloc[-1]["status"]
+[?2004l[?2004h>     return out
+[?2004l[?2004h> EOF
+[?2004l[?2004hroot@44f3b013-1907-4734-b87d-e77db71013da:/app# cat <<EOF > /app/churn/windows.py
+[?2004l[?2004h> """Activity features over trailing windows (orders, spend, tickets) and simple time-since features.
+[?2004l[?2004h> """
+[?2004l[?2004h> import numpy as np
+[?2004l[?2004h> import pandas as pd
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def activity_features(points, orders, tickets):
+[?2004l[?2004h>     """Per prediction: activity features using data committed before the prediction time."""
+[?2004l[?2004h>     out = points[["customer_id", "as_of"]].copy()
+[?2004l[?2004h>     out["orders_7d"] = 0
+[?2004l[?2004h>     out["orders_30d"] = 0
+[?2004l[?2004h>     out["spend_30d_cents"] = 0
+[?2004l[?2004h>     out["tickets_30d"] = 0
+[?2004l[?2004h>     out["days_since_last_order"] = np.nan
+[?2004l[?2004h> 
+[?2004l[?2004h>     for cid, group in points.groupby("customer_id"):
+[?2004l[?2004h>         cust_orders = orders[orders["customer_id"] == cid].sort_values("ordered_at")
+[?2004l[?2004h>         cust_tickets = tickets[tickets["customer_id"] == cid].sort_values("opened_at")
+[?2004l[?2004h>         
+[?2004l[?2004h>         for idx, row in group.iterrows():
+[?2004l[?2004h>             t = row["as_of"]
+[?2004l[?2004h>             
+[?2004l[?2004h>             vis_orders = cust_orders[cust_orders["_loaded_at"] < t]
+[?2004l[?2004h>             vis_tickets = cust_tickets[cust_tickets["_loaded_at"] < t]
+[?2004l[?2004h>             
+[?2004l[?2004h>             o7 = vis_orders[(vis_orders["ordered_at"] >= t - pd.Timedelta(days=7)) & (vis_orders["ordered_at"] < t)]
+[?2004l[?2004h>             out.at[idx, "orders_7d"] = len(o7)
+[?2004l[?2004h>             
+[?2004l[?2004h>             o30 = vis_orders[(vis_orders["ordered_at"] >= t - pd.Timedelta(days=30)) & (vis_orders["ordered_at"] < t)]
+[?2004l[?2004h>             out.at[idx, "orders_30d"] = len(o30)
+[?2004l[?2004h>             out.at[idx, "spend_30d_cents"] = o30["amount_cents"].sum()
+[?2004l[?2004h>             
+[?2004l[?2004h>             t30 = vis_tickets[(vis_tickets["opened_at"] >= t - pd.Timedelta(days=30)) & (vis_tickets["opened_at"] < t)]
+[?2004l[?2004h>             out.at[idx, "tickets_30d"] = len(t30)
+[?2004l[?2004h>             
+[?2004l[?2004h>             last_orders = vis_orders[vis_orders["ordered_at"] < t]
+[?2004l[?2004h>             if not last_orders.empty:
+[?2004l[?2004h>                 last_date = last_orders["ordered_at"].max()
+[?2004l[?2004h>                 out.at[idx, "days_since_last_order"] = (t - last_date).total_seconds() / 86400
+[?2004l[?2004h>                 
+[?2004l[?2004h>     return out
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def tenure_days(points, customers):
+[?2004l[?2004h>     signup = points["customer_id"].map(customers.set_index("customer_id")["signup_at"])
+[?2004l[?2004h>     return (points["as_of"] - signup).dt.total_seconds() / 86400
+[?2004l[?2004h> EOF
+[?2004l[?2004hroot@44f3b013-1907-4734-b87d-e77db71013da:/app# cat <<EOF > /app/churn/build_features.py
+[?2004l[?2004h> """Build the churn feature table: python -m churn.build_features --data <dir> --out <file.parquet>"""
+[?2004l[?2004h> import argparse
+[?2004l[?2004h> import os
+[?2004l[?2004h> 
+[?2004l[?2004h> from churn.attributes import plan
+[?2004l[?2004h> from churn.encoding import district_encoding
+[?2004l[?2004h> from churn.extract import load_extract
+[?2004l[?2004h> from churn.impute import fill_app_minutes
+[?2004l[?2004h> from churn.status import latest_status
+[?2004l[?2004h> from churn.windows import activity_features, tenure_days
+[?2004l[?2004h> 
+[?2004l[?2004h> FEATURE_COLUMNS = ["orders_7d", "orders_30d", "spend_30d_cents", "tickets_30d", "days_since_last_order",
+[?2004l[?2004h>                    "tenure_days", "status", "plan", "app_minutes_7d", "te_district"]
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def build(data_dir):
+[?2004l[?2004h>     t = load_extract(data_dir)
+[?2004l[?2004h>     points = t["scoring_points"].reset_index(drop=True)
+[?2004l[?2004h>     feats = activity_features(points, t["orders"], t["tickets"])
+[?2004l[?2004h>     feats["tenure_days"] = tenure_days(points, t["customers"])
+[?2004l[?2004h>     feats["status"] = latest_status(points, t["status_snapshots"])
+[?2004l[?2004h>     feats["plan"] = plan(points, t["customers"], t["plan_changes"])
+[?2004l[?2004h>     feats["app_minutes_7d"] = fill_app_minutes(points)
+[?2004l[?2004h>     feats["te_district"] = district_encoding(points, t["labels"], t["customers"])
+[?2004l[?2004h>     return feats[["customer_id", "as_of"] + FEATURE_COLUMNS]
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def main():
+[?2004l[?2004h>     ap = argparse.ArgumentParser(description=__doc__)
+[?2004l[?2004h>     ap.add_argument("--data", required=True, help="folder with the extract CSVs")
+[?2004l[?2004h>     ap.add_argument("--out", required=True, help="output parquet file")
+[?2004l[?2004h>     a = ap.parse_args()
+[?2004l[?2004h>     feats = build(a.data)
+[?2004l[?2004h>     os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
+[?2004l[?2004h>     feats.to_parquet(a.out, index=False)
+[?2004l[?2004h>     print(f"wrote {len(feats)} rows x {feats.shape[1]} columns to {a.out}")
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> if __name__ == "__main__":
+[?2004l[?2004h>     main()
+[?2004l[?2004h> EOF
+[?2004l[?2004hroot@44f3b013-1907-4734-b87d-e77db71013da:/app# time python3 -m churn.build_features --data /app/data --out /app/output.parquet
+[?2004lls -l /app/output.parquet
+python3 -m churn.build_features --data /app/data --out /app/output.parquet
+ls -lh /app/output.parquet
+python3 -c "import pandas as pd; df = pd.read_parquet('/app/output.parquet'); print(df.columns.tolist()); print(df.shape)"
+python3 -m churn.build_features --data /app/data --out /app/output.parquet
+ls -lh /app/output.parquet
+python3 -c "import pandas as pd; df = pd.read_parquet('/app/output.parquet'); print(df.columns.tolist()); print(df.shape)"
+export PYTHONPATH=$PYTHONPATH:/app
+python3 -m churn.build_features --data /app/data --out /app/output.parquet
+wrote 57909 rows x 12 columns to /app/output.parquet
+
+real	2m38.790s
+user	2m38.433s
+sys	0m0.492s
+[?2004hroot@44f3b013-1907-4734-b87d-e77db71013da:/app# ls -l /app/output.parquet
+[?2004l-rw-r--r-- 1 root root 1422121 Nov  3 20:42 /app/output.parquet
+[?2004hroot@44f3b013-1907-4734-b87d-e77db71013da:/app# python3 -m churn.build_features --data /app/data --out /app/output.parquet
+[?2004lls -lh /app/output.parquet
+python3 -c "import pandas as pd; df = pd.read_parquet('/app/output.parquet'); print(df.columns.tolist()); print(df.shape)"
+cat <<EOF > /app/churn/status.py
+"""Account status from the billing system's status snapshots, point in time.
+"""
+import pandas as pd
+
+
+def latest_status(points, snapshots):
+    """Status of the customer's latest snapshot committed before the prediction time (null if none)."""
+    # Ensure sorted for merge_asof
+    points = points.sort_values("as_of")
+    snapshots = snapshots.sort_values("_loaded_at")
+    
+    m = pd.merge_asof(
+        points[["customer_id", "as_of"]], 
+        snapshots[["customer_id", "_loaded_at", "status"]],
+        left_on="as_of", 
+        right_on="_loaded_at", 
+        by="customer_id",
+        allow_exact_matches=False
+    )
+    return m.set_index(points.index)["status"].reindex(points.index)
+EOF
+cat <<EOF > /app/churn/attributes.py
+"""Customer attributes from the customer record (new in v3): the subscription plan.
+"""
+import pandas as pd
+import numpy as np
+
+
+def plan(points, customers, plan_changes):
+    """The customer's subscription plan at the moment of prediction."""
+    # Determine the initial plan for every customer
+    # 1. From plan_changes: the oldest 'old_plan' for that customer
+    # 2. From customers: the 'plan' if they have no changes
+    
+    sorted_changes = plan_changes.sort_values(["customer_id", "changed_at"])
+    initial_plans = sorted_changes.groupby("customer_id")["old_plan"].first()
+    
+    # current_plan in customers acts as a fallback if no plan_changes exist
+    fallback_plans = customers.set_index("customer_id")["plan"]
+    
+    # Use merge_asof to find the last committed plan change before as_of
+    pts_sorted = points.sort_values("as_of")
+    changes_sorted = plan_changes.sort_values("_loaded_at")
+    
+    m = pd.merge_asof(
+        pts_sorted[["customer_id", "as_of"]], 
+        changes_sorted[["customer_id", "_loaded_at", "new_plan"]],
+        left_on="as_of", 
+        right_on="_loaded_at", 
+        by="customer_id",
+        allow_exact_matches=False
+    )
+    
+    # Result is new_plan if available, else the initial plan
+    res = m["new_plan"].values
+    cids = pts_sorted["customer_id"].values
+    
+    for i in range(len(res)):
+        if pd.isna(res[i]):
+            cid = cids[i]
+            res[i] = initial_plans.get(cid, fallback_plans.get(cid))
+            
+    return pd.Series(res, index=pts_sorted.index).reindex(points.index)
+EOF
+cat <<EOF > /app/churn/windows.py
+"""Activity features over trailing windows (orders, spend, tickets) and simple time-since features.
+"""
+import numpy as np
+import pandas as pd
+
+
+def activity_features(points, orders, tickets):
+    """Per prediction: activity features using data committed before the prediction time."""
+    pts_sorted = points.sort_values("as_of")
+    out = pts_sorted[["customer_id", "as_of"]].copy()
+    
+    # Handle Orders
+    orders_sorted = orders.sort_values("_loaded_at")
+    # Time since last order: merge_asof on _loaded_at
+    m_last = pd.merge_asof(
+        pts_sorted[["customer_id", "as_of"]], 
+        orders_sorted[["customer_id", "_loaded_at", "ordered_at"]],
+        left_on="as_of", 
+        right_on="_loaded_at", 
+        by="customer_id",
+        allow_exact_matches=False
+    )
+    # We need the last order based on ordered_at among those committed by as_of
+    # The above only gives the last committed order. We actually need the max(ordered_at) among all committed.
+    # Since orders are generally committed in order, this is usually fine, but for correctness:
+    
+    # Correctwrote 57909 rows x 12 columns to /app/output.parquet
+[?2004hroot@44f3b013-1907-4734-b87d-e77db71013da:/app# ls -lh /app/output.parquet
+[?2004l-rw-r--r-- 1 root root 1.4M Nov  3 20:44 /app/output.parquet
+[?2004hroot@44f3b013-1907-4734-b87d-e77db71013da:/app# python3 -c "import pandas as pd; df = pd.read_parquet('/app/output.parquet'); print(df.columns.tolist()); print(df.shape)"
+[?2004l['customer_id', 'as_of', 'orders_7d', 'orders_30d', 'spend_30d_cents', 'tickets_30d', 'days_since_last_order', 'tenure_days', 'status', 'plan', 'app_minutes_7d', 'te_district']
+(57909, 12)
+[?2004hroot@44f3b013-1907-4734-b87d-e77db71013da:/app# python3 -m churn.build_features --data /app/data --out /app/output.parquet
+[?2004l

@@ -1,0 +1,165 @@
+[test.sh] lock ok: /logs/verifier 0:0 755, /logs 0:0 755, owner before 0:0; protected_symlinks=1 protected_hardlinks=1 protected_regular=2; setid files left: 0
+[kit] submission copied to /work/sub; removed 0 auto-run entries; skipped 0 special files
+[kit] 2012 refusal cases, 402 permitted reads; 264 refused writes held back for run 2
+[kit] staged /tests/original for uid 1001 at /work/w345c2ce9
+[kit] staged /tests/hidden/seed.db for uid 1001 at /work/wf5c0bf26
+[kit] service on 127.0.0.1:59579 answered after 0.20s
+[kit] service from /work/w345c2ce9 on port 59579: up in 0.21s
+[kit] phase original: 356 checks, 0 failed, 0.55s; failed by check: {}
+[kit] staged /tests/hidden/seed.db for uid 1001 at /work/w884b7b57
+[kit] service on 127.0.0.1:58119 answered after 0.20s
+[kit] service from /work/sub on port 58119: up in 0.21s
+[kit] network isolation: ON (private namespace, loopback only); probe rc=0 out=b'NETNS-OK' err=b''
+[kit] ran ['/usr/local/bin/python3', '-I', '-c', "import sqlite3, sys, urllib.parse\nc = sqlite3.connect('file:' + urllib.parse.quote(sys.argv[1]) + '?mode=rw', uri=True)\nr = c.execute('PRAGMA wal_checkpoint(TRUNCATE)').fetchone()\nc.close()\nsys.exit(0 if r[0] == 0 else 3)\n"]... rc=0 timed_out=False 0.036s net=private strays_killed=0
+[kit] phase run1: 2211 checks, 435 failed, 2.60s; failed by check: {"db_changed": 1, "leak_download": 32, "leak_download_bad_x_org_id": 2, "leak_export": 52, "leak_export_bad_x_org_id": 4, "leak_read": 26, "leak_thumb": 32, "leak_thumb_bad_x_org_id": 2, "status_admin_orgs_bad_x_org_id": 2, "status_delete": 36, "status_delete_bad_x_org_id": 1, "status_download": 32, "status_download_bad_x_org_id": 2, "status_export": 52, "status_export_bad_x_org_id": 4, "status_me_bad_x_org_id": 2, "status_read": 32, "status_read_bad_x_org_id": 2, "status_rename": 21, "status_share": 21, "status_thumb": 32, "status_thumb_bad_x_org_id": 2, "sweep": 43}
+[kit]   FAIL run1 [status_download]: GET /api/files/6ce99987-648c-4817-a5db-ababb19bf181/download as tomas@eriksen-it.example X-Org-Id=Sable Point Credit Union: got 200, expected a refusal (4xx)
+[kit]   FAIL run1 [leak_download]: GET /api/files/6ce99987-648c-4817-a5db-ababb19bf181/download as tomas@eriksen-it.example X-Org-Id=Sable Point Credit Union: refusal holds contents of travel-policy-5d94.md
+[kit]   FAIL run1 [status_thumb]: GET /api/files/fafe26f1-3fdd-4a78-9eff-92c87bdb51a0/thumb as quinn@sablepoint.example: got 200, expected a refusal (4xx)
+[kit]   FAIL run1 [leak_thumb]: GET /api/files/fafe26f1-3fdd-4a78-9eff-92c87bdb51a0/thumb as quinn@sablepoint.example: refusal holds contents of pricing-proposal-1967.txt
+[kit]   FAIL run1 [status_thumb]: GET /api/files/3c113334-f1a1-4535-9a33-5577754ac9f6/thumb as lena@ilsevarga.example: got 200, expected a refusal (4xx)
+[kit]   FAIL run1 [leak_thumb]: GET /api/files/3c113334-f1a1-4535-9a33-5577754ac9f6/thumb as lena@ilsevarga.example: refusal holds contents of payroll-summary-19f3.txt
+[kit]   FAIL run1 [status_thumb]: GET /api/files/6ce99987-648c-4817-a5db-ababb19bf181/thumb as nadia@northpine.example: got 200, expected a refusal (4xx)
+[kit]   FAIL run1 [leak_thumb]: GET /api/files/6ce99987-648c-4817-a5db-ababb19bf181/thumb as nadia@northpine.example: refusal holds contents of travel-policy-5d94.md
+[kit]   FAIL run1 [status_export]: POST /api/export as quinn@sablepoint.example: got 200, expected a refusal (4xx)
+[kit]   FAIL run1 [leak_export]: POST /api/export as quinn@sablepoint.example: refusal holds contents of grant-application-06fb.txt, contents of maintenance-schedule-5dd1.txt
+[kit]   FAIL run1 [status_read]: GET /api/files/a0e2d96c-b23a-4481-804a-218c5af7c4a5 as marco@ilsevarga.example X-Org-Id=Ilse Varga Architects: got 200, expected a refusal (4xx)
+[kit]   FAIL run1 [leak_read]: GET /api/files/a0e2d96c-b23a-4481-804a-218c5af7c4a5 as marco@ilsevarga.example X-Org-Id=Ilse Varga Architects: refusal holds name board-minutes-b1b2.txt
+[kit]   FAIL run1 [status_export]: POST /api/export as priya@sablepoint.example X-Org-Id=Sable Point Credit Union: got 200, expected a refusal (4xx)
+[kit]   FAIL run1 [leak_export]: POST /api/export as priya@sablepoint.example X-Org-Id=Sable Point Credit Union: refusal holds contents of board-minutes-c0cf.txt, contents of firmware-release-notes-8b31.md, contents of settlement-draft-4178.txt
+[kit]   FAIL run1 [status_export]: POST /api/export as ines@corvane.example X-Org-Id=Corvane Freight: got 200, expected a refusal (4xx)
+[kit]   FAIL run1 [leak_export]: POST /api/export as ines@corvane.example X-Org-Id=Corvane Freight: refusal holds contents of capacity-plan-c2a0.csv, contents of data-retention-policy-7e02.csv, contents of customer-escalation-log-c115.md
+[kit]   FAIL run1 [status_download]: GET /api/files/5e96d434-2a48-4043-a622-14e99437fa3d/download as tomas@eriksen-it.example X-Org-Id=Northpine Dental Group: got 200, expected a refusal (4xx)
+[kit]   FAIL run1 [leak_download]: GET /api/files/5e96d434-2a48-4043-a622-14e99437fa3d/download as tomas@eriksen-it.example X-Org-Id=Northpine Dental Group: refusal holds contents of settlement-draft-4178.txt
+[kit]   FAIL run1 [status_export_bad_x_org_id]: POST /api/export as victor@support.docshare.example X-Org-Id=00000000-0000-4000-8000-00000000dead: got 200, expected a refusal (4xx)
+[kit]   FAIL run1 [leak_export_bad_x_org_id]: POST /api/export as victor@support.docshare.example X-Org-Id=00000000-0000-4000-8000-00000000dead: refusal holds contents of customer-escalation-log-31b5.md, contents of payroll-summary-19f3.txt
+[kit]   FAIL run1 [status_read]: GET /api/files/8e049002-3f57-4a2c-b022-b2c1ba2d7218 as lena@ilsevarga.example X-Org-Id=Ilse Varga Architects: got 200, expected a refusal (4xx)
+[kit]   FAIL run1 [leak_read]: GET /api/files/8e049002-3f57-4a2c-b022-b2c1ba2d7218 as lena@ilsevarga.example X-Org-Id=Ilse Varga Architects: refusal holds name training-records-d1ae.md
+[kit]   FAIL run1 [status_download]: GET /api/files/5e96d434-2a48-4043-a622-14e99437fa3d/download as jonas@corvane.example X-Org-Id=Corvane Freight: got 200, expected a refusal (4xx)
+[kit]   FAIL run1 [leak_download]: GET /api/files/5e96d434-2a48-4043-a622-14e99437fa3d/download as jonas@corvane.example X-Org-Id=Corvane Freight: refusal holds contents of settlement-draft-4178.txt
+[kit]   FAIL run1 [status_read]: GET /api/files/34b04f8c-cbe2-47b2-8e60-dc0f29786329 as tomas@eriksen-it.example X-Org-Id=Sable Point Credit Union: got 200, expected a refusal (4xx)
+[kit]   FAIL run1 [leak_read]: GET /api/files/34b04f8c-cbe2-47b2-8e60-dc0f29786329 as tomas@eriksen-it.example X-Org-Id=Sable Point Credit Union: refusal holds name vendor-contract-739c.csv
+[kit]   FAIL run1 [status_export_bad_x_org_id]: POST /api/export as uma@support.docshare.example X-Org-Id=00000000-0000-4000-8000-00000000dead: got 200, expected a refusal (4xx)
+[kit]   FAIL run1 [leak_export_bad_x_org_id]: POST /api/export as uma@support.docshare.example X-Org-Id=00000000-0000-4000-8000-00000000dead: refusal holds contents of lease-renewal-2978.md
+[kit]   FAIL run1 [status_download_bad_x_org_id]: GET /api/files/cc75967e-7b8a-4e11-af27-4cb7f61dff2c/download as uma@support.docshare.example X-Org-Id=00000000-0000-4000-8000-00000000dead: got 200, expected a refusal (4xx)
+[kit]   FAIL run1 [leak_download_bad_x_org_id]: GET /api/files/cc75967e-7b8a-4e11-af27-4cb7f61dff2c/download as uma@support.docshare.example X-Org-Id=00000000-0000-4000-8000-00000000dead: refusal holds contents of budget-variance-e121.md
+[kit]   FAIL run1 [status_admin_orgs_bad_x_org_id]: GET /api/admin/orgs as uma@support.docshare.example X-Org-Id=00000000-0000-4000-8000-00000000dead: got 200, expected a refusal (4xx)
+[kit]   FAIL run1 [status_read_bad_x_org_id]: GET /api/files/ae3f99d5-8bbb-491b-aece-063ca6684daf as uma@support.docshare.example X-Org-Id=00000000-0000-4000-8000-00000000dead: got 200, expected a refusal (4xx)
+[kit]   FAIL run1 [status_me_bad_x_org_id]: GET /api/me as victor@support.docshare.example X-Org-Id=00000000-0000-4000-8000-00000000dead: got 200, expected a refusal (4xx)
+[kit]   FAIL run1 [status_export_bad_x_org_id]: POST /api/export as victor@support.docshare.example X-Org-Id=00000000-0000-4000-8000-00000000dead: got 200, expected a refusal (4xx)
+[kit]   FAIL run1 [leak_export_bad_x_org_id]: POST /api/export as victor@support.docshare.example X-Org-Id=00000000-0000-4000-8000-00000000dead: refusal holds contents of incident-review-f524.md
+[kit]   FAIL run1 [status_me_bad_x_org_id]: GET /api/me as uma@support.docshare.example X-Org-Id=00000000-0000-4000-8000-00000000dead: got 200, expected a refusal (4xx)
+[kit]   FAIL run1 [status_admin_orgs_bad_x_org_id]: GET /api/admin/orgs as victor@support.docshare.example X-Org-Id=00000000-0000-4000-8000-00000000dead: got 200, expected a refusal (4xx)
+[kit]   FAIL run1 [status_thumb_bad_x_org_id]: GET /api/files/19711c59-d61d-47db-a2ea-aa6769fee2f1/thumb as uma@support.docshare.example X-Org-Id=00000000-0000-4000-8000-00000000dead: got 200, expected a refusal (4xx)
+[kit]   FAIL run1 [leak_thumb_bad_x_org_id]: GET /api/files/19711c59-d61d-47db-a2ea-aa6769fee2f1/thumb as uma@support.docshare.example X-Org-Id=00000000-0000-4000-8000-00000000dead: refusal holds contents of security-questionnaire-97d5.txt
+[kit]   FAIL run1 [status_read_bad_x_org_id]: GET /api/files/dafc9295-e81c-4248-bcb0-f480044d2a47 as victor@support.docshare.example X-Org-Id=00000000-0000-4000-8000-00000000dead: got 200, expected a refusal (4xx)
+[kit]   FAIL run1 [status_thumb_bad_x_org_id]: GET /api/files/5e96d434-2a48-4043-a622-14e99437fa3d/thumb as victor@support.docshare.example X-Org-Id=00000000-0000-4000-8000-00000000dead: got 200, expected a refusal (4xx)
+[kit]   FAIL run1 [leak_thumb_bad_x_org_id]: GET /api/files/5e96d434-2a48-4043-a622-14e99437fa3d/thumb as victor@support.docshare.example X-Org-Id=00000000-0000-4000-8000-00000000dead: refusal holds contents of settlement-draft-4178.txt
+[kit]   FAIL run1 [status_download_bad_x_org_id]: GET /api/files/74c0fb7a-e656-4a98-96f7-e90b7a445a17/download as victor@support.docshare.example X-Org-Id=00000000-0000-4000-8000-00000000dead: got 200, expected a refusal (4xx)
+[kit]   FAIL run1 [leak_download_bad_x_org_id]: GET /api/files/74c0fb7a-e656-4a98-96f7-e90b7a445a17/download as victor@support.docshare.example X-Org-Id=00000000-0000-4000-8000-00000000dead: refusal holds contents of quarterly-forecast-9e40.md
+[kit]   FAIL run1 [status_rename]: PATCH /api/files/1713cbfb-3ba5-4008-b546-1db5a1eb3655 as lena@ilsevarga.example: got 200, expected a refusal (4xx)
+[kit]   FAIL run1 [status_rename]: PATCH /api/files/3c113334-f1a1-4535-9a33-5577754ac9f6 as kiri@ilsevarga.example: got 200, expected a refusal (4xx)
+[kit]   FAIL run1 [status_rename]: PATCH /api/files/762123c7-662e-4e8a-afaa-454519382703 as kiri@ilsevarga.example X-Org-Id=Ilse Varga Architects: got 200, expected a refusal (4xx)
+[kit]   FAIL run1 [status_share]: POST /api/files/3c113334-f1a1-4535-9a33-5577754ac9f6/shares as lena@ilsevarga.example: got 201, expected a refusal (4xx)
+[kit]   FAIL run1 [status_share]: POST /api/files/0b8f3770-a530-40a9-8a7a-a2814fcfe5ce/shares as kiri@ilsevarga.example: got 201, expected a refusal (4xx)
+[kit]   FAIL run1 [status_share]: POST /api/files/2e636960-fb07-41a7-8f7e-3e2f9eda8a61/shares as kiri@ilsevarga.example X-Org-Id=Ilse Varga Architects: got 201, expected a refusal (4xx)
+[kit]   FAIL run1 [status_delete]: DELETE /api/files/ebafec01-3e45-4203-b7fa-245abea27f91 as lena@ilsevarga.example: got 204, expected a refusal (4xx)
+[kit]   FAIL run1 [status_delete]: DELETE /api/files/0e2c93a4-1375-4be5-a040-2a29734c3d63 as lena@ilsevarga.example: got 204, expected a refusal (4xx)
+[kit]   FAIL run1 [status_delete]: DELETE /api/files/bf969b30-5997-4952-9aa9-5eb926395ba8 as lena@ilsevarga.example X-Org-Id=Ilse Varga Architects: got 204, expected a refusal (4xx)
+[kit]   FAIL run1 [status_delete_bad_x_org_id]: DELETE /api/files/ff553146-0ea3-460c-b263-0ea26f92c632 as uma@support.docshare.example X-Org-Id=00000000-0000-4000-8000-00000000dead: got 204, expected a refusal (4xx)
+[kit]   FAIL run1 [sweep]: after the refused requests, data-retention-policy-fa63.txt reads as 404 b'{"error":"not_found"}\n'
+[kit]   FAIL run1 [sweep]: after the refused requests, settlement-draft-9f38.md reads as 404 b'{"error":"not_found"}\n'
+[kit]   FAIL run1 [sweep]: after the refused requests, severance-terms-e22c.txt reads as 404 b'{"error":"not_found"}\n'
+[kit]   FAIL run1 [db_changed]: database changed by refused requests: files, shares
+[kit] staged /tests/hidden/seed.db for uid 1001 at /work/wc7ff4477
+[kit] service on 127.0.0.1:52983 answered after 0.20s
+[kit] service from /work/sub on port 52983: up in 0.21s
+[kit] write list: 43 requests, with 337 refused requests and 253 held-back refused writes mixed in; 0 steps skipped
+[kit] held back from run 1: 264 refused writes; sent in run 2: 264 (253 in the write list, 11 after it)
+[kit] held-back writes read back: 41 files and 4 seed links; 14 files they act on were used by the write list and not read back
+[kit] phase run2: 1491 checks, 218 failed, 1.89s; failed by check: {"held_link": 2, "held_status_delete": 19, "held_status_rename": 10, "held_status_share": 8, "held_sweep": 30, "leak_download": 9, "leak_download_bad_x_org_id": 2, "leak_export": 16, "leak_read": 8, "leak_thumb": 11, "leak_thumb_bad_x_org_id": 1, "noise_leak_download": 4, "noise_leak_export": 5, "noise_leak_export_bad_x_org_id": 2, "noise_leak_read": 2, "noise_leak_thumb": 4, "noise_status_delete": 6, "noise_status_download": 4, "noise_status_export": 5, "noise_status_export_bad_x_org_id": 2, "noise_status_read": 2, "noise_status_rename": 3, "noise_status_share": 3, "noise_status_thumb": 4, "status_admin_orgs_bad_x_org_id": 1, "status_download": 9, "status_download_bad_x_org_id": 2, "status_export": 16, "status_me_bad_x_org_id": 1, "status_read": 11, "status_read_bad_x_org_id": 1, "status_thumb": 11, "status_thumb_bad_x_org_id": 1, "write_create_link": 1, "write_delete": 1, "write_rename": 1}
+[kit]   FAIL run2 [status_thumb]: GET /api/files/6ce99987-648c-4817-a5db-ababb19bf181/thumb as hugo@corvane.example X-Org-Id=Corvane Freight: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [leak_thumb]: GET /api/files/6ce99987-648c-4817-a5db-ababb19bf181/thumb as hugo@corvane.example X-Org-Id=Corvane Freight: refusal holds contents of travel-policy-5d94.md
+[kit]   FAIL run2 [status_download]: GET /api/files/0eb95fbc-855f-4218-b8a1-e509430707a7/download as priya@sablepoint.example X-Org-Id=Sable Point Credit Union: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [leak_download]: GET /api/files/0eb95fbc-855f-4218-b8a1-e509430707a7/download as priya@sablepoint.example X-Org-Id=Sable Point Credit Union: refusal holds contents of lease-renewal-2978.md
+[kit]   FAIL run2 [status_export]: POST /api/export as marco@ilsevarga.example: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [leak_export]: POST /api/export as marco@ilsevarga.example: refusal holds contents of board-minutes-c0cf.txt, contents of vendor-contract-739c.csv
+[kit]   FAIL run2 [status_read]: GET /api/files/bf969b30-5997-4952-9aa9-5eb926395ba8 as rosa@lindgren-advisory.example: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [status_thumb]: GET /api/files/74625690-aef2-4ed9-9d3e-e5ca06166f40/thumb as priya@sablepoint.example X-Org-Id=Sable Point Credit Union: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [leak_thumb]: GET /api/files/74625690-aef2-4ed9-9d3e-e5ca06166f40/thumb as priya@sablepoint.example X-Org-Id=Sable Point Credit Union: refusal holds contents of insurance-certificate-8359.md
+[kit]   FAIL run2 [status_read]: GET /api/files/ebafec01-3e45-4203-b7fa-245abea27f91 as quinn@sablepoint.example X-Org-Id=Sable Point Credit Union: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [leak_read]: GET /api/files/ebafec01-3e45-4203-b7fa-245abea27f91 as quinn@sablepoint.example X-Org-Id=Sable Point Credit Union: refusal holds name firmware-release-notes-954a.txt
+[kit]   FAIL run2 [status_read]: GET /api/files/21fc3f37-889a-4db6-8483-b0ae8fdd9bdd as omar@northpine.example X-Org-Id=Northpine Dental Group: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [leak_read]: GET /api/files/21fc3f37-889a-4db6-8483-b0ae8fdd9bdd as omar@northpine.example X-Org-Id=Northpine Dental Group: refusal holds name insurance-certificate-cc1e.md
+[kit]   FAIL run2 [status_thumb]: GET /api/files/9c498e66-d600-46fa-9a59-03577d1d48e9/thumb as hugo@corvane.example: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [leak_thumb]: GET /api/files/9c498e66-d600-46fa-9a59-03577d1d48e9/thumb as hugo@corvane.example: refusal holds contents of capacity-plan-24f2.md
+[kit]   FAIL run2 [status_export]: POST /api/export as omar@northpine.example X-Org-Id=Northpine Dental Group: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [leak_export]: POST /api/export as omar@northpine.example X-Org-Id=Northpine Dental Group: refusal holds contents of board-minutes-c0cf.txt, contents of customer-escalation-log-31b5.md
+[kit]   FAIL run2 [status_export]: POST /api/export as lena@ilsevarga.example: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [leak_export]: POST /api/export as lena@ilsevarga.example: refusal holds contents of patient-intake-checklist-3386.md, contents of lease-renewal-2978.md
+[kit]   FAIL run2 [status_read_bad_x_org_id]: GET /api/files/dafc9295-e81c-4248-bcb0-f480044d2a47 as victor@support.docshare.example X-Org-Id=00000000-0000-4000-8000-00000000dead: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [status_download]: GET /api/files/f1d04d40-4867-42bd-9e01-61859e851d5a/download as lena@ilsevarga.example: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [leak_download]: GET /api/files/f1d04d40-4867-42bd-9e01-61859e851d5a/download as lena@ilsevarga.example: refusal holds contents of hiring-plan-449f.txt
+[kit]   FAIL run2 [status_download_bad_x_org_id]: GET /api/files/cc75967e-7b8a-4e11-af27-4cb7f61dff2c/download as uma@support.docshare.example X-Org-Id=00000000-0000-4000-8000-00000000dead: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [leak_download_bad_x_org_id]: GET /api/files/cc75967e-7b8a-4e11-af27-4cb7f61dff2c/download as uma@support.docshare.example X-Org-Id=00000000-0000-4000-8000-00000000dead: refusal holds contents of budget-variance-e121.md
+[kit]   FAIL run2 [leak_read]: GET /api/files/6bbc99a4-9945-47d1-b9b8-373447dbc6ee as nadia@northpine.example X-Org-Id=Northpine Dental Group: refusal holds name training-records-3026.md
+[kit]   FAIL run2 [status_admin_orgs_bad_x_org_id]: GET /api/admin/orgs as victor@support.docshare.example X-Org-Id=00000000-0000-4000-8000-00000000dead: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [status_download]: GET /api/files/a0e2d96c-b23a-4481-804a-218c5af7c4a5/download as lena@ilsevarga.example X-Org-Id=Ilse Varga Architects: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [leak_download]: GET /api/files/a0e2d96c-b23a-4481-804a-218c5af7c4a5/download as lena@ilsevarga.example X-Org-Id=Ilse Varga Architects: refusal holds contents of board-minutes-b1b2.txt
+[kit]   FAIL run2 [status_me_bad_x_org_id]: GET /api/me as victor@support.docshare.example X-Org-Id=00000000-0000-4000-8000-00000000dead: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [status_thumb_bad_x_org_id]: GET /api/files/19711c59-d61d-47db-a2ea-aa6769fee2f1/thumb as uma@support.docshare.example X-Org-Id=00000000-0000-4000-8000-00000000dead: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [leak_thumb_bad_x_org_id]: GET /api/files/19711c59-d61d-47db-a2ea-aa6769fee2f1/thumb as uma@support.docshare.example X-Org-Id=00000000-0000-4000-8000-00000000dead: refusal holds contents of security-questionnaire-97d5.txt
+[kit]   FAIL run2 [status_download_bad_x_org_id]: GET /api/files/74c0fb7a-e656-4a98-96f7-e90b7a445a17/download as victor@support.docshare.example X-Org-Id=00000000-0000-4000-8000-00000000dead: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [leak_download_bad_x_org_id]: GET /api/files/74c0fb7a-e656-4a98-96f7-e90b7a445a17/download as victor@support.docshare.example X-Org-Id=00000000-0000-4000-8000-00000000dead: refusal holds contents of quarterly-forecast-9e40.md
+[kit]   FAIL run2 [held_status_delete]: DELETE /api/files/ff553146-0ea3-460c-b263-0ea26f92c632 as victor@support.docshare.example X-Org-Id=Ilse Varga Architects: got 204, expected a refusal (4xx)
+[kit]   FAIL run2 [noise_status_export]: POST /api/export as tomas@eriksen-it.example: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [noise_leak_export]: POST /api/export as tomas@eriksen-it.example: refusal holds contents of budget-variance-2825.md, contents of lease-renewal-2978.md
+[kit]   FAIL run2 [held_status_delete]: DELETE /api/files/f1d04d40-4867-42bd-9e01-61859e851d5a as tomas@eriksen-it.example X-Org-Id=Sable Point Credit Union: got 204, expected a refusal (4xx)
+[kit]   FAIL run2 [held_status_share]: POST /api/files/77073b0e-645d-4044-9d1f-06f14e843dad/shares as ines@corvane.example X-Org-Id=Corvane Freight: got 201, expected a refusal (4xx)
+[kit]   FAIL run2 [noise_status_export]: POST /api/export as nadia@northpine.example X-Org-Id=Northpine Dental Group: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [noise_leak_export]: POST /api/export as nadia@northpine.example X-Org-Id=Northpine Dental Group: refusal holds contents of data-retention-policy-fa63.txt, contents of travel-policy-4ef4.md, contents of severance-terms-e22c.txt
+[kit]   FAIL run2 [noise_status_export]: POST /api/export as marco@ilsevarga.example X-Org-Id=Ilse Varga Architects: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [noise_leak_export]: POST /api/export as marco@ilsevarga.example X-Org-Id=Ilse Varga Architects: refusal holds contents of training-records-3026.md, contents of vendor-contract-739c.csv, contents of firmware-release-notes-954a.txt
+[kit]   FAIL run2 [noise_status_share]: POST /api/files/6bbc99a4-9945-47d1-b9b8-373447dbc6ee/shares as priya@sablepoint.example: got 201, expected a refusal (4xx)
+[kit]   FAIL run2 [noise_status_thumb]: GET /api/files/2b530ddf-4a6d-4df6-9db3-e308d6ca10de/thumb as jonas@corvane.example X-Org-Id=Corvane Freight: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [noise_leak_thumb]: GET /api/files/2b530ddf-4a6d-4df6-9db3-e308d6ca10de/thumb as jonas@corvane.example X-Org-Id=Corvane Freight: refusal holds contents of expense-report-df63.txt
+[kit]   FAIL run2 [noise_status_thumb]: GET /api/files/e4772f41-fa3d-41c2-b016-29152ec596a5/thumb as rosa@lindgren-advisory.example X-Org-Id=Corvane Freight: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [noise_leak_thumb]: GET /api/files/e4772f41-fa3d-41c2-b016-29152ec596a5/thumb as rosa@lindgren-advisory.example X-Org-Id=Corvane Freight: refusal holds contents of offsite-agenda-e931.csv
+[kit]   FAIL run2 [held_status_delete]: DELETE /api/files/aa4f05f5-9234-4dc5-b975-f7f0af77cde4 as tomas@eriksen-it.example X-Org-Id=Northpine Dental Group: got 204, expected a refusal (4xx)
+[kit]   FAIL run2 [held_status_rename]: PATCH /api/files/2b530ddf-4a6d-4df6-9db3-e308d6ca10de as rosa@lindgren-advisory.example: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [held_status_rename]: PATCH /api/files/057a909d-246c-44b2-ae98-1f8f1d5eb871 as priya@sablepoint.example X-Org-Id=Sable Point Credit Union: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [noise_status_read]: GET /api/files/50ccca99-541a-452c-bfa0-22813f707cee as quinn@sablepoint.example: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [noise_leak_read]: GET /api/files/50ccca99-541a-452c-bfa0-22813f707cee as quinn@sablepoint.example: refusal holds name grant-application-278c.md
+[kit]   FAIL run2 [noise_status_rename]: PATCH /api/files/5e96d434-2a48-4043-a622-14e99437fa3d as tomas@eriksen-it.example X-Org-Id=Northpine Dental Group: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [held_status_rename]: PATCH /api/files/5e96d434-2a48-4043-a622-14e99437fa3d as tomas@eriksen-it.example: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [write_rename]: rename (second-org): file reads back as {'created_at': '2026-08-15T23:42:00Z', 'folder_id': 'ea699759-5bc5-4e0a-9d51-91ea9543fc0b', 'id': '5e96d434-2a48-4043-a6
+[kit]   FAIL run2 [noise_status_export_bad_x_org_id]: POST /api/export as uma@support.docshare.example X-Org-Id=00000000-0000-4000-8000-00000000dead: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [noise_leak_export_bad_x_org_id]: POST /api/export as uma@support.docshare.example X-Org-Id=00000000-0000-4000-8000-00000000dead: refusal holds contents of budget-variance-2825.md, contents of litigation-hold-notice-1681.csv
+[kit]   FAIL run2 [noise_status_delete]: DELETE /api/files/5e96d434-2a48-4043-a622-14e99437fa3d as rosa@lindgren-advisory.example: got 204, expected a refusal (4xx)
+[kit]   FAIL run2 [noise_status_delete]: DELETE /api/files/872f2cca-df0f-4657-ae4d-b9e4d88f4af6 as uma@support.docshare.example: got 204, expected a refusal (4xx)
+[kit]   FAIL run2 [held_status_share]: POST /api/files/d5fb600c-e1b8-4df4-bfe7-3957a220c353/shares as hugo@corvane.example: got 201, expected a refusal (4xx)
+[kit]   FAIL run2 [held_status_share]: POST /api/files/a0e2d96c-b23a-4481-804a-218c5af7c4a5/shares as rosa@lindgren-advisory.example X-Org-Id=Ilse Varga Architects: got 201, expected a refusal (4xx)
+[kit]   FAIL run2 [noise_status_download]: GET /api/files/77073b0e-645d-4044-9d1f-06f14e843dad/download as hugo@corvane.example: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [noise_leak_download]: GET /api/files/77073b0e-645d-4044-9d1f-06f14e843dad/download as hugo@corvane.example: refusal holds contents of customer-escalation-log-c115.md
+[kit]   FAIL run2 [noise_status_download]: GET /api/files/d9e525b5-485f-4341-b6f1-c05a65a3bf60/download as nadia@northpine.example X-Org-Id=Northpine Dental Group: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [noise_leak_download]: GET /api/files/d9e525b5-485f-4341-b6f1-c05a65a3bf60/download as nadia@northpine.example X-Org-Id=Northpine Dental Group: refusal holds contents of supplier-onboarding-0e45.md
+[kit]   FAIL run2 [noise_status_read]: GET /api/files/ebafec01-3e45-4203-b7fa-245abea27f91 as priya@sablepoint.example: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [noise_leak_read]: GET /api/files/ebafec01-3e45-4203-b7fa-245abea27f91 as priya@sablepoint.example: refusal holds name firmware-release-notes-954a.txt
+[kit]   FAIL run2 [noise_status_delete]: DELETE /api/files/cc75967e-7b8a-4e11-af27-4cb7f61dff2c as rosa@lindgren-advisory.example X-Org-Id=Corvane Freight: got 204, expected a refusal (4xx)
+[kit]   FAIL run2 [noise_status_share]: POST /api/files/ebafec01-3e45-4203-b7fa-245abea27f91/shares as tomas@eriksen-it.example: got 201, expected a refusal (4xx)
+[kit]   FAIL run2 [noise_status_download]: GET /api/files/6ce99987-648c-4817-a5db-ababb19bf181/download as tomas@eriksen-it.example X-Org-Id=Sable Point Credit Union: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [noise_leak_download]: GET /api/files/6ce99987-648c-4817-a5db-ababb19bf181/download as tomas@eriksen-it.example X-Org-Id=Sable Point Credit Union: refusal holds contents of travel-policy-5d94.md
+[kit]   FAIL run2 [noise_status_rename]: PATCH /api/files/762123c7-662e-4e8a-afaa-454519382703 as kiri@ilsevarga.example X-Org-Id=Ilse Varga Architects: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [noise_status_export_bad_x_org_id]: POST /api/export as victor@support.docshare.example X-Org-Id=00000000-0000-4000-8000-00000000dead: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [noise_leak_export_bad_x_org_id]: POST /api/export as victor@support.docshare.example X-Org-Id=00000000-0000-4000-8000-00000000dead: refusal holds contents of customer-escalation-log-31b5.md, contents of payroll-summary-19f3.txt
+[kit]   FAIL run2 [noise_status_thumb]: GET /api/files/d714080c-52e3-473f-b82b-eb5cec182f8a/thumb as omar@northpine.example X-Org-Id=Northpine Dental Group: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [noise_leak_thumb]: GET /api/files/d714080c-52e3-473f-b82b-eb5cec182f8a/thumb as omar@northpine.example X-Org-Id=Northpine Dental Group: refusal holds contents of expense-report-45e4.md
+[kit]   FAIL run2 [write_create_link]: create link (second-org): POST /api/files/aa4f05f5-9234-4dc5-b975-f7f0af77cde4/shares as tomas@eriksen-it.example X-Org-Id=Sable Point Credit Union got 404 b'{"error":"not_found"}\n'
+[kit]   FAIL run2 [noise_status_rename]: PATCH /api/files/4ac50216-0fcc-4b2b-b02e-40401352d598 as rosa@lindgren-advisory.example X-Org-Id=Ilse Varga Architects: got 200, expected a refusal (4xx)
+[kit]   FAIL run2 [write_delete]: delete (org_admin): DELETE /api/files/781868a0-7376-4cc5-a179-4d7c74907191 as kiri@ilsevarga.example got 404 b'{"error":"not_found"}\n'
+[kit]   FAIL run2 [noise_status_share]: POST /api/files/0b8f3770-a530-40a9-8a7a-a2814fcfe5ce/shares as kiri@ilsevarga.example: got 201, expected a refusal (4xx)
+[kit]   FAIL run2 [held_sweep]: after the refused requests, data-retention-policy-fa63.txt reads as 200 b'{"created_at":"2026-05-04T16:22:00Z","folder_id":"4781fdc8-078e-42b4-a154-ba1401'
+[kit]   FAIL run2 [held_sweep]: after the refused requests, settlement-draft-9f38.md reads as 404 b'{"error":"not_found"}\n'
+[kit]   FAIL run2 [held_sweep]: after the refused requests, severance-terms-e22c.txt reads as 200 b'{"created_at":"2026-09-16T07:24:00Z","folder_id":"6734e38b-37d7-4c24-b3e5-7e9544'
+[kit]   FAIL run2 [held_link]: after the held-back refused writes, the seed link of training-records-d1ae.md answers 404
+[kit]   FAIL run2 [held_link]: after the held-back refused writes, the seed link of board-minutes-c0cf.txt answers 404
+[kit] reward=0.0 (killed 0 runner processes) metrics={'reward': 0.0, 'run1_checks': 2211, 'run1_failed': 435, 'run2_checks': 1491, 'run2_failed': 218, 'leaking_refusals': 214, 'held_back': 264, 'held_back_sent': 264, 'grading_seconds': 5.07, 'run1_fail_status_download': 32, 'run1_fail_leak_download': 32, 'run1_fail_status_thumb': 32, 'run1_fail_leak_thumb': 32, 'run1_fail_status_export': 52, 'run1_fail_leak_export': 52, 'run1_fail_status_read': 32, 'run1_fail_leak_read': 26, 'run1_fail_status_export_bad_x_org_id': 4, 'run1_fail_leak_export_bad_x_org_id': 4, 'run1_fail_status_download_bad_x_org_id': 2, 'run1_fail_leak_download_bad_x_org_id': 2, 'run1_fail_status_admin_orgs_bad_x_org_id': 2, 'run1_fail_status_read_bad_x_org_id': 2, 'run1_fail_status_me_bad_x_org_id': 2, 'run1_fail_status_thumb_bad_x_org_id': 2, 'run1_fail_leak_thumb_bad_x_org_id': 2, 'run1_fail_status_rename': 21, 'run1_fail_status_share': 21, 'run1_fail_status_delete': 36, 'run1_fail_status_delete_bad_x_org_id': 1, 'run1_fail_sweep': 43, 'run1_fail_db_changed': 1, 'run2_fail_status_thumb': 11, 'run2_fail_leak_thumb': 11, 'run2_fail_status_download': 9, 'run2_fail_leak_download': 9, 'run2_fail_status_export': 16, 'run2_fail_leak_export': 16, 'run2_fail_status_read': 11, 'run2_fail_leak_read': 8, 'run2_fail_status_read_bad_x_org_id': 1, 'run2_fail_status_download_bad_x_org_id': 2, 'run2_fail_leak_download_bad_x_org_id': 2, 'run2_fail_status_admin_orgs_bad_x_org_id': 1, 'run2_fail_status_me_bad_x_org_id': 1, 'run2_fail_status_thumb_bad_x_org_id': 1, 'run2_fail_leak_thumb_bad_x_org_id': 1, 'run2_fail_held_status_delete': 19, 'run2_fail_noise_status_export': 5, 'run2_fail_noise_leak_export': 5, 'run2_fail_held_status_share': 8, 'run2_fail_noise_status_share': 3, 'run2_fail_noise_status_thumb': 4, 'run2_fail_noise_leak_thumb': 4, 'run2_fail_held_status_rename': 10, 'run2_fail_noise_status_read': 2, 'run2_fail_noise_leak_read': 2, 'run2_fail_noise_status_rename': 3, 'run2_fail_write_rename': 1, 'run2_fail_noise_status_export_bad_x_org_id': 2, 'run2_fail_noise_leak_export_bad_x_org_id': 2, 'run2_fail_noise_status_delete': 6, 'run2_fail_noise_status_download': 4, 'run2_fail_noise_leak_download': 4, 'run2_fail_write_create_link': 1, 'run2_fail_write_delete': 1, 'run2_fail_held_sweep': 30, 'run2_fail_held_link': 2}

@@ -1,0 +1,153 @@
+{
+    "id": "d58e913a-f2de-486e-9051-87e83fe19f0f",
+    "started_at": "2026-11-03T09:15:28.479685",
+    "updated_at": "2026-11-03T09:20:43.237353",
+    "finished_at": "2026-11-03T09:20:43.237353",
+    "n_total_trials": 1,
+    "stats": {
+        "n_completed_trials": 1,
+        "n_errored_trials": 0,
+        "n_running_trials": 0,
+        "n_pending_trials": 0,
+        "n_cancelled_trials": 0,
+        "n_retries": 0,
+        "evals": {
+            "terminus-2__glm-5.3-flash__adhoc": {
+                "n_trials": 1,
+                "n_errors": 0,
+                "metrics": [
+                    {
+                        "app_locked": 1.0,
+                        "hidden_bad_rows": 0.0,
+                        "hidden_duplicate_rows": 0.0,
+                        "hidden_extra_rows": 0.0,
+                        "hidden_max_abs_err": 0.0005,
+                        "hidden_missing_rows": 0.0,
+                        "hidden_ok": 1.0,
+                        "hidden_rows_over_tol": 0.0,
+                        "hidden_run_rc": 0.0,
+                        "hidden_run_seconds": 0.369,
+                        "hidden_run_timed_out": 0.0,
+                        "reward": 1.0,
+                        "tolerance_mm_day": 0.03,
+                        "visible_bad_rows": 0.0,
+                        "visible_duplicate_rows": 0.0,
+                        "visible_extra_rows": 0.0,
+                        "visible_max_abs_err": 0.0005,
+                        "visible_missing_rows": 0.0,
+                        "visible_ok": 1.0,
+                        "visible_rows_over_tol": 0.0
+                    }
+                ],
+                "pass_at_k": {},
+                "reward_stats": {
+                    "reward": {
+                        "1.0": [
+                            "et0-station-ingest__y4XU2MG"
+                        ]
+                    },
+                    "tolerance_mm_day": {
+                        "0.03": [
+                            "et0-station-ingest__y4XU2MG"
+                        ]
+                    },
+                    "app_locked": {
+                        "1": [
+                            "et0-station-ingest__y4XU2MG"
+                        ]
+                    },
+                    "visible_ok": {
+                        "1": [
+                            "et0-station-ingest__y4XU2MG"
+                        ]
+                    },
+                    "visible_missing_rows": {
+                        "0": [
+                            "et0-station-ingest__y4XU2MG"
+                        ]
+                    },
+                    "visible_extra_rows": {
+                        "0": [
+                            "et0-station-ingest__y4XU2MG"
+                        ]
+                    },
+                    "visible_bad_rows": {
+                        "0": [
+                            "et0-station-ingest__y4XU2MG"
+                        ]
+                    },
+                    "visible_duplicate_rows": {
+                        "0": [
+                            "et0-station-ingest__y4XU2MG"
+                        ]
+                    },
+                    "visible_rows_over_tol": {
+                        "0": [
+                            "et0-station-ingest__y4XU2MG"
+                        ]
+                    },
+                    "visible_max_abs_err": {
+                        "0.0005": [
+                            "et0-station-ingest__y4XU2MG"
+                        ]
+                    },
+                    "hidden_run_rc": {
+                        "0": [
+                            "et0-station-ingest__y4XU2MG"
+                        ]
+                    },
+                    "hidden_run_timed_out": {
+                        "0": [
+                            "et0-station-ingest__y4XU2MG"
+                        ]
+                    },
+                    "hidden_run_seconds": {
+                        "0.369": [
+                            "et0-station-ingest__y4XU2MG"
+                        ]
+                    },
+                    "hidden_ok": {
+                        "1": [
+                            "et0-station-ingest__y4XU2MG"
+                        ]
+                    },
+                    "hidden_missing_rows": {
+                        "0": [
+                            "et0-station-ingest__y4XU2MG"
+                        ]
+                    },
+                    "hidden_extra_rows": {
+                        "0": [
+                            "et0-station-ingest__y4XU2MG"
+                        ]
+                    },
+                    "hidden_bad_rows": {
+                        "0": [
+                            "et0-station-ingest__y4XU2MG"
+                        ]
+                    },
+                    "hidden_duplicate_rows": {
+                        "0": [
+                            "et0-station-ingest__y4XU2MG"
+                        ]
+                    },
+                    "hidden_rows_over_tol": {
+                        "0": [
+                            "et0-station-ingest__y4XU2MG"
+                        ]
+                    },
+                    "hidden_max_abs_err": {
+                        "0.0005": [
+                            "et0-station-ingest__y4XU2MG"
+                        ]
+                    }
+                },
+                "exception_stats": {}
+            }
+        },
+        "n_input_tokens": 298387,
+        "n_cache_tokens": 0,
+        "n_output_tokens": 20221,
+        "cost_usd": null
+    }
+}

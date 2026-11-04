@@ -1,0 +1,218 @@
+{
+    "id": "f6f76d61-fe33-4979-a8d8-0969bbe36bd2",
+    "task_name": "diffuse-labs/ab-test-reanalysis",
+    "trial_name": "ab-test-reanalysis__9bw5VW9",
+    "trial_uri": "file://<submission>/jobs/agent-trials/ab-test-reanalysis-terminus2-glm53flash-m1-2/ab-test-reanalysis__9bw5VW9",
+    "task_id": {
+        "path": "<submission>/jobs/ab-test-reanalysis/package-rev1/ab-test-reanalysis"
+    },
+    "source": null,
+    "task_checksum": "274fcfeb9730803d14e0e19bfa6772a2f81ee82d3477737e0f3fb3e263048240",
+    "config": {
+        "task": {
+            "path": "<submission>/jobs/ab-test-reanalysis/package-rev1/ab-test-reanalysis",
+            "git_url": null,
+            "git_commit_id": null,
+            "name": null,
+            "ref": null,
+            "overwrite": false,
+            "download_dir": null,
+            "source": null
+        },
+        "trial_name": "ab-test-reanalysis__9bw5VW9",
+        "trials_dir": "<submission>/jobs/agent-trials/ab-test-reanalysis-terminus2-glm53flash-m1-2",
+        "install_only": false,
+        "timeout_multiplier": 1.0,
+        "agent_timeout_multiplier": null,
+        "verifier_timeout_multiplier": null,
+        "agent_setup_timeout_multiplier": null,
+        "environment_build_timeout_multiplier": 3.0,
+        "agent": {
+            "name": "terminus-2",
+            "import_path": null,
+            "model_name": "openai/glm-5.3-flash",
+            "base_url": null,
+            "model_api_key_name": null,
+            "model_api_format": null,
+            "skip_model_parsing": false,
+            "n_concurrent": null,
+            "concurrency_group": null,
+            "skills": [],
+            "override_timeout_sec": null,
+            "override_setup_timeout_sec": null,
+            "max_timeout_sec": null,
+            "resume_trajectory": false,
+            "load_trajectory": null,
+            "extra_allowed_hosts": [],
+            "kwargs": {
+                "model_info": {
+                    "max_input_tokens": 196608,
+                    "max_output_tokens": 65536,
+                    "input_cost_per_token": 0,
+                    "output_cost_per_token": 0
+                },
+                "api_base": "<model-endpoint>"
+            },
+            "mcp_servers": []
+        },
+        "user_agent": null,
+        "environment": {
+            "type": "daytona",
+            "import_path": null,
+            "force_build": false,
+            "delete": true,
+            "stream": false,
+            "cpu_enforcement_policy": "auto",
+            "memory_enforcement_policy": "auto",
+            "override_cpus": null,
+            "override_memory_mb": null,
+            "override_storage_mb": null,
+            "override_gpus": null,
+            "override_tpu": null,
+            "mounts": null,
+            "extra_docker_compose": [],
+            "kwargs": {},
+            "extra_allowed_hosts": []
+        },
+        "verifier": {
+            "override_timeout_sec": null,
+            "max_timeout_sec": null,
+            "disable": false
+        },
+        "artifacts": [],
+        "extra_instruction_paths": [],
+        "extra_instructions": [],
+        "job_id": "a0b07f78-aba7-4800-b136-a49e1adf3cf8",
+        "source_trial": null
+    },
+    "agent_info": {
+        "name": "terminus-2",
+        "version": "2.0.0",
+        "model_info": {
+            "name": "glm-5.3-flash",
+            "provider": "openai"
+        }
+    },
+    "agent_result": {
+        "n_input_tokens": 148227,
+        "n_cache_tokens": 0,
+        "n_output_tokens": 29201,
+        "cost_usd": null,
+        "model_usage": {
+            "glm-5.3-flash": {
+                "n_input_tokens": 148227,
+                "n_cache_tokens": 0,
+                "n_output_tokens": 29201,
+                "cost_usd": null
+            }
+        },
+        "rollout_details": [],
+        "metadata": {
+            "n_episodes": 10,
+            "api_request_times_msec": [
+                4869.329929351807,
+                5189.872741699219,
+                4033.874034881592,
+                12469.590902328491,
+                22425.116777420044,
+                33912.83202171326,
+                74126.20902061462,
+                54246.864795684814,
+                26485.690116882324,
+                65450.86407661438
+            ],
+            "summarization_count": 0
+        }
+    },
+    "verifier_result": {
+        "rewards": {
+            "reward": 1.0,
+            "band_hw": 0.25,
+            "run_cap_sec": 120,
+            "res_os_cpu_count": 64,
+            "res_cpu_affinity": 64,
+            "res_cgroup_cpus": 1.0,
+            "res_cgroup_mem_mib": 2048.0,
+            "res_host_memtotal_mib": 773337.81640625,
+            "visible_ok": 1,
+            "visible_problems": 0,
+            "visible_ctr_max_err": 0.0,
+            "visible_diff_err": 0.0,
+            "visible_srm_p_rel_err": 1.1829140680293875e-16,
+            "visible_ci_lo_err_hw": 3.286667476061109e-16,
+            "visible_ci_hi_err_hw": 3.286667476061109e-16,
+            "h_null_run_rc": 0,
+            "h_null_run_timed_out": 0,
+            "h_null_run_seconds": 1.274,
+            "h_null_ok": 1,
+            "h_null_problems": 0,
+            "h_null_ctr_max_err": 0.0,
+            "h_null_diff_err": 0.0,
+            "h_null_srm_p_rel_err": 8.902975794635376e-15,
+            "h_null_ci_lo_err_hw": 3.2386974051446843e-16,
+            "h_null_ci_hi_err_hw": 3.2386974051446843e-16,
+            "h_pos_run_rc": 0,
+            "h_pos_run_timed_out": 0,
+            "h_pos_run_seconds": 1.379,
+            "h_pos_ok": 1,
+            "h_pos_problems": 0,
+            "h_pos_ctr_max_err": 0.0,
+            "h_pos_diff_err": 0.0,
+            "h_pos_srm_p_rel_err": 1.9239355888896643e-16,
+            "h_pos_ci_lo_err_hw": 0.0,
+            "h_pos_ci_hi_err_hw": 0.0,
+            "h_srm_run_rc": 0,
+            "h_srm_run_timed_out": 0,
+            "h_srm_run_seconds": 1.425,
+            "h_srm_ok": 1,
+            "h_srm_problems": 0,
+            "h_srm_ctr_max_err": 0.0,
+            "h_srm_diff_err": 0.0,
+            "h_srm_srm_p_rel_err": 8.693279730455397e-16,
+            "h_srm_ci_lo_err_hw": 3.0467330944995497e-16,
+            "h_srm_ci_hi_err_hw": 6.093466188999099e-16,
+            "h_plain_run_rc": 0,
+            "h_plain_run_timed_out": 0,
+            "h_plain_run_seconds": 1.324,
+            "h_plain_ok": 1,
+            "h_plain_problems": 0,
+            "h_plain_ctr_max_err": 0.0,
+            "h_plain_diff_err": 0.0,
+            "h_plain_srm_p_rel_err": 1.4240168292155358e-14,
+            "h_plain_ci_lo_err_hw": 2.8350708528922217e-16,
+            "h_plain_ci_hi_err_hw": 0.0,
+            "h_neg_run_rc": 0,
+            "h_neg_run_timed_out": 0,
+            "h_neg_run_seconds": 1.374,
+            "h_neg_ok": 1,
+            "h_neg_problems": 0,
+            "h_neg_ctr_max_err": 0.0,
+            "h_neg_diff_err": 0.0,
+            "h_neg_srm_p_rel_err": 2.205587558053253e-16,
+            "h_neg_ci_lo_err_hw": 6.283091179353852e-16,
+            "h_neg_ci_hi_err_hw": 3.141545589676926e-16,
+            "sets_passed": 6
+        }
+    },
+    "verifier_environment_mode": "separate",
+    "exception_info": null,
+    "started_at": "2026-11-03T17:18:41.607008Z",
+    "finished_at": "2026-11-03T17:25:21.418621Z",
+    "environment_setup": {
+        "started_at": "2026-11-03T17:18:41.664859Z",
+        "finished_at": "2026-11-03T17:18:43.471848Z"
+    },
+    "agent_setup": {
+        "started_at": "2026-11-03T17:18:43.472026Z",
+        "finished_at": "2026-11-03T17:18:53.586611Z"
+    },
+    "agent_execution": {
+        "started_at": "2026-11-03T17:18:53.587333Z",
+        "finished_at": "2026-11-03T17:24:52.975504Z"
+    },
+    "verifier": {
+        "started_at": "2026-11-03T17:24:57.346306Z",
+        "finished_at": "2026-11-03T17:25:21.418509Z"
+    },
+    "step_results": null
+}

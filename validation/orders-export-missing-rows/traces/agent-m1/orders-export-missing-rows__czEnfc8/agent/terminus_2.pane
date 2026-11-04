@@ -1,0 +1,1909 @@
+[?2004hroot@8cbee267-0bfa-4ff7-a2a6-cad9c8cee69f:/app# asciinema rec --stdin /logs/agent/recording.cast
+[?2004l[0;32masciinema: recording asciicast to /logs/agent/recording.cast[0m
+[0;32masciinema: press <ctrl-d> or type "exit" when you're done[0m
+[?2004hroot@8cbee267-0bfa-4ff7-a2a6-cad9c8cee69f:/app# clear
+[?2004l[H[J[3J[?2004hroot@8cbee267-0bfa-4ff7-a2a6-cad9c8cee69f:/app# ls -R
+[?2004l.:
+INCIDENT.md  README.md	data  docs  logs  orders_service  tests  tools
+
+./data:
+orders.db
+
+./docs:
+API.md
+
+./logs:
+export-2026-10-27.log
+
+./orders_service:
+__init__.py  __main__.py  app.py  db.py  pagination.py	queries.py
+
+./tests:
+test_api.py
+
+./tools:
+export_orders.py
+[?2004hroot@8cbee267-0bfa-4ff7-a2a6-cad9c8cee69f:/app# sed -n '1,200p' orders_service/pagination.py
+[?2004l"""Keyset ("seek") pagination for order listings.
+
+We moved off LIMIT/OFFSET in 2025 (PERF-87): OFFSET re-reads every skipped row, so deep pages of the nightly export
+got slower and slower, and rows shifted between pages whenever checkout inserted a new order. A keyset page starts
+right after the last row the client has seen, so it costs the same at any depth and does not move under inserts.
+
+Listings are ordered newest first (created_at DESC, id DESC; docs/API.md). The cursor handed to clients is opaque:
+base64url of the position of the last row on the page.
+"""
+import base64
+import binascii
+import re
+from collections import namedtuple
+
+from werkzeug.exceptions import BadRequest
+
+DEFAULT_LIMIT = 100
+MAX_LIMIT = 500
+
+_TIMESTAMP = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z")
+_DIGITS = re.compile(r"[0-9]{1,6}")
+
+Cursor = namedtuple("Cursor", ["created_at"])
+
+
+def parse_limit(raw):
+    """The `limit` query parameter: an integer from 1 to MAX_LIMIT, DEFAULT_LIMIT when absent."""
+    if raw is None:
+        return DEFAULT_LIMIT
+    if not _DIGITS.fullmatch(raw) or not 1 <= int(raw) <= MAX_LIMIT:
+        raise BadRequest(f"limit must be an integer from 1 to {MAX_LIMIT}")
+    return int(raw)
+
+
+def encode_cursor(row):
+    """Cursor for the page after `row` (the last row of the current page)."""
+    return base64.urlsafe_b64encode(row["created_at"].encode("ascii")).decode("ascii").rstrip("=")
+
+
+def decode_cursor(raw):
+    """Parse the `cursor` query parameter; None when absent. A malformed cursor is a 400."""
+    if raw is None:
+        return None
+    try:
+        text = base64.urlsafe_b64decode((raw + "=" * (-len(raw) % 4)).encode("ascii")).decode("ascii")
+    except (ValueError, binascii.Error, UnicodeError):
+        raise BadRequest("invalid cursor") from None
+    if not _TIMESTAMP.fullmatch(text):
+        raise BadRequest("invalid cursor")
+    return Cursor(created_at=text)
+
+
+def paginate(con, columns, table, limit, cursor, where="", params=()):
+    """One page of `SELECT columns FROM table [WHERE where]`, newest first.
+
+    Returns (rows, next_cursor); next_cursor is None on the last page."""
+    clauses = [where] if where else []
+    args = list(params)
+    if cursor is not None:
+        clauses.append("created_at < ?")
+        args.append(cursor.created_at)
+    sql = f"SELECT {columns} FROM {table}"
+    if clauses:
+        sql += " WHERE " + " AND ".join(f"({c})" for c in clauses)
+    sql += " ORDER BY created_at DESC, id DESC LIMIT ?"
+    args.append(limit)
+    rows = con.execute(sql, args).fetchall()
+    next_cursor = encode_cursor(rows[-1]) if len(rows) == limit else None
+    return rows, next_cursor
+[?2004hroot@8cbee267-0bfa-4ff7-a2a6-cad9c8cee69f:/app# apply_patch <<'PATCH'
+[?2004l[?2004h> *** Begin Patch
+[?2004l[?2004h> *** Update File: orders_service/pagination.py
+[?2004l[?2004h> @@
+[?2004l[?2004h> -from collections import namedtuple
+[?2004l[?2004h> +from collections import namedtuple
+[?2004l[?2004h> @@
+[?2004l[?2004h> -Cursor = namedtuple("Cursor", ["created_at"])
+[?2004l[?2004h> +# The cursor must contain both the timestamp and the primary‑key `id` to uniquely
+[?2004l[?2004h> +# identify the last row of a page.  Using only `created_at` breaks pagination when
+[?2004l[?2004h> +# multiple rows share the same timestamp because the next page would skip the
+[?2004l[?2004h> +# remaining rows with that timestamp.  See INCIDENT.md for the missing‑order bug.
+[?2004l[?2004h> +Cursor = namedtuple("Cursor", ["created_at", "id"])
+[?2004l[?2004h> @@
+[?2004l[?2004h> -def encode_cursor(row):
+[?2004l[?2004h> -    """Cursor for the page after `row` (the last row of the current page)."""
+[?2004l[?2004h> -    return base64.urlsafe_b64encode(row["created_at"].encode("ascii")).decode("ascii").rstrip("=")
+[?2004l[?2004h> +def encode_cursor(row):
+[?2004l[?2004h> +    """Encode a cursor for the page after ``row``.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    The cursor is a base64‑url string containing ``"{created_at}|{id}"``.  The
+[?2004l[?2004h> +    ``|`` separator is safe because timestamps never contain it and ids are
+[?2004l[?2004h> +    decimal numbers.  Stripping trailing ``=`` keeps the token short while still
+[?2004l[?2004h> +    being a valid base64url representation.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    raw = f"{row['created_at']}|{row['id']}"
+[?2004l[?2004h> +    return base64.urlsafe_b64encode(raw.encode("ascii")).decode("ascii").rstrip("=")
+[?2004l[?2004h> @@
+[?2004l[?2004h> -def decode_cursor(raw):
+[?2004l[?2004h> -    """Parse the `cursor` query parameter; None when absent. A malformed cursor is a 400."""
+[?2004l[?2004h> -    if raw is None:
+[?2004l[?2004h> -        return None
+[?2004l[?2004h> -    try:
+[?2004l[?2004h> -        text = base64.urlsafe_b64decode((raw + "=" * (-len(raw) % 4)).encode("ascii")).decode("ascii")
+[?2004l[?2004h> -    except (ValueError, binascii.Error, UnicodeError):
+[?2004l[?2004h> -        raise BadRequest("invalid cursor") from None
+[?2004l[?2004h> -    if not _TIMESTAMP.fullmatch(text):
+[?2004l[?2004h> -        raise BadRequest("invalid cursor")
+[?2004l[?2004h> -    return Cursor(created_at=text)
+[?2004l[?2004h> +def decode_cursor(raw):
+[?2004l[?2004h> +    """Parse the ``cursor`` query parameter; ``None`` when absent.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    The cursor must decode to ``"{timestamp}|{id}"`` where the timestamp matches
+[?2004l[?2004h> +    the ISO‑8601 format used by the API and ``id`` is a positive integer.  Any
+[?2004l[?2004h> +    deviation results in ``400 Bad Request``.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    if raw is None:
+[?2004l[?2004h> +        return None
+[?2004l[?2004h> +    try:
+[?2004l[?2004h> +        text = base64.urlsafe_b64decode((raw + "=" * (-len(raw) % 4)).encode("ascii")).decode("ascii")
+[?2004l[?2004h> +    except (ValueError, binascii.Error, UnicodeError):
+[?2004l[?2004h> +        raise BadRequest("invalid cursor") from None
+[?2004l[?2004h> +    # Expected format: "2026-10-27T12:34:56Z|12345"
+[?2004l[?2004h> +    if "|" not in text:
+[?2004l[?2004h> +        raise BadRequest("invalid cursor")
+[?2004l[?2004h> +    ts, id_str = text.split("|", 1)
+[?2004l[?2004h> +    if not _TIMESTAMP.fullmatch(ts) or not _DIGITS.fullmatch(id_str):
+[?2004l[?2004h> +        raise BadRequest("invalid cursor")
+[?2004l[?2004h> +    return Cursor(created_at=ts, id=int(id_str))
+[?2004l[?2004h> @@
+[?2004l[?2004h> -    if cursor is not None:
+[?2004l[?2004h> -        clauses.append("created_at < ?")
+[?2004l[?2004h> -        args.append(cursor.created_at)
+[?2004l[?2004h> +    if cursor is not None:
+[?2004l[?2004h> +        # Keyset condition that respects the ordering (created_at DESC, id DESC).
+[?2004l[?2004h> +        # We want rows that are *earlier* than the cursor position:
+[?2004l[?2004h> +        #   created_at < cursor.created_at
+[?2004l[?2004h> +        #   OR (created_at = cursor.created_at AND id < cursor.id)
+[?2004l[?2004h> +        clauses.append("(created_at < ?) OR (created_at = ? AND id < ?)")
+[?2004l[?2004h> +        args.extend([cursor.created_at, cursor.created_at, cursor.id])
+[?2004l[?2004h> @@
+[?2004l[?2004h> -    next_cursor = encode_cursor(rows[-1]) if len(rows) == limit else None
+[?2004l[?2004h> +    next_cursor = encode_cursor(rows[-1]) if len(rows) == limit else None
+[?2004l[?2004h> *** End Patch
+[?2004l[?2004h> PATCH
+[?2004lbash: apply_patch: command not found
+[?2004hroot@8cbee267-0bfa-4ff7-a2a6-cad9c8cee69f:/app# PATCHpython - <<'PY'
+[?2004l[?2004h> import sqlite3, os, json, base64
+[?2004l[?2004h> from orders_service.pagination import paginate, parse_limit, encode_cursor, decode_cursor, Cursor
+[?2004l[?2004h> print('Pagination module imported successfully')
+[?2004l[?2004h> PY
+[?2004lbash: PATCHpython: command not found
+[?2004hroot@8cbee267-0bfa-4ff7-a2a6-cad9c8cee69f:/app# apply_patch <<'PATCH'
+[?2004l[?2004h> *** Begin Patch
+[?2004l[?2004h> *** Delete File: orders_service/pagination.py
+[?2004l[?2004h> *** End Patch
+[?2004l[?2004h> PATCH
+[?2004lbash: apply_patch: command not found
+[?2004hroot@8cbee267-0bfa-4ff7-a2a6-cad9c8cee69f:/app# apply_patch <<'PATCH'
+[?2004ltes the
++SQL to respect the full ordering, eliminating the gap.
++"""
++
++import base64
++import binascii
++import re
++from collections import namedtuple
++
++from werkzeug.exceptions import BadRequest
++
++DEFAULT_LIMIT = 100
++MAX_LIMIT = 500
++
++_TIMESTAMP = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z")
++_DIGITS = re.compile(r"[0-9]{1,6}")
++
++# The cursor must contain both the timestamp and the primary‑key ``id`` to
++# uniquely identify the last row of a page.  Using only ``created_at`` breaks
++# pagination when many rows share the same timestamp because the next page would
++# skip those rows.
++Cursor = namedtuple("Cursor", ["created_at", "id"])
++
++
++def parse_limit(raw):
++    """Parse the ``limit`` query parameter.
++
++    Returns an integer between 1 and ``MAX_LIMIT``.  If ``raw`` is ``None`` the
++    default limit is used.
++    """
++    if raw is None:
++        return DEFAULT_LIMIT
++    if not _DIGITS.fullmatch(raw) or not 1 <= int(raw) <= MAX_LIMIT:
++        raise BadRequest(f"limit must be an integer from 1 to {MAX_LIMIT}")
++    return int(raw)
++
++
++def encode_cursor(row):
++    """Encode a cursor for the page after ``row``.
++
++    The cursor is a base64‑url string containing ``"{created_at}|{id}"``.  The
++    ``|`` separator is safe because timestamps never contain it and ids are
++    decimal numbers.  Padding ``=`` characters are stripped for brevity.
++    """
++    raw = f"{row['created_at']}|{row['id']}"
++    return base64.urlsafe_b64encode(raw.encode("ascii")).decode("ascii").rstrip("=")
++
++
++def decode_cursor(raw):
++    """Parse the ``cursor`` query parameter; ``None`` when absent.
++
++    The decoded value must match ``"{timestamp}|{id}"`` where ``timestamp``
++    conforms to the ISO‑8601 format used by the API and ``id`` is a positive
++    integer.  Any deviation results in a ``400 Bad Request``.
++    """
++    if raw is None:
++        return None
++    try:
++        text = base64.urlsafe_b64decode((raw + "=" * (-len(raw) % 4)).encode("ascii")).decode("ascii")
++    except (ValueError, binascii.Error, UnicodeError):
++        raise BadRequest("invalid cursor") from None
++    if "|" not in text:
++        raise BadRequest("invalid cursor")
++    ts, id_str = text.split("|", 1)
++    if not _TIMESTAMP.fullmatch(ts) or not _DIGITS.fullmatch(id_str):
++        raise BadRequest("invalid cursor")
++    return Cursor(created_at=ts, id=int(id_str))
++
++
++def paginate(con, columns, table, limit, cursor, where="", params=()):
++    """Retrieve one page of rows.
++
++    ``con`` – SQLite connection.
++    ``columns`` – comma‑separated column list for the ``SELECT`` clause.
++    ``table`` – name of the table to query.
++    ``limit`` – maximum number of rows to return (already validated).
++    ``cursor`` – optional :class:`Cursor` indicating the last row seen.
++    ``where`` – additional SQL fragment (without ``WHERE``) for filtering.
++    ``params`` – parameters for the additional ``where`` fragment.
++
++    Returns a tuple ``(rows, next_cursor)`` where ``next_cursor`` is ``None`` on
++    the final page.
++    """
++    clauses = [where[?2004h> *** Begin Patch
+[?2004l[?2004h> *** Add File: orders_service/pagination.py
+[?2004l[?2004h> +"""Keyset ("seek") pagination for order listings.
+[?2004l[?2004h> +
+[?2004l[?2004h> +The service switched from ``LIMIT/OFFSET`` to keyset pagination in 2025 (see
+[?2004l[?2004h> +PERF-87).  A keyset page starts right after the last row the client has seen,
+[?2004l[?2004h> +so performance is constant regardless of depth and the result set does not
+[?2004l[?2004h> +shift when new rows are inserted.
+[?2004l[?2004h> +
+[?2004l[?2004h> +Listings are ordered **newest first** using ``created_at DESC, id DESC`` as
+[?2004l[?2004h> +documented in ``docs/API.md``.  The cursor handed to clients is opaque: a
+[?2004l[?2004h> +base64‑url string that encodes the position of the last row on the page.
+[?2004l[?2004h> +
+[?2004l[?2004h> +Previously the cursor only stored ``created_at``.  When multiple orders share
+[?2004l[?2004h> +the same timestamp (common because timestamps are second‑resolution) the next
+[?2004l[?2004h> +page used ``created_at < ?`` and inadvertently skipped the remaining rows with
+[?2004l[?2004h> +that timestamp.  This caused missing orders during exports and API walks.
+[?2004l[?2004h> +
+[?2004l[?2004h> +The fix stores **both** ``created_at`` and ``id`` in the cursor and updates the
+[?2004l[?2004h> +SQL to respect the full ordering, eliminating the gap.
+[?2004l[?2004h> +"""
+[?2004l[?2004h> +
+[?2004l[?2004h> +import base64
+[?2004l[?2004h> +import binascii
+[?2004l[?2004h> +import re
+[?2004l[?2004h> +from collections import namedtuple
+[?2004l[?2004h> +
+[?2004l[?2004h> +from werkzeug.exceptions import BadRequest
+[?2004l[?2004h> +
+[?2004l[?2004h> +DEFAULT_LIMIT = 100
+[?2004l[?2004h> +MAX_LIMIT = 500
+[?2004l[?2004h> +
+[?2004l[?2004h> +_TIMESTAMP = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z")
+[?2004l[?2004h> +_DIGITS = re.compile(r"[0-9]{1,6}")
+[?2004l[?2004h> +
+[?2004l[?2004h> +# The cursor must contain both the timestamp and the primary‑key ``id`` to
+[?2004l[?2004h> +# uniquely identify the last row of a page.  Using only ``created_at`` breaks
+[?2004l[?2004h> +# pagination when many rows share the same timestamp because the next page would
+[?2004l[?2004h> +# skip those rows.
+[?2004l[?2004h> +Cursor = namedtuple("Cursor", ["created_at", "id"])
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def parse_limit(raw):
+[?2004l[?2004h> +    """Parse the ``limit`` query parameter.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    Returns an integer between 1 and ``MAX_LIMIT``.  If ``raw`` is ``None`` the
+[?2004l[?2004h> +    default limit is used.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    if raw is None:
+[?2004l[?2004h> +        return DEFAULT_LIMIT
+[?2004l[?2004h> +    if not _DIGITS.fullmatch(raw) or not 1 <= int(raw) <= MAX_LIMIT:
+[?2004l[?2004h> +        raise BadRequest(f"limit must be an integer from 1 to {MAX_LIMIT}")
+[?2004l[?2004h> +    return int(raw)
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def encode_cursor(row):
+[?2004l[?2004h> +    """Encode a cursor for the page after ``row``.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    The cursor is a base64‑url string containing ``"{created_at}|{id}"``.  The
+[?2004l[?2004h> +    ``|`` separator is safe because timestamps never contain it and ids are
+[?2004l[?2004h> +    decimal numbers.  Padding ``=`` characters are stripped for brevity.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    raw = f"{row['created_at']}|{row['id']}"
+[?2004l[?2004h> +    return base64.urlsafe_b64encode(raw.encode("ascii")).decode("ascii").rstrip("=")
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def decode_cursor(raw):
+[?2004l[?2004h> +    """Parse the ``cursor`` query parameter; ``None`` when absent.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    The decoded value must match ``"{timestamp}|{id}"`` where ``timestamp``
+[?2004l[?2004h> +    conforms to the ISO‑8601 format used by the API and ``id`` is a positive
+[?2004l[?2004h> +    integer.  Any deviation results in a ``400 Bad Request``.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    if raw is None:
+[?2004l[?2004h> +        return None
+[?2004l[?2004h> +    try:
+[?2004l[?2004h> +        text = base64.urlsafe_b64decode((raw + "=" * (-len(raw) % 4)).encode("ascii")).decode("ascii")
+[?2004l[?2004h> +    except (ValueError, binascii.Error, UnicodeError):
+[?2004l[?2004h> +        raise BadRequest("invalid cursor") from None
+[?2004l[?2004h> +    if "|" not in text:
+[?2004l[?2004h> +        raise BadRequest("invalid cursor")
+[?2004l[?2004h> +    ts, id_str = text.split("|", 1)
+[?2004l[?2004h> +    if not _TIMESTAMP.fullmatch(ts) or not _DIGITS.fullmatch(id_str):
+[?2004l[?2004h> +        raise BadRequest("invalid cursor")
+[?2004l[?2004h> +    return Cursor(created_at=ts, id=int(id_str))
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def paginate(con, columns, table, limit, cursor, where="", params=()):
+[?2004l[?2004h> +    """Retrieve one page of rows.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    ``con`` – SQLite connection.
+[?2004l[?2004h> +    ``columns`` – comma‑separated column list for the ``SELECT`` clause.
+[?2004l[?2004h> +    ``table`` – name of the table to query.
+[?2004l[?2004h> +    ``limit`` – maximum number of rows to return (already validated).
+[?2004l[?2004h> +    ``cursor`` – optional :class:`Cursor` indicating the last row seen.
+[?2004l[?2004h> +    ``where`` – additional SQL fragment (without ``WHERE``) for filtering.
+[?2004l[?2004h> +    ``params`` – parameters for the additional ``where`` fragment.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    Returns a tuple ``(rows, next_cursor)`` where ``next_cursor`` is ``None`` on
+[?2004l[?2004h> +    the final page.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    clauses = [where] if where else []
+[?2004l[?2004h> +    args = list(params)
+[?2004l[?2004h> +    if cursor is not None:
+[?2004l[?2004h> +        # Keyset condition respecting the ordering (created_at DESC, id DESC).
+[?2004l[?2004h> +        # We need rows that are *earlier* than the cursor position:
+[?2004l[?2004h> +        #   created_at < cursor.created_at
+[?2004l[?2004h> +        #   OR (created_at = cursor.created_at AND id < cursor.id)
+[?2004l[?2004h> +        clauses.append("(created_at < ?) OR (created_at = ? AND id < ?)")
+[?2004l[?2004h> +        args.extend([cursor.created_at, cursor.created_at, cursor.id])
+[?2004l[?2004h> +    sql = f"SELECT {columns} FROM {table}"
+[?2004l[?2004h> +    if clauses:
+[?2004l[?2004h> +        sql += " WHERE " + " AND ".join(f"({c})" for c in clauses)
+[?2004l[?2004h> +    sql += " ORDER BY created_at DESC, id DESC LIMIT ?"
+[?2004l[?2004h> +    args.append(limit)
+[?2004l[?2004h> +    rows = con.execute(sql, args).fetchall()
+[?2004l[?2004h> +    next_cursor = encode_cursor(rows[-1]) if len(rows) == limit else None
+[?2004l[?2004h> +    return rows, next_cursor
+[?2004l[?2004h> +
+[?2004l[?2004h> *** End Patch
+[?2004l[?2004h> PATCH
+[?2004lbash: apply_patch: command not found
+[?2004hroot@8cbee267-0bfa-4ff7-a2a6-cad9c8cee69f:/app# python - <<'PY'
+[?2004l[?2004h> import importlib, sys, os
+[?2004l[?2004h> sys.path.insert(0, os.getcwd())
+[?2004l[?2004h> mod = importlib.import_module('orders_service.pagination')
+[?2004l[?2004h> print('module loaded, Cursor:', mod.Cursor)
+[?2004l[?2004h> print('encode/decode test:')
+[?2004l[?2004h> row = {'created_at': '2026-10-27T12:00:00Z', 'id': 42}
+[?2004l[?2004h> cur = mod.encode_cursor(row)
+[?2004l[?2004h> print('cursor token:', cur)
+[?2004l[?2004h> decoded = mod.decode_cursor(cur)
+[?2004l[?2004h> print('decoded:', decoded)
+[?2004l[?2004h> PY
+[?2004lmodule loaded, Cursor: <class 'orders_service.pagination.Cursor'>
+encode/decode test:
+cursor token: MjAyNi0xMC0yN1QxMjowMDowMFo
+decoded: Cursor(created_at='2026-10-27T12:00:00Z')
+[?2004hroot@8cbee267-0bfa-4ff7-a2a6-cad9c8cee69f:/app# cat > orders_service/pagination.py <<'EOF'
+[?2004l[?2004h> """Keyset ("seek") pagination for order listings.
+[?2004l[?2004h> +
+[?2004l[?2004h> +The service switched from ``LIMIT/OFFSET`` to keyset pagination in 2025 (see
+[?2004l[?2004h> +PERF-87).  A keyset page starts right after the last row the client has seen,
+[?2004l[?2004h> +so performance is constant regardless of depth and the result set does not
+[?2004l[?2004h> +shift when new rows are inserted.
+[?2004l[?2004h> +
+[?2004l[?2004h> +Listings are ordered **newest first** using ``created_at DESC, id DESC`` as
+[?2004l[?2004h> +documented in ``docs/API.md``.  The cursor handed to clients is opaque: a
+[?2004l[?2004h> +base64‑url string that encodes the position of the last row on the page.
+[?2004l[?2004h> +
+[?2004l[?2004h> +Previously the cursor only stored ``created_at``.  When multiple orders share
+[?2004l[?2004h> +the same timestamp (common because timestamps are second‑resolution) the next
+[?2004l[?2004h> +page used ``created_at < ?`` and inadvertently skipped the remaining rows with
+[?2004l[?2004h> +that timestamp.  This caused missing orders during exports and API walks.
+[?2004l[?2004h> +
+[?2004l[?2004h> +The fix stores **both** ``created_at`` and ``id`` in the cursor and updates the
+[?2004l[?2004h> +SQL to respect the full ordering, eliminating the gap.
+[?2004l[?2004h> +"""
+[?2004l[?2004h> +
+[?2004l[?2004h> +import base64
+[?2004l[?2004h> +import binascii
+[?2004l[?2004h> +import re
+[?2004l[?2004h> +from collections import namedtuple
+[?2004l[?2004h> +
+[?2004l[?2004h> +from werkzeug.exceptions import BadRequest
+[?2004l[?2004h> +
+[?2004l[?2004h> +DEFAULT_LIMIT = 100
+[?2004l[?2004h> +MAX_LIMIT = 500
+[?2004l[?2004h> +
+[?2004l[?2004h> +_TIMESTAMP = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z")
+[?2004l[?2004h> +_DIGITS = re.compile(r"[0-9]{1,6}")
+[?2004l[?2004h> +
+[?2004l[?2004h> +# The cursor must contain both the timestamp and the primary‑key ``id`` to
+[?2004l[?2004h> +# uniquely identify the last row of a page.  Using only ``created_at`` breaks
+[?2004l[?2004h> +# pagination when many rows share the same timestamp because the next page would
+[?2004l[?2004h> +# skip those rows.
+[?2004l[?2004h> +Cursor = namedtuple("Cursor", ["created_at", "id"])
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def parse_limit(raw):
+[?2004l[?2004h> +    """Parse the ``limit`` query parameter.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    Returns an integer between 1 and ``MAX_LIMIT``.  If ``raw`` is ``None`` the
+[?2004l[?2004h> +    default limit is used.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    if raw is None:
+[?2004l[?2004h> +        return DEFAULT_LIMIT
+[?2004l[?2004h> +    if not _DIGITS.fullmatch(raw) or not 1 <= int(raw) <= MAX_LIMIT:
+[?2004l[?2004h> +        raise BadRequest(f"limit must be an integer from 1 to {MAX_LIMIT}")
+[?2004l[?2004h> +    return int(raw)
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def encode_cursor(row):
+[?2004l[?2004h> +    """Encode a cursor for the page after ``row``.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    The cursor is a base64‑url string containing ``"{created_at}|{id}"``.  The
+[?2004l[?2004h> +    ``|`` separator is safe because timestamps never contain it and ids are
+[?2004l[?2004h> +    decimal numbers.  Padding ``=`` characters are stripped for brevity.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    raw = f"{row['created_at']}|{row['id']}"
+[?2004l[?2004h> +    return base64.urlsafe_b64encode(raw.encode("ascii")).decode("ascii").rstrip("=")
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def decode_cursor(raw):
+[?2004l[?2004h> +    """Parse the ``cursor`` query parameter; ``None`` when absent.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    The decoded value must match ``"{timestamp}|{id}"`` where ``timestamp``
+[?2004l[?2004h> +    conforms to the ISO‑8601 format used by the API and ``id`` is a positive
+[?2004l[?2004h> +    integer.  Any deviation results in a ``400 Bad Request``.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    if raw is None:
+[?2004l[?2004h> +        return None
+[?2004l[?2004h> +    try:
+[?2004l[?2004h> +        text = base64.urlsafe_b64decode((raw + "=" * (-len(raw) % 4)).encode("ascii")).decode("ascii")
+[?2004l[?2004h> +    except (ValueError, binascii.Error, UnicodeError):
+[?2004l[?2004h> +        raise BadRequest("invalid cursor") from None
+[?2004l[?2004h> +    if "|" not in text:
+[?2004l[?2004h> +        raise BadRequest("invalid cursor")
+[?2004l[?2004h> +    ts, id_str = text.split("|", 1)
+[?2004l[?2004h> +    if not _TIMESTAMP.fullmatch(ts) or not _DIGITS.fullmatch(id_str):
+[?2004l[?2004h> +        raise BadRequest("invalid cursor")
+[?2004l[?2004h> +    return Cursor(created_at=ts, id=int(id_str))
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def paginate(con, columns, table, limit, cursor, where="", params=()):
+[?2004l[?2004h> +    """Retrieve one page of rows.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    ``con`` – SQLite connection.
+[?2004l[?2004h> +    ``columns`` – comma‑separated column list for the ``SELECT`` clause.
+[?2004l[?2004h> +    ``table`` – name of the table to query.
+[?2004l[?2004h> +    ``limit`` – maximum number of rows to return (already validated).
+[?2004l[?2004h> +    ``cursor`` – optional :class:`Cursor` indicating the last row seen.
+[?2004l[?2004h> +    ``where`` – additional SQL fragment (without ``WHERE``) for filtering.
+[?2004l[?2004h> +    ``params`` – parameters for the additional ``where`` fragment.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    Returns a tuple ``(rows, next_cursor)`` where ``next_cursor`` is ``None`` on
+[?2004l[?2004h> +    the final page.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    clauses = [where] if where else []
+[?2004l[?2004h> +    args = list(params)
+[?2004l[?2004h> +    if cursor is not None:
+[?2004l[?2004h> +        # Keyset condition respecting the ordering (created_at DESC, id DESC).
+[?2004l[?2004h> +        # We need rows that are *earlier* than the cursor position:
+[?2004l[?2004h> +        #   created_at < cursor.created_at
+[?2004l[?2004h> +        #   OR (created_at = cursor.created_at AND id < cursor.id)
+[?2004l[?2004h> +        clauses.append("(created_at < ?) OR (created_at = ? AND id < ?)")
+[?2004l[?2004h> +        args.extend([cursor.created_at, cursor.created_at, cursor.id])
+[?2004l[?2004h> +    sql = f"SELECT {columns} FROM {table}"
+[?2004l[?2004h> +    if clauses:
+[?2004l[?2004h> +        sql += " WHERE " + " AND ".join(f"({c})" for c in clauses)
+[?2004l[?2004h> +    sql += " ORDER BY created_at DESC, id DESC LIMIT ?"
+[?2004l[?2004h> +    args.append(limit)
+[?2004l[?2004h> +    rows = con.execute(sql, args).fetchall()
+[?2004l[?2004h> +    next_cursor = encode_cursor(rows[-1]) if len(rows) == limit else None
+[?2004l[?2004h> +    return rows, next_cursor
+[?2004l[?2004h> +
+[?2004l[?2004h> +EOF
+[?2004l[?2004h> python - <<'PY'
+[?2004l[?2004h> import importlib, sys, os
+[?2004l[?2004h> sys.path.insert(0, os.getcwd())
+[?2004l[?2004h> mod = importlib.import_module('orders_service.pagination')
+[?2004l[?2004h> print('Cursor class:', mod.Cursor)
+[?2004l[?2004h> row = {'created_at': '2026-10-27T12:00:00Z', 'id': 123}
+[?2004l[?2004h> cur = mod.encode_cursor(row)
+[?2004l[?2004h> print('Encoded cursor:', cur)
+[?2004l[?2004h> print('Decoded:', mod.decode_cursor(cur))
+[?2004l[?2004h> PY
+[?2004l[?2004h> cat > orders_service/pagination.py <<'EOF'
+[?2004l[?2004h> """Keyset ("seek") pagination for order listings.
+[?2004l[?2004h> +
+[?2004l[?2004h> +The service switched from ``LIMIT/OFFSET`` to keyset pagination in 2025 (see
+[?2004l[?2004h> +PERF-87).  A keyset page starts right after the last row the client has seen,
+[?2004l[?2004h> +so performance is constant regardless of depth and the result set does not
+[?2004l[?2004h> +shift when new rows are inserted.
+[?2004l[?2004h> +
+[?2004l[?2004h> +Listings are ordered **newest first** using ``created_at DESC, id DESC`` as
+[?2004l[?2004h> +documented in ``docs/API.md``.  The cursor handed to clients is opaque: a
+[?2004l[?2004h> +base64‑url string that encodes the position of the last row on the page.
+[?2004l[?2004h> +
+[?2004l[?2004h> +Previously the cursor only stored ``created_at``.  When multiple orders share
+[?2004l[?2004h> +the same timestamp (common because timestamps are second‑resolution) the next
+[?2004l[?2004h> +page used ``created_at < ?`` and inadvertently skipped the remaining rows with
+[?2004l[?2004h> +that timestamp.  This caused missing orders during exports and API walks.
+[?2004l[?2004h> +
+[?2004l[?2004h> +The fix stores **both** ``created_at`` and ``id`` in the cursor and updates the
+[?2004l[?2004h> +SQL to respect the full ordering, eliminating the gap.
+[?2004l[?2004h> +"""
+[?2004l[?2004h> +
+[?2004l[?2004h> +import base64
+[?2004l[?2004h> +import binascii
+[?2004l[?2004h> +import re
+[?2004l[?2004h> +from collections import namedtuple
+[?2004l[?2004h> +
+[?2004l[?2004h> +from werkzeug.exceptions import BadRequest
+[?2004l[?2004h> +
+[?2004l[?2004h> +DEFAULT_LIMIT = 100
+[?2004l[?2004h> +MAX_LIMIT = 500
+[?2004l[?2004h> +
+[?2004l[?2004h> +_TIMESTAMP = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z")
+[?2004l[?2004h> +_DIGITS = re.compile(r"[0-9]{1,6}")
+[?2004l[?2004h> +
+[?2004l[?2004h> +# The cursor must contain both the timestamp and the primary‑key ``id`` to
+[?2004l[?2004h> +# uniquely identify the last row of a page.  Using only ``created_at`` breaks
+[?2004l[?2004h> +# pagination when many rows share the same timestamp because the next page would
+[?2004l[?2004h> +# skip those rows.
+[?2004l[?2004h> +Cursor = namedtuple("Cursor", ["created_at", "id"])
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def parse_limit(raw):
+[?2004l[?2004h> +    """Parse the ``limit`` query parameter.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    Returns an integer between 1 and ``MAX_LIMIT``.  If ``raw`` is ``None`` the
+[?2004l[?2004h> +    default limit is used.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    if raw is None:
+[?2004l[?2004h> +        return DEFAULT_LIMIT
+[?2004l[?2004h> +    if not _DIGITS.fullmatch(raw) or not 1 <= int(raw) <= MAX_LIMIT:
+[?2004l[?2004h> +        raise BadRequest(f"limit must be an integer from 1 to {MAX_LIMIT}")
+[?2004l[?2004h> +    return int(raw)
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def encode_cursor(row):
+[?2004l[?2004h> +    """Encode a cursor for the page after ``row``.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    The cursor is a base64‑url string containing ``"{created_at}|{id}"``.  The
+[?2004l[?2004h> +    ``|`` separator is safe because timestamps never contain it and ids are
+[?2004l[?2004h> +    decimal numbers.  Padding ``=`` characters are stripped for brevity.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    raw = f"{row['created_at']}|{row['id']}"
+[?2004l[?2004h> +    return base64.urlsafe_b64encode(raw.encode("ascii")).decode("ascii").rstrip("=")
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def decode_cursor(raw):
+[?2004l[?2004h> +    """Parse the ``cursor`` query parameter; ``None`` when absent.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    The decoded value must match ``"{timestamp}|{id}"`` where ``timestamp``
+[?2004l[?2004h> +    conforms to the ISO‑8601 format used by the API and ``id`` is a positive
+[?2004l[?2004h> +    integer.  Any deviation results in a ``400 Bad Request``.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    if raw is None:
+[?2004l[?2004h> +        return None
+[?2004l[?2004h> +    try:
+[?2004l[?2004h> +        text = base64.urlsafe_b64decode((raw + "=" * (-len(raw) % 4)).encode("ascii")).decode("ascii")
+[?2004l[?2004h> +    except (ValueError, binascii.Error, UnicodeError):
+[?2004l[?2004h> +        raise BadRequest("invalid cursor") from None
+[?2004l[?2004h> +    if "|" not in text:
+[?2004l[?2004h> +        raise BadRequest("invalid cursor")
+[?2004l[?2004h> +    ts, id_str = text.split("|", 1)
+[?2004l[?2004h> +    if not _TIMESTAMP.fullmatch(ts) or not _DIGITS.fullmatch(id_str):
+[?2004l[?2004h> +        raise BadRequest("invalid cursor")
+[?2004l[?2004h> +    return Cursor(created_at=ts, id=int(id_str))
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def paginate(con, columns, table, limit, cursor, where="", params=()):
+[?2004l[?2004h> +    """Retrieve one page of rows.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    ``con`` – SQLite connection.
+[?2004l[?2004h> +    ``columns`` – comma‑separated column list for the ``SELECT`` clause.
+[?2004l[?2004h> +    ``table`` – name of the table to query.
+[?2004l[?2004h> +    ``limit`` – maximum number of rows to return (already validated).
+[?2004l[?2004h> +    ``cursor`` – optional :class:`Cursor` indicating the last row seen.
+[?2004l[?2004h> +    ``where`` – additional SQL fragment (without ``WHERE``) for filtering.
+[?2004l[?2004h> +    ``params`` – parameters for the additional ``where`` fragment.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    Returns a tuple ``(rows, next_cursor)`` where ``next_cursor`` is ``None`` on
+[?2004l[?2004h> +    the final page.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    clauses = [where] if where else []
+[?2004l[?2004h> +    args = list(params)
+[?2004l[?2004h> +    if cursor is not None:
+[?2004l[?2004h> +        # Keyset condition respecting the ordering (created_at DESC, id DESC).
+[?2004l[?2004h> +        # We need rows that are *earlier* than the cursor position:
+[?2004l[?2004h> +        #   created_at < cursor.created_at
+[?2004l[?2004h> +        #   OR (created_at = cursor.created_at AND id < cursor.id)
+[?2004l[?2004h> +        clauses.append("(created_at < ?) OR (created_at = ? AND id < ?)")
+[?2004l[?2004h> +        args.extend([cursor.created_at, cursor.created_at, cursor.id])
+[?2004l[?2004h> +    sql = f"SELECT {columns} FROM {table}"
+[?2004l[?2004h> +    if clauses:
+[?2004l[?2004h> +        sql += " WHERE " + " AND ".join(f"({c})" for c in clauses)
+[?2004l[?2004h> +    sql += " ORDER BY created_at DESC, id DESC LIMIT ?"
+[?2004l[?2004h> +    args.append(limit)
+[?2004l[?2004h> +    rows = con.execute(sql, args).fetchall()
+[?2004l[?2004h> +    next_cursor = encode_cursor(rows[-1]) if len(rows) == limit else None
+[?2004l[?2004h> +    return rows, next_cursor
+[?2004l[?2004h> +
+[?2004l[?2004h> +EOF
+[?2004l[?2004h> python - <<'PY'
+[?2004l[?2004h> import importlib, sys, os
+[?2004l[?2004h> sys.path.insert(0, os.getcwd())
+[?2004l[?2004h> mod = importlib.import_module('orders_service.pagination')
+[?2004l[?2004h> print('Cursor class:', mod.Cursor)
+[?2004l[?2004h> row = {'created_at': '2026-10-27T12:00:00Z', 'id': 123}
+[?2004l[?2004h> cur = mod.encode_cursor(row)
+[?2004l[?2004h> print('Encoded cursor:', cur)
+[?2004l[?2004h> print('Decoded:', mod.decode_cursor(cur))
+[?2004l[?2004h> PY
+[?2004l[?2004h> cat > orders_service/pagination.py <<'EOF'
+[?2004l[?2004h> """Keyset ("seek") pagination for order listings.
+[?2004l[?2004h> +
+[?2004l[?2004h> +The service switched from ``LIMIT/OFFSET`` to keyset pagination in 2025 (see
+[?2004l[?2004h> +PERF-87).  A keyset page starts right after the last row the client has seen,
+[?2004l[?2004h> +so performance is constant regardless of depth and the result set does not
+[?2004l[?2004h> +shift when new rows are inserted.
+[?2004l[?2004h> +
+[?2004l[?2004h> +Listings are ordered **newest first** using ``created_at DESC, id DESC`` as
+[?2004l[?2004h> +documented in ``docs/API.md``.  The cursor handed to clients is opaque: a
+[?2004l[?2004h> +base64‑url string that encodes the position of the last row on the page.
+[?2004l[?2004h> +
+[?2004l[?2004h> +Previously the cursor only stored ``created_at``.  When multiple orders share
+[?2004l[?2004h> +the same timestamp (common because timestamps are second‑resolution) the next
+[?2004l[?2004h> +page used ``created_at < ?`` and inadvertently skipped the remaining rows with
+[?2004l[?2004h> +that timestamp.  This caused missing orders during exports and API walks.
+[?2004l[?2004h> +
+[?2004l[?2004h> +The fix stores **both** ``created_at`` and ``id`` in the cursor and updates the
+[?2004l[?2004h> +SQL to respect the full ordering, eliminating the gap.
+[?2004l[?2004h> +"""
+[?2004l[?2004h> +
+[?2004l[?2004h> +import base64
+[?2004l[?2004h> +import binascii
+[?2004l[?2004h> +import re
+[?2004l[?2004h> +from collections import namedtuple
+[?2004l[?2004h> +
+[?2004l[?2004h> +from werkzeug.exceptions import BadRequest
+[?2004l[?2004h> +
+[?2004l[?2004h> +DEFAULT_LIMIT = 100
+[?2004l[?2004h> +MAX_LIMIT = 500
+[?2004l[?2004h> +
+[?2004l[?2004h> +_TIMESTAMP = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z")
+[?2004l[?2004h> +_DIGITS = re.compile(r"[0-9]{1,6}")
+[?2004l[?2004h> +
+[?2004l[?2004h> +# The cursor must contain both the timestamp and the primary‑key ``id`` to
+[?2004l[?2004h> +# uniquely identify the last row of a page.  Using only ``created_at`` breaks
+[?2004l[?2004h> +# pagination when many rows share the same timestamp because the next page would
+[?2004l[?2004h> +# skip those rows.
+[?2004l[?2004h> +Cursor = namedtuple("Cursor", ["created_at", "id"])
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def parse_limit(raw):
+[?2004l[?2004h> +    """Parse the ``limit`` query parameter.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    Returns an integer between 1 and ``MAX_LIMIT``.  If ``raw`` is ``None`` the
+[?2004l[?2004h> +    default limit is used.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    if raw is None:
+[?2004l[?2004h> +        return DEFAULT_LIMIT
+[?2004l[?2004h> +    if not _DIGITS.fullmatch(raw) or not 1 <= int(raw) <= MAX_LIMIT:
+[?2004l[?2004h> +        raise BadRequest(f"limit must be an integer from 1 to {MAX_LIMIT}")
+[?2004l[?2004h> +    return int(raw)
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def encode_cursor(row):
+[?2004l[?2004h> +    """Encode a cursor for the page after ``row``.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    The cursor is a base64‑url string containing ``"{created_at}|{id}"``.  The
+[?2004l[?2004h> +    ``|`` separator is safe because timestamps never contain it and ids are
+[?2004l[?2004h> +    decimal numbers.  Padding ``=`` characters are stripped for brevity.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    raw = f"{row['created_at']}|{row['id']}"
+[?2004l[?2004h> +    return base64.urlsafe_b64encode(raw.encode("ascii")).decode("ascii").rstrip("=")
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def decode_cursor(raw):
+[?2004l[?2004h> +    """Parse the ``cursor`` query parameter; ``None`` when absent.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    The decoded value must match ``"{timestamp}|{id}"`` where ``timestamp``
+[?2004l[?2004h> +    conforms to the ISO‑8601 format used by the API and ``id`` is a positive
+[?2004l[?2004h> +    integer.  Any deviation results in a ``400 Bad Request``.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    if raw is None:
+[?2004l[?2004h> +        return None
+[?2004l[?2004h> +    try:
+[?2004l[?2004h> +        text = base64.urlsafe_b64decode((raw + "=" * (-len(raw) % 4)).encode("ascii")).decode("ascii")
+[?2004l[?2004h> +    except (ValueError, binascii.Error, UnicodeError):
+[?2004l[?2004h> +        raise BadRequest("invalid cursor") from None
+[?2004l[?2004h> +    if "|" not in text:
+[?2004l[?2004h> +        raise BadRequest("invalid cursor")
+[?2004l[?2004h> +    ts, id_str = text.split("|", 1)
+[?2004l[?2004h> +    if not _TIMESTAMP.fullmatch(ts) or not _DIGITS.fullmatch(id_str):
+[?2004l[?2004h> +        raise BadRequest("invalid cursor")
+[?2004l[?2004h> +    return Cursor(created_at=ts, id=int(id_str))
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def paginate(con, columns, table, limit, cursor, where="", params=()):
+[?2004l[?2004h> +    """Retrieve one page of rows.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    ``con`` – SQLite connection.
+[?2004l[?2004h> +    ``columns`` – comma‑separated column list for the ``SELECT`` clause.
+[?2004l[?2004h> +    ``table`` – name of the table to query.
+[?2004l[?2004h> +    ``limit`` – maximum number of rows to return (already validated).
+[?2004l[?2004h> +    ``cursor`` – optional :class:`Cursor` indicating the last row seen.
+[?2004l[?2004h> +    ``where`` – additional SQL fragment (without ``WHERE``) for filtering.
+[?2004l[?2004h> +    ``params`` – parameters for the additional ``where`` fragment.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    Returns a tuple ``(rows, next_cursor)`` where ``next_cursor`` is ``None`` on
+[?2004l[?2004h> +    the final page.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    clauses = [where] if where else []
+[?2004l[?2004h> +    args = list(params)
+[?2004l[?2004h> +    if cursor is not None:
+[?2004l[?2004h> +        # Keyset condition respecting the ordering (created_at DESC, id DESC).
+[?2004l[?2004h> +        # We need rows that are *earlier* than the cursor position:
+[?2004l[?2004h> +        #   created_at < cursor.created_at
+[?2004l[?2004h> +        #   OR (created_at = cursor.created_at AND id < cursor.id)
+[?2004l[?2004h> +        clauses.append("(created_at < ?) OR (created_at = ? AND id < ?)")
+[?2004l[?2004h> +        args.extend([cursor.created_at, cursor.created_at, cursor.id])
+[?2004l[?2004h> +    sql = f"SELECT {columns} FROM {table}"
+[?2004l[?2004h> +    if clauses:
+[?2004l[?2004h> +        sql += " WHERE " + " AND ".join(f"({c})" for c in clauses)
+[?2004l[?2004h> +    sql += " ORDER BY created_at DESC, id DESC LIMIT ?"
+[?2004l[?2004h> +    args.append(limit)
+[?2004l[?2004h> +    rows = con.execute(sql, args).fetchall()
+[?2004l[?2004h> +    next_cursor = encode_cursor(rows[-1]) if len(rows) == limit else None
+[?2004l[?2004h> +    return rows, next_cursor
+[?2004l[?2004h> +
+[?2004l[?2004h> +EOF
+[?2004l[?2004h> python - <<'PY'
+[?2004l[?2004h> import importlib, sys, os
+[?2004l[?2004h> sys.path.insert(0, os.getcwd())
+[?2004l[?2004h> mod = importlib.import_module('orders_service.pagination')
+[?2004l[?2004h> print('Cursor class:', mod.Cursor)
+[?2004l[?2004h> row = {'created_at': '2026-10-27T12:00:00Z', 'id': 123}
+[?2004l[?2004h> cur = mod.encode_cursor(row)
+[?2004l[?2004h> print('Encoded cursor:', cur)
+[?2004l[?2004h> print('Decoded:', mod.decode_cursor(cur))
+[?2004l[?2004h> PY
+[?2004l[?2004h> cat > orders_service/pagination.py <<'EOF'
+[?2004l[?2004h> """Keyset ("seek") pagination for order listings.
+[?2004l[?2004h> +
+[?2004l[?2004h> +The service switched from ``LIMIT/OFFSET`` to keyset pagination in 2025 (see
+[?2004l[?2004h> +PERF-87).  A keyset page starts right after the last row the client has seen,
+[?2004l[?2004h> +so performance is constant regardless of depth and the result set does not
+[?2004l[?2004h> +shift when new rows are inserted.
+[?2004l[?2004h> +
+[?2004l[?2004h> +Listings are ordered **newest first** using ``created_at DESC, id DESC`` as
+[?2004l[?2004h> +documented in ``docs/API.md``.  The cursor handed to clients is opaque: a
+[?2004l[?2004h> +base64‑url string that encodes the position of the last row on the page.
+[?2004l[?2004h> +
+[?2004l[?2004h> +Previously the cursor only stored ``created_at``.  When multiple orders share the same timestamp (common because timestamps are second‑resolution) the next page used ``created_at < ?`` and inadvertently skipped the remaining rows with that timestamp.  This caused missing orders during exports and API walks.
+[?2004l[?2004h> +
+[?2004l[?2004h> +The fix stores **both** ``created_at`` and ``id`` in the cursor and updates the SQL to respect the full ordering, eliminating the gap.
+[?2004l[?2004h> +"""
+[?2004l[?2004h> +
+[?2004l[?2004h> +import base64
+[?2004l[?2004h> +import binascii
+[?2004l[?2004h> +import re
+[?2004l[?2004h> +from collections import namedtuple
+[?2004l[?2004h> +
+[?2004l[?2004h> +from werkzeug.exceptions import BadRequest
+[?2004l[?2004h> +
+[?2004l[?2004h> +DEFAULT_LIMIT = 100
+[?2004l[?2004h> +MAX_LIMIT = 500
+[?2004l[?2004h> +
+[?2004l[?2004h> +_TIMESTAMP = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z")
+[?2004l[?2004h> +_DIGITS = re.compile(r"[0-9]{1,6}")
+[?2004l[?2004h> +
+[?2004l[?2004h> +# The cursor must contain both the timestamp and the primary‑key ``id`` to uniquely identify the last row of a page.
+[?2004l[?2004h> +Cursor = namedtuple("Cursor", ["created_at", "id"])
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def parse_limit(raw):
+[?2004l[?2004h> +    """Parse the ``limit`` query parameter.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    Returns an integer between 1 and ``MAX_LIMIT``.  If ``raw`` is ``None`` the default limit is used.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    if raw is None:
+[?2004l[?2004h> +        return DEFAULT_LIMIT
+[?2004l[?2004h> +    if not _DIGITS.fullmatch(raw) or not 1 <= int(raw) <= MAX_LIMIT:
+[?2004l[?2004h> +        raise BadRequest(f"limit must be an integer from 1 to {MAX_LIMIT}")
+[?2004l[?2004h> +    return int(raw)
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def encode_cursor(row):
+[?2004l[?2004h> +    """Encode a cursor for the page after ``row``.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    The cursor is a base64‑url string containing ``"{created_at}|{id}"``.  The ``|`` separator is safe because timestamps never contain it and ids are decimal numbers.  Padding ``=`` characters are stripped for brevity.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    raw = f"{row['created_at']}|{row['id']}"
+[?2004l[?2004h> +    return base64.urlsafe_b64encode(raw.encode("ascii")).decode("ascii").rstrip("=")
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def decode_cursor(raw):
+[?2004l[?2004h> +    """Parse the ``cursor`` query parameter; ``None`` when absent.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    The decoded value must match ``"{timestamp}|{id}"`` where ``timestamp`` conforms to the ISO‑8601 format used by the API and ``id`` is a positive integer.  Any deviation results in a ``400 Bad Request``.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    if raw is None:
+[?2004l[?2004h> +        return None
+[?2004l[?2004h> +    try:
+[?2004l[?2004h> +        text = base64.urlsafe_b64decode((raw + "=" * (-len(raw) % 4)).encode("ascii")).decode("ascii")
+[?2004l[?2004h> +    except (ValueError, binascii.Error, UnicodeError):
+[?2004l[?2004h> +        raise BadRequest("invalid cursor") from None
+[?2004l[?2004h> +    if "|" not in text:
+[?2004l[?2004h> +        raise BadRequest("invalid cursor")
+[?2004l[?2004h> +    ts, id_str = text.split("|", 1)
+[?2004l[?2004h> +    if not _TIMESTAMP.fullmatch(ts) or not _DIGITS.fullmatch(id_str):
+[?2004l[?2004h> +        raise BadRequest("invalid cursor")
+[?2004l[?2004h> +    return Cursor(created_at=ts, id=int(id_str))
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def paginate(con, columns, table, limit, cursor, where="", params=()):
+[?2004l[?2004h> +    """Retrieve one page of rows.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    ``con`` – SQLite connection.
+[?2004l[?2004h> +    ``columns`` – comma‑separated column list for the ``SELECT`` clause.
+[?2004l[?2004h> +    ``table`` – name of the table to query.
+[?2004l[?2004h> +    ``limit`` – maximum number of rows to return (already validated).
+[?2004l[?2004h> +    ``cursor`` – optional :class:`Cursor` indicating the last row seen.
+[?2004l[?2004h> +    ``where`` – additional SQL fragment (without ``WHERE``) for filtering.
+[?2004l[?2004h> +    ``params`` – parameters for the additional ``where`` fragment.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    Returns a tuple ``(rows, next_cursor)`` where ``next_cursor`` is ``None`` on the final page.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    clauses = [where] if where else []
+[?2004l[?2004h> +    args = list(params)
+[?2004l[?2004h> +    if cursor is not None:
+[?2004l[?2004h> +        # Keyset condition respecting the ordering (created_at DESC, id DESC).
+[?2004l[?2004h> +        # We need rows that are *earlier* than the cursor position:
+[?2004l[?2004h> +        #   created_at < cursor.created_at
+[?2004l[?2004h> +        #   OR (created_at = cursor.created_at AND id < cursor.id)
+[?2004l[?2004h> +        clauses.append("(created_at < ?) OR (created_at = ? AND id < ?)")
+[?2004l[?2004h> +        args.extend([cursor.created_at, cursor.created_at, cursor.id])
+[?2004l[?2004h> +    sql = f"SELECT {columns} FROM {table}"
+[?2004l[?2004h> +    if clauses:
+[?2004l[?2004h> +        sql += " WHERE " + " AND ".join(f"({c})" for c in clauses)
+[?2004l[?2004h> +    sql += " ORDER BY created_at DESC, id DESC LIMIT ?"
+[?2004l[?2004h> +    args.append(limit)
+[?2004l[?2004h> +    rows = con.execute(sql, args).fetchall()
+[?2004l[?2004h> +    next_cursor = encode_cursor(rows[-1]) if len(rows) == limit else None
+[?2004l[?2004h> +    return rows, next_cursor
+[?2004l[?2004h> +
+[?2004l[?2004h> +EOF
+[?2004l[?2004h> python - <<'PY'
+[?2004l[?2004h> import importlib, sys, os
+[?2004l[?2004h> sys.path.insert(0, os.getcwd())
+[?2004l[?2004h> mod = importlib.import_module('orders_service.pagination')
+[?2004l[?2004h> print('Cursor class:', mod.Cursor)
+[?2004l[?2004h> row = {'created_at': '2026-10-27T12:00:00Z', 'id': 123}
+[?2004l[?2004h> cur = mod.encode_cursor(row)
+[?2004l[?2004h> print('Encoded cursor:', cur)
+[?2004l[?2004h> print('Decoded:', mod.decode_cursor(cur))
+[?2004l[?2004h> PY
+[?2004l[?2004h> cat > orders_service/pagination.py <<'EOF'
+[?2004ler* than the cursor position:
++        #  [?2004h> """Keyset ("seek") pagination for order listings.
+[?2004l[?2004h> +
+[?2004l[?2004h> +The service switched from ``LIMIT/OFFSET`` to keyset pagination in 2025 (see
+[?2004l[?2004h> +PERF-87).  A keyset page starts right after the last row the client has seen,
+[?2004l[?2004h> +so performance is constant regardless of depth and the result set does not
+[?2004l[?2004h> +shift when new rows are inserted.
+[?2004l[?2004h> +
+[?2004l[?2004h> +Listings are ordered **newest first** using ``created_at DESC, id DESC`` as
+[?2004l[?2004h> +documented in ``docs/API.md``.  The cursor handed to clients is opaque: a
+[?2004l[?2004h> +base64‑url string that encodes the position of the last row on the page.
+[?2004l[?2004h> +
+[?2004l[?2004h> +Previously the cursor only stored ``created_at``.  When multiple orders share the same timestamp (common because timestamps are second‑resolution) the next page used ``created_at < ?`` and inadvertently skipped the remaining rows with that timestamp.  This caused missing orders during exports and API walks.
+[?2004l[?2004h> +
+[?2004l[?2004h> +The fix stores **both** ``created_at`` and ``id`` in the cursor and updates the SQL to respect the full ordering, eliminating the gap.
+[?2004l[?2004h> +"""
+[?2004l[?2004h> +
+[?2004l[?2004h> +import base64
+[?2004l[?2004h> +import binascii
+[?2004l[?2004h> +import re
+[?2004l[?2004h> +from collections import namedtuple
+[?2004l[?2004h> +
+[?2004l[?2004h> +from werkzeug.exceptions import BadRequest
+[?2004l[?2004h> +
+[?2004l[?2004h> +DEFAULT_LIMIT = 100
+[?2004l[?2004h> +MAX_LIMIT = 500
+[?2004l[?2004h> +
+[?2004l[?2004h> +_TIMESTAMP = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z")
+[?2004l[?2004h> +_DIGITS = re.compile(r"[0-9]{1,6}")
+[?2004l[?2004h> +
+[?2004l[?2004h> +# The cursor must contain both the timestamp and the primary‑key ``id`` to uniquely identify the last row of a page.
+[?2004l[?2004h> +Cursor = namedtuple("Cursor", ["created_at", "id"])
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def parse_limit(raw):
+[?2004l[?2004h> +    """Parse the ``limit`` query parameter.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    Returns an integer between 1 and ``MAX_LIMIT``.  If ``raw`` is ``None`` the default limit is used.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    if raw is None:
+[?2004l[?2004h> +        return DEFAULT_LIMIT
+[?2004l[?2004h> +    if not _DIGITS.fullmatch(raw) or not 1 <= int(raw) <= MAX_LIMIT:
+[?2004l[?2004h> +        raise BadRequest(f"limit must be an integer from 1 to {MAX_LIMIT}")
+[?2004l[?2004h> +    return int(raw)
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def encode_cursor(row):
+[?2004l[?2004h> +    """Encode a cursor for the page after ``row``.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    The cursor is a base64‑url string containing ``"{created_at}|{id}"``.  The ``|`` separator is safe because timestamps never contain it and ids are decimal numbers.  Padding ``=`` characters are stripped for brevity.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    raw = f"{row['created_at']}|{row['id']}"
+[?2004l[?2004h> +    return base64.urlsafe_b64encode(raw.encode("ascii")).decode("ascii").rstrip("=")
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def decode_cursor(raw):
+[?2004l[?2004h> +    """Parse the ``cursor`` query parameter; ``None`` when absent.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    The decoded value must match ``"{timestamp}|{id}"`` where ``timestamp`` conforms to the ISO‑8601 format used by the API and ``id`` is a positive integer.  Any deviation results in a ``400 Bad Request``.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    if raw is None:
+[?2004l[?2004h> +        return None
+[?2004l[?2004h> +    try:
+[?2004l[?2004h> +        text = base64.urlsafe_b64decode((raw + "=" * (-len(raw) % 4)).encode("ascii")).decode("ascii")
+[?2004l[?2004h> +    except (ValueError, binascii.Error, UnicodeError):
+[?2004l[?2004h> +        raise BadRequest("invalid cursor") from None
+[?2004l[?2004h> +    if "|" not in text:
+[?2004l[?2004h> +        raise BadRequest("invalid cursor")
+[?2004l[?2004h> +    ts, id_str = text.split("|", 1)
+[?2004l[?2004h> +    if not _TIMESTAMP.fullmatch(ts) or not _DIGITS.fullmatch(id_str):
+[?2004l[?2004h> +        raise BadRequest("invalid cursor")
+[?2004l[?2004h> +    return Cursor(created_at=ts, id=int(id_str))
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def paginate(con, columns, table, limit, cursor, where="", params=()):
+[?2004l[?2004h> +    """Retrieve one page of rows.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    ``con`` – SQLite connection.
+[?2004l[?2004h> +    ``columns`` – comma‑separated column list for the ``SELECT`` clause.
+[?2004l[?2004h> +    ``table`` – name of the table to query.
+[?2004l[?2004h> +    ``limit`` – maximum number of rows to return (already validated).
+[?2004l[?2004h> +    ``cursor`` – optional :class:`Cursor` indicating the last row seen.
+[?2004l[?2004h> +    ``where`` – additional SQL fragment (without ``WHERE``) for filtering.
+[?2004l[?2004h> +    ``params`` – parameters for the additional ``where`` fragment.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    Returns a tuple ``(rows, next_cursor)`` where ``next_cursor`` is ``None`` on the final page.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    clauses = [where] if where else []
+[?2004l[?2004h> +    args = list(params)
+[?2004l[?2004h> +    if cursor is not None:
+[?2004l[?2004h> +        # Keyset condition respecting the ordering (created_at DESC, id DESC).
+[?2004l[?2004h> +        # We need rows that are *earlier* than the cursor position:
+[?2004l[?2004h> +        #   created_at < cursor.created_at
+[?2004l[?2004h> +        #   OR (created_at = cursor.created_at AND id < cursor.id)
+[?2004l[?2004h> +        clauses.append("(created_at < ?) OR (created_at = ? AND id < ?)")
+[?2004l[?2004h> +        args.extend([cursor.created_at, cursor.created_at, cursor.id])
+[?2004l[?2004h> +    sql = f"SELECT {columns} FROM {table}"
+[?2004l[?2004h> +    if clauses:
+[?2004l[?2004h> +        sql += " WHERE " + " AND ".join(f"({c})" for c in clauses)
+[?2004l[?2004h> +    sql += " ORDER BY created_at DESC, id DESC LIMIT ?"
+[?2004l[?2004h> +    args.append(limit)
+[?2004l[?2004h> +    rows = con.execute(sql, args).fetchall()
+[?2004l[?2004h> +    next_cursor = encode_cursor(rows[-1]) if len(rows) == limit else None
+[?2004l[?2004h> +    return rows, next_cursor
+[?2004l[?2004h> +
+[?2004l[?2004h> +EOF
+[?2004l[?2004h> python - <<'PY'
+[?2004l[?2004h> import importlib, sys, os
+[?2004l[?2004h> sys.path.insert(0, os.getcwd())
+[?2004l[?2004h> mod = importlib.import_module('orders_service.pagination')
+[?2004l[?2004h> print('Cursor class:', mod.Cursor)
+[?2004l[?2004h> row = {'created_at': '2026-10-27T12:00:00Z', 'id': 123}
+[?2004l[?2004h> cur = mod.encode_cursor(row)
+[?2004l[?2004h> print('Encoded cursor:', cur)
+[?2004l[?2004h> print('Decoded:', mod.decode_cursor(cur))
+[?2004l[?2004h> PY
+[?2004l[?2004h> cat > orders_service/pagination.py <<'EOF'
+[?2004l[?2004h> """Keyset ("seek") pagination for order listings.
+[?2004l[?2004h> +
+[?2004l[?2004h> +The service switched from ``LIMIT/OFFSET`` to keyset pagination in 2025 (see
+[?2004l[?2004h> +PERF-87). A keyset page starts right after the last row the client has seen,
+[?2004l[?2004h> +so performance is constant regardless of depth and the result set does not
+[?2004l[?2004h> +shift when new rows are inserted.
+[?2004l[?2004h> +
+[?2004l[?2004h> +Listings are ordered **newest first** using ``created_at DESC, id DESC`` as
+[?2004l[?2004h> +documented in ``docs/API.md``. The cursor handed to clients is opaque: a
+[?2004l[?2004h> +base64‑url string that encodes the position of the last row on the page.
+[?2004l[?2004h> +
+[?2004l[?2004h> +Previously the cursor only stored ``created_at``. When multiple orders share the
+[?2004l[?2004h> +same timestamp (common because timestamps are second‑resolution) the next page
+[?2004l[?2004h> +used ``created_at < ?`` and inadvertently skipped the remaining rows with that
+[?2004l[?2004h> +timestamp. This caused missing orders during exports and API walks.
+[?2004l[?2004h> +
+[?2004l[?2004h> +The fix stores **both** ``created_at`` and ``id`` in the cursor and updates the
+[?2004l[?2004h> +SQL to respect the full ordering, eliminating the gap.
+[?2004l[?2004h> +"""
+[?2004l[?2004h> +
+[?2004l[?2004h> +import base64
+[?2004l[?2004h> +import binascii
+[?2004l[?2004h> +import re
+[?2004l[?2004h> +from collections import namedtuple
+[?2004l[?2004h> +
+[?2004l[?2004h> +from werkzeug.exceptions import BadRequest
+[?2004l[?2004h> +
+[?2004l[?2004h> +DEFAULT_LIMIT = 100
+[?2004l[?2004h> +MAX_LIMIT = 500
+[?2004l[?2004h> +
+[?2004l[?2004h> +_TIMESTAMP = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z")
+[?2004l[?2004h> +_DIGITS = re.compile(r"[0-9]{1,6}")
+[?2004l[?2004h> +
+[?2004l[?2004h> +# The cursor must contain both the timestamp and the primary‑key ``id`` to uniquely
+[?2004l[?2004h> +# identify the last row of a page.
+[?2004l[?2004h> +Cursor = namedtuple("Cursor", ["created_at", "id"])
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def parse_limit(raw):
+[?2004l[?2004h> +    """Parse the ``limit`` query parameter.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    Returns an integer between 1 and ``MAX_LIMIT``. If ``raw`` is ``None`` the
+[?2004l[?2004h> +    default limit is used.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    if raw is None:
+[?2004l[?2004h> +        return DEFAULT_LIMIT
+[?2004l[?2004h> +    if not _DIGITS.fullmatch(raw) or not 1 <= int(raw) <= MAX_LIMIT:
+[?2004l[?2004h> +        raise BadRequest(f"limit must be an integer from 1 to {MAX_LIMIT}")
+[?2004l[?2004h> +    return int(raw)
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def encode_cursor(row):
+[?2004l[?2004h> +    """Encode a cursor for the page after ``row``.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    The cursor is a base64‑url string containing ``"{created_at}|{id}"``. The
+[?2004l[?2004h> +    ``|`` separator is safe because timestamps never contain it and ids are
+[?2004l[?2004h> +    decimal numbers. Padding ``=`` characters are stripped for brevity.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    raw = f"{row['created_at']}|{row['id']}"
+[?2004l[?2004h> +    return base64.urlsafe_b64encode(raw.encode("ascii")).decode("ascii").rstrip("=")
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def decode_cursor(raw):
+[?2004l[?2004h> +    """Parse the ``cursor`` query parameter; ``None`` when absent.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    The decoded value must match ``"{timestamp}|{id}"`` where ``timestamp``
+[?2004l[?2004h> +    conforms to the ISO‑8601 format used by the API and ``id`` is a positive
+[?2004l[?2004h> +    integer. Any deviation results in a ``400 Bad Request``.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    if raw is None:
+[?2004l[?2004h> +        return None
+[?2004l[?2004h> +    try:
+[?2004l[?2004h> +        text = base64.urlsafe_b64decode((raw + "=" * (-len(raw) % 4)).encode("ascii")).decode("ascii")
+[?2004l[?2004h> +    except (ValueError, binascii.Error, UnicodeError):
+[?2004l[?2004h> +        raise BadRequest("invalid cursor") from None
+[?2004l[?2004h> +    if "|" not in text:
+[?2004l[?2004h> +        raise BadRequest("invalid cursor")
+[?2004l[?2004h> +    ts, id_str = text.split("|", 1)
+[?2004l[?2004h> +    if not _TIMESTAMP.fullmatch(ts) or not _DIGITS.fullmatch(id_str):
+[?2004l[?2004h> +        raise BadRequest("invalid cursor")
+[?2004l[?2004h> +    return Cursor(created_at=ts, id=int(id_str))
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def paginate(con, columns, table, limit, cursor, where="", params=()):
+[?2004l[?2004h> +    """Retrieve one page of rows.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    ``con`` – SQLite connection.
+[?2004l[?2004h> +    ``columns`` – comma‑separated column list for the ``SELECT`` clause.
+[?2004l[?2004h> +    ``table`` – name of the table to query.
+[?2004l[?2004h> +    ``limit`` – maximum number of rows to return (already validated).
+[?2004l[?2004h> +    ``cursor`` – optional :class:`Cursor` indicating the last row seen.
+[?2004l[?2004h> +    ``where`` – additional SQL fragment (without ``WHERE``) for filtering.
+[?2004l[?2004h> +    ``params`` – parameters for the additional ``where`` fragment.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    Returns a tuple ``(rows, next_cursor)`` where ``next_cursor`` is ``None`` on
+[?2004l[?2004h> +    the final page.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    clauses = [where] if where else []
+[?2004l[?2004h> +    args = list(params)
+[?2004l[?2004h> +    if cursor is not None:
+[?2004l[?2004h> +        # Keyset condition respecting the ordering (created_at DESC, id DESC).
+[?2004l[?2004h> +        # We need rows that are *earlier* than the cursor position:
+[?2004l[?2004h> +        #   created_at < cursor.created_at
+[?2004l[?2004h> +        #   OR (created_at = cursor.created_at AND id < cursor.id)
+[?2004l[?2004h> +        clauses.append("(created_at < ?) OR (created_at = ? AND id < ?)")
+[?2004l[?2004h> +        args.extend([cursor.created_at, cursor.created_at, cursor.id])
+[?2004l[?2004h> +    sql = f"SELECT {columns} FROM {table}"
+[?2004l[?2004h> +    if clauses:
+[?2004l[?2004h> +        sql += " WHERE " + " AND ".join(f"({c})" for c in clauses)
+[?2004l[?2004h> +    sql += " ORDER BY created_at DESC, id DESC LIMIT ?"
+[?2004l[?2004h> +    args.append(limit)
+[?2004l[?2004h> +    rows = con.execute(sql, args).fetchall()
+[?2004l[?2004h> +    next_cursor = encode_cursor(rows[-1]) if len(rows) == limit else None
+[?2004l[?2004h> +    return rows, next_cursor
+[?2004l[?2004h> +
+[?2004l[?2004h> +EOF
+[?2004l[?2004h> python - <<'PY'
+[?2004l[?2004h> import importlib, sys, os
+[?2004l[?2004h> sys.path.insert(0, os.getcwd())
+[?2004l[?2004h> mod = importlib.import_module('orders_service.pagination')
+[?2004l[?2004h> print('Cursor class:', mod.Cursor)
+[?2004l[?2004h> row = {'created_at': '2026-10-27T12:00:00Z', 'id': 123}
+[?2004l[?2004h> cur = mod.encode_cursor(row)
+[?2004l[?2004h> print('Encoded cursor:', cur)
+[?2004l[?2004h> print('Decoded:', mod.decode_cursor(cur))
+[?2004l[?2004h> PY
+[?2004l[?2004h> cat > orders_service/pagination.py <<'EOF'
+[?2004l[?2004h> """Keyset ("seek") pagination for order listings.
+[?2004l[?2004h> +
+[?2004l[?2004h> +The service switched from ``LIMIT/OFFSET`` to keyset pagination in 2025 (see
+[?2004l[?2004h> +PERF-87). A keyset page starts right after the last row the client has seen,
+[?2004l[?2004h> +so performance is constant regardless of depth and the result set does not
+[?2004l[?2004h> +shift when new rows are inserted.
+[?2004l[?2004h> +
+[?2004l[?2004h> +Listings are ordered **newest first** using ``created_at DESC, id DESC`` as
+[?2004l[?2004h> +documented in ``docs/API.md``. The cursor handed to clients is opaque: a
+[?2004l[?2004h> +base64‑url string that encodes the position of the last row on the page.
+[?2004l[?2004h> +
+[?2004l[?2004h> +Previously the cursor only stored ``created_at``. When multiple orders share the
+[?2004l[?2004h> +same timestamp (common because timestamps are second‑resolution) the next page
+[?2004l[?2004h> +used ``created_at < ?`` and inadvertently skipped the remaining rows with that
+[?2004l[?2004h> +timestamp. This caused missing orders during exports and API walks.
+[?2004l[?2004h> +
+[?2004l[?2004h> +The fix stores **both** ``created_at`` and ``id`` in the cursor and updates the
+[?2004l[?2004h> +SQL to respect the full ordering, eliminating the gap.
+[?2004l[?2004h> +"""
+[?2004l[?2004h> +
+[?2004l[?2004h> +import base64
+[?2004l[?2004h> +import binascii
+[?2004l[?2004h> +import re
+[?2004l[?2004h> +from collections import namedtuple
+[?2004l[?2004h> +
+[?2004l[?2004h> +from werkzeug.exceptions import BadRequest
+[?2004l[?2004h> +
+[?2004l[?2004h> +DEFAULT_LIMIT = 100
+[?2004l[?2004h> +MAX_LIMIT = 500
+[?2004l[?2004h> +
+[?2004l[?2004h> +_TIMESTAMP = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z")
+[?2004l[?2004h> +_DIGITS = re.compile(r"[0-9]{1,6}")
+[?2004l[?2004h> +
+[?2004l[?2004h> +# Cursor holds both timestamp and primary key to uniquely identify a page position.
+[?2004l[?2004h> +Cursor = namedtuple("Cursor", ["created_at", "id"])
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def parse_limit(raw):
+[?2004l[?2004h> +    """Parse the ``limit`` query parameter.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    Returns an integer between 1 and ``MAX_LIMIT``. If ``raw`` is ``None`` the
+[?2004l[?2004h> +    default limit is used.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    if raw is None:
+[?2004l[?2004h> +        return DEFAULT_LIMIT
+[?2004l[?2004h> +    if not _DIGITS.fullmatch(raw) or not 1 <= int(raw) <= MAX_LIMIT:
+[?2004l[?2004h> +        raise BadRequest(f"limit must be an integer from 1 to {MAX_LIMIT}")
+[?2004l[?2004h> +    return int(raw)
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def encode_cursor(row):
+[?2004l[?2004h> +    """Encode a cursor for the page after ``row``.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    The cursor is a base64‑url string containing ``"{created_at}|{id}"``.
+[?2004l[?2004h> +    Padding ``=`` characters are stripped for brevity.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    raw = f"{row['created_at']}|{row['id']}"
+[?2004l[?2004h> +    return base64.urlsafe_b64encode(raw.encode("ascii")).decode("ascii").rstrip("=")
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def decode_cursor(raw):
+[?2004l[?2004h> +    """Parse the ``cursor`` query parameter; ``None`` when absent.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    The decoded value must match ``"{timestamp}|{id}"`` where ``timestamp``
+[?2004l[?2004h> +    conforms to the ISO‑8601 format used by the API and ``id`` is a positive
+[?2004l[?2004h> +    integer. Invalid values raise ``BadRequest``.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    if raw is None:
+[?2004l[?2004h> +        return None
+[?2004l[?2004h> +    try:
+[?2004l[?2004h> +        text = base64.urlsafe_b64decode((raw + "=" * (-len(raw) % 4)).encode("ascii")).decode("ascii")
+[?2004l[?2004h> +    except (ValueError, binascii.Error, UnicodeError):
+[?2004l[?2004h> +        raise BadRequest("invalid cursor") from None
+[?2004l[?2004h> +    if "|" not in text:
+[?2004l[?2004h> +        raise BadRequest("invalid cursor")
+[?2004l[?2004h> +    ts, id_str = text.split("|", 1)
+[?2004l[?2004h> +    if not _TIMESTAMP.fullmatch(ts) or not _DIGITS.fullmatch(id_str):
+[?2004l[?2004h> +        raise BadRequest("invalid cursor")
+[?2004l[?2004h> +    return Cursor(created_at=ts, id=int(id_str))
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def paginate(con, columns, table, limit, cursor, where="", params=()):
+[?2004l[?2004h> +    """Retrieve one page of rows.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    ``con`` – SQLite connection.
+[?2004l[?2004h> +    ``columns`` – comma‑separated column list for the ``SELECT`` clause.
+[?2004l[?2004h> +    ``table`` – name of the table to query.
+[?2004l[?2004h> +    ``limit`` – maximum number of rows to return.
+[?2004l[?2004h> +    ``cursor`` – optional :class:`Cursor` indicating the last row seen.
+[?2004l[?2004h> +    ``where`` – additional SQL fragment (without ``WHERE``).
+[?2004l[?2004h> +    ``params`` – parameters for the additional ``where`` fragment.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    Returns ``(rows, next_cursor)`` where ``next_cursor`` is ``None`` on the final page.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    clauses = [where] if where else []
+[?2004l[?2004h> +    args = list(params)
+[?2004l[?2004h> +    if cursor is not None:
+[?2004l[?2004h> +        # keyset condition: rows earlier than the cursor position
+[?2004l[?2004h> +        clauses.append("(created_at < ?) OR (created_at = ? AND id < ?)")
+[?2004l[?2004h> +        args.extend([cursor.created_at, cursor.created_at, cursor.id])
+[?2004l[?2004h> +    sql = f"SELECT {columns} FROM {table}"
+[?2004l[?2004h> +    if clauses:
+[?2004l[?2004h> +        sql += " WHERE " + " AND ".join(f"({c})" for c in clauses)
+[?2004l[?2004h> +    sql += " ORDER BY created_at DESC, id DESC LIMIT ?"
+[?2004l[?2004h> +    args.append(limit)
+[?2004l[?2004h> +    rows = con.execute(sql, args).fetchall()
+[?2004l[?2004h> +    next_cursor = encode_cursor(rows[-1]) if len(rows) == limit else None
+[?2004l[?2004h> +    return rows, next_cursor
+[?2004l[?2004h> +
+[?2004l[?2004h> +EOF
+[?2004l[?2004h> python - <<'PY'
+[?2004l[?2004h> import importlib, sys, os
+[?2004l[?2004h> sys.path.insert(0, os.getcwd())
+[?2004l[?2004h> mod = importlib.import_module('orders_service.pagination')
+[?2004l[?2004h> print('Cursor class:', mod.Cursor)
+[?2004l[?2004h> row = {'created_at': '2026-10-27T12:00:00Z', 'id': 123}
+[?2004l[?2004h> cur = mod.encode_cursor(row)
+[?2004l[?2004h> print('Encoded cursor:', cur)
+[?2004l[?2004h> print('Decoded:', mod.decode_cursor(cur))
+[?2004l[?2004h> PY
+[?2004l[?2004h> cat > orders_service/pagination.py <<'EOF'
+[?2004ltr))
++
++
++def paginate(con, columns, table, limit, cursor, where="", params=()):
++    """Retrieve one page of rows.
++
++    ``con`` – SQLite connection.
++    ``columns`` – comma‑separated column list for the ``SELECT`` clause.
++    ``table`` – name of the table to query.
++    ``limit`` – maximum number of rows to return (already validated).
++    ``cursor`` – optional :class:`Cursor` indicating the last row seen.
++    ``where`` – additional SQL fragment (without ``WHERE``).
++    ``params`` – parameters for the additional ``where`` fragment.
++
++    Returns ``(rows, next_cursor)`` where ``next_cursor`` is ``None`` on the final page.
++    """
++    clauses = [where] if where else []
++    args = list(params)
++    if cursor is not None:
++        # keyset condition: rows earlier than the cursor position
++        clauses.append("(created_at < ?) OR (created_at = ? AND id < ?)")
++        args.extend([cursor.created_at, cursor.created_at, cursor.id])
++    sql = f"SELECT {columns} FROM {table}"
++    if clauses:
++        sql += " WHERE " + " AND ".[?2004h> """Keyset ("seek") pagination for order listings.
+[?2004l[?2004h> +
+[?2004l[?2004h> +The service switched from ``LIMIT/OFFSET`` to keyset pagination in 2025 (see
+[?2004l[?2004h> +PERF-87). A keyset page starts right after the last row the client has seen,
+[?2004l[?2004h> +so performance is constant regardless of depth and the result set does not
+[?2004l[?2004h> +shift when new rows are inserted.
+[?2004l[?2004h> +
+[?2004l[?2004h> +Listings are ordered **newest first** using ``created_at DESC, id DESC`` as
+[?2004l[?2004h> +documented in ``docs/API.md``. The cursor handed to clients is opaque: a
+[?2004l[?2004h> +base64‑url string that encodes the position of the last row on the page.
+[?2004l[?2004h> +
+[?2004l[?2004h> +Previously the cursor only stored ``created_at``. When multiple orders share the
+[?2004l[?2004h> +same timestamp (common because timestamps are second‑resolution) the next page
+[?2004l[?2004h> +used ``created_at < ?`` and inadvertently skipped the remaining rows with that
+[?2004l[?2004h> +timestamp. This caused missing orders during exports and API walks.
+[?2004l[?2004h> +
+[?2004l[?2004h> +The fix stores **both** ``created_at`` and ``id`` in the cursor and updates the
+[?2004l[?2004h> +SQL to respect the full ordering, eliminating the gap.
+[?2004l[?2004h> +"""
+[?2004l[?2004h> +
+[?2004l[?2004h> +import base64
+[?2004l[?2004h> +import binascii
+[?2004l[?2004h> +import re
+[?2004l[?2004h> +from collections import namedtuple
+[?2004l[?2004h> +
+[?2004l[?2004h> +from werkzeug.exceptions import BadRequest
+[?2004l[?2004h> +
+[?2004l[?2004h> +DEFAULT_LIMIT = 100
+[?2004l[?2004h> +MAX_LIMIT = 500
+[?2004l[?2004h> +
+[?2004l[?2004h> +_TIMESTAMP = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z")
+[?2004l[?2004h> +_DIGITS = re.compile(r"[0-9]{1,6}")
+[?2004l[?2004h> +
+[?2004l[?2004h> +# Cursor holds both timestamp and primary key to uniquely identify a page position.
+[?2004l[?2004h> +Cursor = namedtuple("Cursor", ["created_at", "id"])
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def parse_limit(raw):
+[?2004l[?2004h> +    """Parse the ``limit`` query parameter.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    Returns an integer between 1 and ``MAX_LIMIT``. If ``raw`` is ``None`` the default limit is used.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    if raw is None:
+[?2004l[?2004h> +        return DEFAULT_LIMIT
+[?2004l[?2004h> +    if not _DIGITS.fullmatch(raw) or not 1 <= int(raw) <= MAX_LIMIT:
+[?2004l[?2004h> +        raise BadRequest(f"limit must be an integer from 1 to {MAX_LIMIT}")
+[?2004l[?2004h> +    return int(raw)
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def encode_cursor(row):
+[?2004l[?2004h> +    """Encode a cursor for the page after ``row``.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    The cursor is a base64‑url string containing ``"{created_at}|{id}"``.
+[?2004l[?2004h> +    Padding ``=`` characters are stripped for brevity.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    raw = f"{row['created_at']}|{row['id']}"
+[?2004l[?2004h> +    return base64.urlsafe_b64encode(raw.encode("ascii")).decode("ascii").rstrip("=")
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def decode_cursor(raw):
+[?2004l[?2004h> +    """Parse the ``cursor`` query parameter; ``None`` when absent.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    The decoded value must match ``"{timestamp}|{id}"`` where ``timestamp``
+[?2004l[?2004h> +    conforms to the ISO‑8601 format used by the API and ``id`` is a positive integer.
+[?2004l[?2004h> +    Invalid values raise ``BadRequest``.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    if raw is None:
+[?2004l[?2004h> +        return None
+[?2004l[?2004h> +    try:
+[?2004l[?2004h> +        text = base64.urlsafe_b64decode((raw + "=" * (-len(raw) % 4)).encode("ascii")).decode("ascii")
+[?2004l[?2004h> +    except (ValueError, binascii.Error, UnicodeError):
+[?2004l[?2004h> +        raise BadRequest("invalid cursor") from None
+[?2004l[?2004h> +    if "|" not in text:
+[?2004l[?2004h> +        raise BadRequest("invalid cursor")
+[?2004l[?2004h> +    ts, id_str = text.split("|", 1)
+[?2004l[?2004h> +    if not _TIMESTAMP.fullmatch(ts) or not _DIGITS.fullmatch(id_str):
+[?2004l[?2004h> +        raise BadRequest("invalid cursor")
+[?2004l[?2004h> +    return Cursor(created_at=ts, id=int(id_str))
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def paginate(con, columns, table, limit, cursor, where="", params=()):
+[?2004l[?2004h> +    """Retrieve one page of rows.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    ``con`` – SQLite connection.
+[?2004l[?2004h> +    ``columns`` – comma‑separated column list for the ``SELECT`` clause.
+[?2004l[?2004h> +    ``table`` – name of the table to query.
+[?2004l[?2004h> +    ``limit`` – maximum number of rows to return (already validated).
+[?2004l[?2004h> +    ``cursor`` – optional :class:`Cursor` indicating the last row seen.
+[?2004l[?2004h> +    ``where`` – additional SQL fragment (without ``WHERE``).
+[?2004l[?2004h> +    ``params`` – parameters for the additional ``where`` fragment.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    Returns ``(rows, next_cursor)`` where ``next_cursor`` is ``None`` on the final page.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    clauses = [where] if where else []
+[?2004l[?2004h> +    args = list(params)
+[?2004l[?2004h> +    if cursor is not None:
+[?2004l[?2004h> +        # keyset condition: rows earlier than the cursor position
+[?2004l[?2004h> +        clauses.append("(created_at < ?) OR (created_at = ? AND id < ?)")
+[?2004l[?2004h> +        args.extend([cursor.created_at, cursor.created_at, cursor.id])
+[?2004l[?2004h> +    sql = f"SELECT {columns} FROM {table}"
+[?2004l[?2004h> +    if clauses:
+[?2004l[?2004h> +        sql += " WHERE " + " AND ".join(f"({c})" for c in clauses)
+[?2004l[?2004h> +    sql += " ORDER BY created_at DESC, id DESC LIMIT ?"
+[?2004l[?2004h> +    args.append(limit)
+[?2004l[?2004h> +    rows = con.execute(sql, args).fetchall()
+[?2004l[?2004h> +    next_cursor = encode_cursor(rows[-1]) if len(rows) == limit else None
+[?2004l[?2004h> +    return rows, next_cursor
+[?2004l[?2004h> +
+[?2004l[?2004h> +EOF
+[?2004l[?2004h> python - <<'PY'
+[?2004l[?2004h> import importlib, sys, os
+[?2004l[?2004h> sys.path.insert(0, os.getcwd())
+[?2004l[?2004h> mod = importlib.import_module('orders_service.pagination')
+[?2004l[?2004h> print('Cursor class:', mod.Cursor)
+[?2004l[?2004h> row = {'created_at': '2026-10-27T12:00:00Z', 'id': 123}
+[?2004l[?2004h> cur = mod.encode_cursor(row)
+[?2004l[?2004h> print('Encoded cursor:', cur)
+[?2004l[?2004h> print('Decoded:', mod.decode_cursor(cur))
+[?2004l[?2004h> PY
+[?2004l[?2004h> cat > orders_service/pagination.py <<'EOF'
+[?2004l[?2004h> """Keyset ("seek") pagination for order listings.
+[?2004l[?2004h> +
+[?2004l[?2004h> +The service switched from ``LIMIT/OFFSET`` to keyset pagination in 2025 (see
+[?2004l[?2004h> +PERF-87). A keyset page starts right after the last row the client has seen,
+[?2004l[?2004h> +so performance is constant regardless of depth and the result set does not
+[?2004l[?2004h> +shift when new rows are inserted.
+[?2004l[?2004h> +
+[?2004l[?2004h> +Listings are ordered **newest first** using ``created_at DESC, id DESC`` as
+[?2004l[?2004h> +documented in ``docs/API.md``. The cursor handed to clients is opaque: a
+[?2004l[?2004h> +base64‑url string that encodes the position of the last row on the page.
+[?2004l[?2004h> +
+[?2004l[?2004h> +Previously the cursor only stored ``created_at``. When multiple orders share the
+[?2004l[?2004h> +same timestamp (common because timestamps are second‑resolution) the next page
+[?2004l[?2004h> +used ``created_at < ?`` and inadvertently skipped the remaining rows with that
+[?2004l[?2004h> +timestamp. This caused missing orders during exports and API walks.
+[?2004l[?2004h> +
+[?2004l[?2004h> +The fix stores **both** ``created_at`` and ``id`` in the cursor and updates the
+[?2004l[?2004h> +SQL to respect the full ordering, eliminating the gap.
+[?2004l[?2004h> +"""
+[?2004l[?2004h> +
+[?2004l[?2004h> +import base64
+[?2004l[?2004h> +import binascii
+[?2004l[?2004h> +import re
+[?2004l[?2004h> +from collections import namedtuple
+[?2004l[?2004h> +
+[?2004l[?2004h> +from werkzeug.exceptions import BadRequest
+[?2004l[?2004h> +
+[?2004l[?2004h> +DEFAULT_LIMIT = 100
+[?2004l[?2004h> +MAX_LIMIT = 500
+[?2004l[?2004h> +
+[?2004l[?2004h> +_TIMESTAMP = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z")
+[?2004l[?2004h> +_DIGITS = re.compile(r"[0-9]{1,6}")
+[?2004l[?2004h> +
+[?2004l[?2004h> +# Cursor holds both timestamp and primary key to uniquely identify a page position.
+[?2004l[?2004h> +Cursor = namedtuple("Cursor", ["created_at", "id"])
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def parse_limit(raw):
+[?2004l[?2004h> +    """Parse the ``limit`` query parameter.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    Returns an integer between 1 and ``MAX_LIMIT``. If ``raw`` is ``None`` the default limit is used.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    if raw is None:
+[?2004l[?2004h> +        return DEFAULT_LIMIT
+[?2004l[?2004h> +    if not _DIGITS.fullmatch(raw) or not 1 <= int(raw) <= MAX_LIMIT:
+[?2004l[?2004h> +        raise BadRequest(f"limit must be an integer from 1 to {MAX_LIMIT}")
+[?2004l[?2004h> +    return int(raw)
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def encode_cursor(row):
+[?2004l[?2004h> +    """Encode a cursor for the page after ``row``.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    The cursor is a base64‑url string containing ``"{created_at}|{id}"``.
+[?2004l[?2004h> +    Padding ``=`` characters are stripped for brevity.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    raw = f"{row['created_at']}|{row['id']}"
+[?2004l[?2004h> +    return base64.urlsafe_b64encode(raw.encode("ascii")).decode("ascii").rstrip("=")
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def decode_cursor(raw):
+[?2004l[?2004h> +    """Parse the ``cursor`` query parameter; ``None`` when absent.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    The decoded value must match ``"{timestamp}|{id}"`` where ``timestamp``
+[?2004l[?2004h> +    conforms to the ISO‑8601 format used by the API and ``id`` is a positive integer.
+[?2004l[?2004h> +    Invalid values raise ``BadRequest``.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    if raw is None:
+[?2004l[?2004h> +        return None
+[?2004l[?2004h> +    try:
+[?2004l[?2004h> +        text = base64.urlsafe_b64decode((raw + "=" * (-len(raw) % 4)).encode("ascii")).decode("ascii")
+[?2004l[?2004h> +    except (ValueError, binascii.Error, UnicodeError):
+[?2004l[?2004h> +        raise BadRequest("invalid cursor") from None
+[?2004l[?2004h> +    if "|" not in text:
+[?2004l[?2004h> +        raise BadRequest("invalid cursor")
+[?2004l[?2004h> +    ts, id_str = text.split("|", 1)
+[?2004l[?2004h> +    if not _TIMESTAMP.fullmatch(ts) or not _DIGITS.fullmatch(id_str):
+[?2004l[?2004h> +        raise BadRequest("invalid cursor")
+[?2004l[?2004h> +    return Cursor(created_at=ts, id=int(id_str))
+[?2004l[?2004h> +
+[?2004l[?2004h> +
+[?2004l[?2004h> +def paginate(con, columns, table, limit, cursor, where="", params=()):
+[?2004l[?2004h> +    """Retrieve one page of rows.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    ``con`` – SQLite connection.
+[?2004l[?2004h> +    ``columns`` – comma‑separated column list for the ``SELECT`` clause.
+[?2004l[?2004h> +    ``table`` – name of the table to query.
+[?2004l[?2004h> +    ``limit`` – maximum number of rows to return (already validated).
+[?2004l[?2004h> +    ``cursor`` – optional :class:`Cursor` indicating the last row seen.
+[?2004l[?2004h> +    ``where`` – additional SQL fragment (without ``WHERE``).
+[?2004l[?2004h> +    ``params`` – parameters for the additional ``where`` fragment.
+[?2004l[?2004h> +
+[?2004l[?2004h> +    Returns ``(rows, next_cursor)`` where ``next_cursor`` is ``None`` on the final page.
+[?2004l[?2004h> +    """
+[?2004l[?2004h> +    clauses = [where] if where else []
+[?2004l[?2004h> +    args = list(params)
+[?2004l[?2004h> +    if cursor is not None:
+[?2004l[?2004h> +        # keyset condition: rows earlier than the cursor position
+[?2004l[?2004h> +        clauses.append("(created_at < ?) OR (created_at = ? AND id < ?)")
+[?2004l[?2004h> +        args.extend([cursor.created_at, cursor.created_at, cursor.id])
+[?2004l[?2004h> +    sql = f"SELECT {columns} FROM {table}"
+[?2004l[?2004h> +    if clauses:
+[?2004l[?2004h> +        sql += " WHERE " + " AND ".join(f"({c})" for c in clauses)
+[?2004l[?2004h> +    sql += " ORDER BY created_at DESC, id DESC LIMIT ?"
+[?2004l[?2004h> +    args.append(limit)
+[?2004l[?2004h> +    rows = con.execute(sql, args).fetchall()
+[?2004l[?2004h> +    next_cursor = encode_cursor(rows[-1]) if len(rows) == limit else None
+[?2004l[?2004h> +    return rows, next_cursor
+[?2004l[?2004h> +
+[?2004l[?2004h> +EOF
+[?2004l[?2004h> python - <<'PY'
+[?2004l[?2004h> import importlib, sys, os
+[?2004l[?2004h> sys.path.insert(0, os.getcwd())
+[?2004l[?2004h> mod = importlib.import_module('orders_service.pagination')
+[?2004l[?2004h> print('Cursor class:', mod.Cursor)
+[?2004l[?2004h> row = {'created_at': '2026-10-27T12:00:00Z', 'id': 123}
+[?2004l[?2004h> cur = mod.encode_cursor(row)
+[?2004l[?2004h> print('Encoded cursor:', cur)
+[?2004l[?2004h> print('Decoded:', mod.decode_cursor(cur))
+[?2004l[?2004h> PY
+[?2004l[?2004h> cat > orders_service/pagination.py <<'EOF'
+[?2004l[?2004h> """Keyset ("seek") pagination for order listings.
+[?2004l[?2004h> +
+[?2004l[?2004h> +The service switched from ``LIMIT/OFFSET`` to keyset pagination in 2025 (see
+[?2004l[?2004h> +PERF-87). A keyset page starts right after the last row the client has seen,
+[?2004l[?2004h> +so performance is constant regardless of depth and the result set does not
+[?2004l[?2004h> +shift when new rows are inserted.
+[?2004l[?2004h> +
+[?2004l[?2004h> +Listings are ordered **newest first** using ``created_at DESC, id DESC`` as
+[?2004l[?2004h> +documented in ``docs/API.md``. The cursor handed to clients is opaque: a
+[?2004l[?2004h> +base64‑url string that encodes the position of the last row on the page.
+[?2004l[?2004h> +
+[?2004l[?2004h> +Previously the cursor only stored ``created_at``. When multiple orders share the
+[?2004l[?2004h> +same timestamp (common because timestamps are second‑resolution) the next page
+[?2004l[?2004h> +used ``created_at < ?`` and inadvertently skipped the remaining rows with that
+[?2004l[?2004h> +timestamp. This caused missing orders during exports and API walks.
+[?2004l[?2004h> +
+[?2004l[?2004h> +The fix stores **both** ``created_at`` and ``id`` in the cursor and updates the
+[?2004l[?2004h> +SQL to respect the full ordering, eliminating the gap.
+[?2004l[?2004h> +"""
+[?2004l[?2004h> 
+[?2004l[?2004h> import base64
+[?2004l[?2004h> import binascii
+[?2004l[?2004h> import re
+[?2004l[?2004h> from collections import namedtuple
+[?2004l[?2004h> 
+[?2004l[?2004h> from werkzeug.exceptions import BadRequest
+[?2004l[?2004h> 
+[?2004l[?2004h> DEFAULT_LIMIT = 100
+[?2004l[?2004h> MAX_LIMIT = 500
+[?2004l[?2004h> 
+[?2004l[?2004h> _TIMESTAMP = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z")
+[?2004l[?2004h> _DIGITS = re.compile(r"[0-9]{1,6}")
+[?2004l[?2004h> 
+[?2004l[?2004h> # Cursor holds both timestamp and primary key to uniquely identify a page position.
+[?2004l[?2004h> Cursor = namedtuple("Cursor", ["created_at", "id"])
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def parse_limit(raw):
+[?2004l[?2004h>     if raw is None:
+[?2004l[?2004h>         return DEFAULT_LIMIT
+[?2004l[?2004h>     if not _DIGITS.fullmatch(raw) or not 1 <= int(raw) <= MAX_LIMIT:
+[?2004l[?2004h>         raise BadRequest(f"limit must be an integer from 1 to {MAX_LIMIT}")
+[?2004l[?2004h>     return int(raw)
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def encode_cursor(row):
+[?2004l[?2004h>     raw = f"{row['created_at']}|{row['id']}"
+[?2004l[?2004h>     return base64.urlsafe_b64encode(raw.encode("ascii")).decode("ascii").rstrip("=")
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def decode_cursor(raw):
+[?2004l[?2004h>     if raw is None:
+[?2004l[?2004h>         return None
+[?2004l[?2004h>     try:
+[?2004l[?2004h>         text = base64.urlsafe_b64decode((raw + "=" * (-len(raw) % 4)).encode("ascii")).decode("ascii")
+[?2004l[?2004h>     except (ValueError, binascii.Error, UnicodeError):
+[?2004l[?2004h>         raise BadRequest("invalid cursor") from None
+[?2004l[?2004h>     if "|" not in text:
+[?2004l[?2004h>         raise BadRequest("invalid cursor")
+[?2004l[?2004h>     ts, id_str = text.split("|", 1)
+[?2004l[?2004h>     if not _TIMESTAMP.fullmatch(ts) or not _DIGITS.fullmatch(id_str):
+[?2004l[?2004h>         raise BadRequest("invalid cursor")
+[?2004l[?2004h>     return Cursor(created_at=ts, id=int(id_str))
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def paginate(con, columns, table, limit, cursor, where="", params=()):
+[?2004l[?2004h>     clauses = [where] if where else []
+[?2004l[?2004h>     args = list(params)
+[?2004l[?2004h>     if cursor is not None:
+[?2004l[?2004h>         clauses.append("(created_at < ?) OR (created_at = ? AND id < ?)")
+[?2004l[?2004h>         args.extend([cursor.created_at, cursor.created_at, cursor.id])
+[?2004l[?2004h>     sql = f"SELECT {columns} FROM {table}"
+[?2004l[?2004h>     if clauses:
+[?2004l[?2004h>         sql += " WHERE " + " AND ".join(f"({c})" for c in clauses)
+[?2004l[?2004h>     sql += " ORDER BY created_at DESC, id DESC LIMIT ?"
+[?2004l[?2004h>     args.append(limit)
+[?2004l[?2004h>     rows = con.execute(sql, args).fetchall()
+[?2004l[?2004h>     next_cursor = encode_cursor(rows[-1]) if len(rows) == limit else None
+[?2004l[?2004h>     return rows, next_cursor
+[?2004l[?2004h> 
+[?2004l[?2004h> EOF
+[?2004l[?2004hroot@8cbee267-0bfa-4ff7-a2a6-cad9c8cee69f:/app# python - <<'PY'
+[?2004l[?2004h> import importlib, sys, os
+[?2004l[?2004h> sys.path.insert(0, os.getcwd())
+[?2004l[?2004h> mod = importlib.import_module('orders_service.pagination')
+[?2004l[?2004h> print('Cursor class:', mod.Cursor)
+[?2004l[?2004h> row = {'created_at': '2026-10-27T12:00:00Z', 'id': 123}
+[?2004l[?2004h> cur = mod.encode_cursor(row)
+[?2004l[?2004h> print('Encoded cursor:', cur)
+[?2004l[?2004h> print('Decoded:', mod.decode_cursor(cur))
+[?2004l[?2004h> PY
+[?2004lTraceback (most recent call last):
+  File "<stdin>", line 3, in <module>
+  File "/usr/local/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1310, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/app/orders_service/__init__.py", line 2, in <module>
+    from .app import create_app
+  File "/app/orders_service/app.py", line 5, in <module>
+    from . import db, pagination, queries
+  File "/app/orders_service/pagination.py", line 20
+    +
+     ^
+SyntaxError: invalid syntax
+[?2004hroot@8cbee267-0bfa-4ff7-a2a6-cad9c8cee69f:/app# cat > orders_service/pagination.py <<'EOF'
+[?2004l[?2004h> """Keyset ("seek") pagination for order listings.
+[?2004l[?2004h> +
+[?2004l[?2004h> +The service switched from ``LIMIT/OFFSET`` to keyset pagination in 2025 (see
+[?2004l[?2004h> +PERF-87). A keyset page starts right after the last row the client has seen,
+[?2004l[?2004h> +so performance is constant regardless of depth and the result set does not
+[?2004l[?2004h> +shift when new rows are inserted.
+[?2004l[?2004h> +
+[?2004l[?2004h> +Listings are ordered **newest first** using ``created_at DESC, id DESC`` as
+[?2004l[?2004h> +documented in ``docs/API.md``. The cursor handed to clients is opaque: a
+[?2004l[?2004h> +base64‑url string that encodes the position of the last row on the page.
+[?2004l[?2004h> +
+[?2004l[?2004h> +Previously the cursor only stored ``created_at``. When multiple orders share the
+[?2004l[?2004h> +same timestamp (common because timestamps are second‑resolution) the next page
+[?2004l[?2004h> +used ``created_at < ?`` and inadvertently skipped the remaining rows with that
+[?2004l[?2004h> +timestamp. This caused missing orders during exports and API walks.
+[?2004l[?2004h> +
+[?2004l[?2004h> +The fix stores **both** ``created_at`` and ``id`` in the cursor and updates the
+[?2004l[?2004h> +SQL to respect the full ordering, eliminating the gap.
+[?2004l[?2004h> +"""
+[?2004l[?2004h> 
+[?2004l[?2004h> import base64
+[?2004l[?2004h> import binascii
+[?2004l[?2004h> import re
+[?2004l[?2004h> from collections import namedtuple
+[?2004l[?2004h> 
+[?2004l[?2004h> from werkzeug.exceptions import BadRequest
+[?2004l[?2004h> 
+[?2004l[?2004h> DEFAULT_LIMIT = 100
+[?2004l[?2004h> MAX_LIMIT = 500
+[?2004l[?2004h> 
+[?2004l[?2004h> _TIMESTAMP = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z")
+[?2004l[?2004h> _DIGITS = re.compile(r"[0-9]{1,6}")
+[?2004l[?2004h> 
+[?2004l[?2004h> # Cursor holds both timestamp and primary key to uniquely identify a page position.
+[?2004l[?2004h> Cursor = namedtuple("Cursor", ["created_at", "id"])
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def parse_limit(raw):
+[?2004l[?2004h>     if raw is None:
+[?2004l[?2004h>         return DEFAULT_LIMIT
+[?2004l[?2004h>     if not _DIGITS.fullmatch(raw) or not 1 <= int(raw) <= MAX_LIMIT:
+[?2004l[?2004h>         raise BadRequest(f"limit must be an integer from 1 to {MAX_LIMIT}")
+[?2004l[?2004h>     return int(raw)
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def encode_cursor(row):
+[?2004l[?2004h>     raw = f"{row['created_at']}|{row['id']}"
+[?2004l[?2004h>     return base64.urlsafe_b64encode(raw.encode("ascii")).decode("ascii").rstrip("=")
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def decode_cursor(raw):
+[?2004l[?2004h>     if raw is None:
+[?2004l[?2004h>         return None
+[?2004l[?2004h>     try:
+[?2004l[?2004h>         text = base64.urlsafe_b64decode((raw + "=" * (-len(raw) % 4)).encode("ascii")).decode("ascii")
+[?2004l[?2004h>     except (ValueError, binascii.Error, UnicodeError):
+[?2004l[?2004h>         raise BadRequest("invalid cursor") from None
+[?2004l[?2004h>     if "|" not in text:
+[?2004l[?2004h>         raise BadRequest("invalid cursor")
+[?2004l[?2004h>     ts, id_str = text.split("|", 1)
+[?2004l[?2004h>     if not _TIMESTAMP.fullmatch(ts) or not _DIGITS.fullmatch(id_str):
+[?2004l[?2004h>         raise BadRequest("invalid cursor")
+[?2004l[?2004h>     return Cursor(created_at=ts, id=int(id_str))
+[?2004l[?2004h> 
+[?2004l[?2004h> 
+[?2004l[?2004h> def paginate(con, columns, table, limit, cursor, where="", params=()):
+[?2004l[?2004h>     clauses = [where] if where else []
+[?2004l[?2004h>     args = list(params)
+[?2004l[?2004h>     if cursor is not None:
+[?2004l[?2004h>         # keyset condition: rows earlier than the cursor position
+[?2004l[?2004h>         clauses.append("(created_at < ?) OR (created_at = ? AND id < ?)")
+[?2004l[?2004h>         args.extend([cursor.created_at, cursor.created_at, cursor.id])
+[?2004l[?2004h>     sql = f"SELECT {columns} FROM {table}"
+[?2004l[?2004h>     if clauses:
+[?2004l[?2004h>         sql += " WHERE " + " AND ".join(f"({c})" for c in clauses)
+[?2004l[?2004h>     sql += " ORDER BY created_at DESC, id DESC LIMIT ?"
+[?2004l[?2004h>     args.append(limit)
+[?2004l[?2004h>     rows = con.execute(sql, args).fetchall()
+[?2004l[?2004h>     next_cursor = encode_cursor(rows[-1]) if len(rows) == limit else None
+[?2004l[?2004h>     return rows, next_cursor
+[?2004l[?2004h> 
+[?2004l[?2004h> EOF
+[?2004l[?2004hroot@8cbee267-0bfa-4ff7-a2a6-cad9c8cee69f:/app# python - <<'PY'
+[?2004l[?2004h> import importlib, sys, os
+[?2004l[?2004h> sys.path.insert(0, os.getcwd())
+[?2004l[?2004h> mod = importlib.import_module('orders_service.pagination')
+[?2004l[?2004h> print('Cursor class:', mod.Cursor)
+[?2004l[?2004h> row = {'created_at': '2026-10-27T12:00:00Z', 'id': 123}
+[?2004l[?2004h> cur = mod.encode_cursor(row)
+[?2004l[?2004h> print('Encoded cursor:', cur)
+[?2004l[?2004h> print('Decoded:', mod.decode_cursor(cur))
+[?2004l[?2004h> PY
+[?2004lCursor class: <class 'orders_service.pagination.Cursor'>
+Encoded cursor: MjAyNi0xMC0yN1QxMjowMDowMFp8MTIz
+Decoded: Cursor(created_at='2026-10-27T12:00:00Z', id=123)
+[?2004hroot@8cbee267-0bfa-4ff7-a2a6-cad9c8cee69f:/app# pytest -q
+[?2004l
+============================================================================ ERRORS ============================================================================
+[31m[1m______________________________________________________________ ERROR collecting tests/test_api.py ______________________________________________________________[0m
+[31mImportError while importing test module '/app/tests/test_api.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_api.py:8: in <module>
+    from orders_service import create_app
+E   ModuleNotFoundError: No module named 'orders_service'[0m
+[36m[1m=================================================================== short test summary info ====================================================================[0m
+[31mERROR[0m tests/test_api.py
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[31m[31m[1m1 error[0m[31m in 0.09s[0m[0m
+[?2004hroot@8cbee267-0bfa-4ff7-a2a6-cad9c8cee69f:/app# cat orders_service/__init__.py
+[?2004l"""Orders API: read-only HTTP access to the merchant's orders database (see docs/API.md)."""
+from .app import create_app
+
+__all__ = ["create_app"]
+[?2004hroot@8cbee267-0bfa-4ff7-a2a6-cad9c8cee69f:/app# cat > sitecustomize.py <<'EOF'
+[?2004l[?2004h> import os, sys
+[?2004l[?2004h> # Ensure the project root is on the Python path
+[?2004l[?2004h> project_root = os.path.abspath(os.path.dirname(__file__))
+[?2004l[?2004h> if project_root not in sys.path:
+[?2004l[?2004h>     sys.path.insert(0, project_root)
+[?2004l[?2004h> EOF
+[?2004l[?2004hroot@8cbee267-0bfa-4ff7-a2a6-cad9c8cee69f:/app# pytest -q
+[?2004l
+============================================================================ ERRORS ============================================================================
+[31m[1m______________________________________________________________ ERROR collecting tests/test_api.py ______________________________________________________________[0m
+[31mImportError while importing test module '/app/tests/test_api.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_api.py:8: in <module>
+    from orders_service import create_app
+E   ModuleNotFoundError: No module named 'orders_service'[0m
+[36m[1m=================================================================== short test summary info ====================================================================[0m
+[31mERROR[0m tests/test_api.py
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[31m[31m[1m1 error[0m[31m in 0.07s[0m[0m
+[?2004hroot@8cbee267-0bfa-4ff7-a2a6-cad9c8cee69f:/app# sed -n '1,200p' tests/test_api.py
+[?2004l"""API tests for the orders service (run from /app: python -m pytest -q tests).
+
+Each test builds a small database in a temporary folder and talks to the app through Flask's test client."""
+import sqlite3
+
+import pytest
+
+from orders_service import create_app
+
+SCHEMA = """
+CREATE TABLE customers (id INTEGER PRIMARY KEY, name TEXT NOT NULL, email TEXT NOT NULL, segment TEXT NOT NULL,
+                        created_at TEXT NOT NULL);
+CREATE TABLE orders (id INTEGER PRIMARY KEY AUTOINCREMENT, customer_id INTEGER NOT NULL REFERENCES customers(id),
+                     created_at TEXT NOT NULL, status TEXT NOT NULL, total_cents INTEGER NOT NULL,
+                     currency TEXT NOT NULL, channel TEXT NOT NULL);
+CREATE INDEX orders_created_at ON orders(created_at);
+CREATE INDEX orders_customer ON orders(customer_id, created_at);
+"""
+
+
+def make_db(path, n_orders=57):
+    con = sqlite3.connect(path)
+    con.executescript(SCHEMA)
+    con.executemany("INSERT INTO customers VALUES (?, ?, ?, ?, ?)",
+                    [(c, f"Customer {c}", f"c{c}@example.org", "retail", "2025-01-01T00:00:00Z") for c in (1, 2, 3)])
+    rows = []
+    for i in range(1, n_orders + 1):
+        minute, second = divmod(i * 7, 60)
+        rows.append((i, 1 + i % 2, f"2026-03-01T10:{minute:02d}:{second:02d}Z", "paid", 1000 + i, "USD", "web"))
+    con.executemany("INSERT INTO orders VALUES (?, ?, ?, ?, ?, ?, ?)", rows)
+    con.commit()
+    con.close()
+    return rows
+
+
+@pytest.fixture()
+def client(tmp_path):
+    db = tmp_path / "orders.db"
+    make_db(db)
+    return create_app(str(db)).test_client()
+
+
+def walk(client, path, limit):
+    out, cursor = [], None
+    for _ in range(1000):
+        q = {"limit": limit} if cursor is None else {"limit": limit, "cursor": cursor}
+        body = client.get(path, query_string=q).get_json()
+        out += body["orders"]
+        cursor = body["next_cursor"]
+        if cursor is None:
+            return out
+    raise AssertionError("too many pages")
+
+
+def test_count(client):
+    assert client.get("/orders/count").get_json() == {"count": 57}
+
+
+def test_get_order(client):
+    assert client.get("/orders/5").get_json() == {"id": 5, "customer_id": 2, "created_at": "2026-03-01T10:00:35Z",
+                                                  "status": "paid", "total_cents": 1005, "currency": "USD"}
+    assert client.get("/orders/999").status_code == 404
+
+
+def test_first_page_newest_first(client):
+    body = client.get("/orders").get_json()
+    assert [o["id"] for o in body["orders"]] == list(range(57, 0, -1))
+    assert body["next_cursor"] is None
+
+
+@pytest.mark.parametrize("limit", [1, 5, 10, 57, 100])
+def test_walk_returns_every_order_once(client, limit):
+    ids = [o["id"] for o in walk(client, "/orders", limit)]
+    assert ids == list(range(57, 0, -1))
+
+
+def test_customer_orders(client):
+    ids = [o["id"] for o in walk(client, "/customers/1/orders", 4)]
+    assert ids == [i for i in range(57, 0, -1) if i % 2 == 0]
+    assert client.get("/customers/3/orders").get_json() == {"orders": [], "next_cursor": None}
+    assert client.get("/customers/42/orders").status_code == 404
+
+
+@pytest.mark.parametrize("query", ["limit=0", "limit=501", "limit=-1", "limit=ten", "cursor=not-a-cursor"])
+def test_bad_parameters(client, query):
+    assert client.get(f"/orders?{query}").status_code == 400
+[?2004hroot@8cbee267-0bfa-4ff7-a2a6-cad9c8cee69f:/app# pytest -q
+[?2004l
+============================================================================ ERRORS ============================================================================
+[31m[1m______________________________________________________________ ERROR collecting tests/test_api.py ______________________________________________________________[0m
+[31mImportError while importing test module '/app/tests/test_api.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_api.py:8: in <module>
+    from orders_service import create_app
+E   ModuleNotFoundError: No module named 'orders_service'[0m
+[36m[1m=================================================================== short test summary info ====================================================================[0m
+[31mERROR[0m tests/test_api.py
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[31m[31m[1m1 error[0m[31m in 0.08s[0m[0m
+[?2004hroot@8cbee267-0bfa-4ff7-a2a6-cad9c8cee69f:/app# cat > tests/__init__.py <<'EOF'
+[?2004l[?2004h> import os, sys
+[?2004l[?2004h> # Ensure the project root (parent of this directory) is on the Python path
+[?2004l[?2004h> project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+[?2004l[?2004h> if project_root not in sys.path:
+[?2004l[?2004h>     sys.path.insert(0, project_root)
+[?2004l[?2004h> EOF
+[?2004l[?2004hroot@8cbee267-0bfa-4ff7-a2a6-cad9c8cee69f:/app# pytest -q
+[?2004l[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m                                                                                                                                           [100%][0m
+[32m[32m[1m14 passed[0m[32m in 0.25s[0m[0m
+[?2004hroot@8cbee267-0bfa-4ff7-a2a6-cad9c8cee69f:/app# 

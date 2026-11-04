@@ -1,0 +1,191 @@
+{
+    "id": "3040d378-f181-424e-bfaf-2c735f832371",
+    "task_name": "diffuse-labs/et0-station-ingest",
+    "trial_name": "et0-station-ingest__wKcgixc",
+    "trial_uri": "file://<submission>/jobs/agent-trials/et0-station-ingest-terminus2-gptoss120b-m1-2/et0-station-ingest__wKcgixc",
+    "task_id": {
+        "path": "<submission>/tasks/et0-station-ingest"
+    },
+    "source": null,
+    "task_checksum": "255c5eeb57732512bd9928381ce5ca441a7991ad48f379e51541a5278d6692e9",
+    "config": {
+        "task": {
+            "path": "<submission>/tasks/et0-station-ingest",
+            "git_url": null,
+            "git_commit_id": null,
+            "name": null,
+            "ref": null,
+            "overwrite": false,
+            "download_dir": null,
+            "source": null
+        },
+        "trial_name": "et0-station-ingest__wKcgixc",
+        "trials_dir": "<submission>/jobs/agent-trials/et0-station-ingest-terminus2-gptoss120b-m1-2",
+        "install_only": false,
+        "timeout_multiplier": 1.0,
+        "agent_timeout_multiplier": null,
+        "verifier_timeout_multiplier": null,
+        "agent_setup_timeout_multiplier": null,
+        "environment_build_timeout_multiplier": 3.0,
+        "agent": {
+            "name": "terminus-2",
+            "import_path": null,
+            "model_name": "openai/gpt-oss-120b",
+            "base_url": null,
+            "model_api_key_name": null,
+            "model_api_format": null,
+            "skip_model_parsing": false,
+            "n_concurrent": null,
+            "concurrency_group": null,
+            "skills": [],
+            "override_timeout_sec": null,
+            "override_setup_timeout_sec": null,
+            "max_timeout_sec": null,
+            "resume_trajectory": false,
+            "load_trajectory": null,
+            "extra_allowed_hosts": [],
+            "kwargs": {
+                "model_info": {
+                    "max_input_tokens": 131072,
+                    "max_output_tokens": 32768,
+                    "input_cost_per_token": 0,
+                    "output_cost_per_token": 0
+                },
+                "api_base": "<model-endpoint>"
+            },
+            "mcp_servers": []
+        },
+        "user_agent": null,
+        "environment": {
+            "type": "daytona",
+            "import_path": null,
+            "force_build": false,
+            "delete": true,
+            "stream": false,
+            "cpu_enforcement_policy": "auto",
+            "memory_enforcement_policy": "auto",
+            "override_cpus": null,
+            "override_memory_mb": null,
+            "override_storage_mb": null,
+            "override_gpus": null,
+            "override_tpu": null,
+            "mounts": null,
+            "extra_docker_compose": [],
+            "kwargs": {},
+            "extra_allowed_hosts": []
+        },
+        "verifier": {
+            "override_timeout_sec": null,
+            "max_timeout_sec": null,
+            "disable": false
+        },
+        "artifacts": [],
+        "extra_instruction_paths": [],
+        "extra_instructions": [],
+        "job_id": "dc6f16d4-5d88-42d5-979c-8c6cdc1133e9",
+        "source_trial": null
+    },
+    "agent_info": {
+        "name": "terminus-2",
+        "version": "2.0.0",
+        "model_info": {
+            "name": "gpt-oss-120b",
+            "provider": "openai"
+        }
+    },
+    "agent_result": {
+        "n_input_tokens": 1301165,
+        "n_cache_tokens": 0,
+        "n_output_tokens": 53816,
+        "cost_usd": null,
+        "model_usage": {
+            "gpt-oss-120b": {
+                "n_input_tokens": 1301165,
+                "n_cache_tokens": 0,
+                "n_output_tokens": 53816,
+                "cost_usd": null
+            }
+        },
+        "rollout_details": [],
+        "metadata": {
+            "n_episodes": 29,
+            "api_request_times_msec": [
+                3502.7999877929688,
+                3098.391056060791,
+                2173.9749908447266,
+                15534.119367599487,
+                8571.668863296509,
+                11464.339017868042,
+                10402.791023254395,
+                9447.421789169312,
+                4088.8400077819824,
+                10058.428049087524,
+                10805.933952331543,
+                10946.479082107544,
+                12831.237077713013,
+                10633.12816619873,
+                10812.941789627075,
+                12281.21304512024,
+                10208.946943283081,
+                10402.061223983765,
+                19921.666145324707,
+                18466.423988342285,
+                15567.455291748047,
+                11352.943897247314,
+                4306.477069854736,
+                3147.6621627807617,
+                18504.749059677124,
+                12602.581024169922,
+                12222.193956375122,
+                3365.7641410827637,
+                4270.015001296997
+            ],
+            "summarization_count": 0
+        }
+    },
+    "verifier_result": {
+        "rewards": {
+            "reward": 0.0,
+            "tolerance_mm_day": 0.03,
+            "app_locked": 1,
+            "visible_ok": 0,
+            "visible_missing_rows": 0,
+            "visible_extra_rows": 0,
+            "visible_bad_rows": 0,
+            "visible_duplicate_rows": 0,
+            "visible_rows_over_tol": 1080,
+            "visible_max_abs_err": 1.842164,
+            "hidden_run_rc": 0,
+            "hidden_run_timed_out": 0,
+            "hidden_run_seconds": 0.369,
+            "hidden_ok": 0,
+            "hidden_missing_rows": 0,
+            "hidden_extra_rows": 0,
+            "hidden_bad_rows": 0,
+            "hidden_duplicate_rows": 0,
+            "hidden_rows_over_tol": 1392,
+            "hidden_max_abs_err": 1.669566
+        }
+    },
+    "verifier_environment_mode": "separate",
+    "exception_info": null,
+    "started_at": "2026-11-03T16:17:04.163142Z",
+    "finished_at": "2026-11-03T16:25:29.400052Z",
+    "environment_setup": {
+        "started_at": "2026-11-03T16:17:04.206913Z",
+        "finished_at": "2026-11-03T16:17:06.255114Z"
+    },
+    "agent_setup": {
+        "started_at": "2026-11-03T16:17:06.255248Z",
+        "finished_at": "2026-11-03T16:17:16.326448Z"
+    },
+    "agent_execution": {
+        "started_at": "2026-11-03T16:17:16.327037Z",
+        "finished_at": "2026-11-03T16:25:17.018531Z"
+    },
+    "verifier": {
+        "started_at": "2026-11-03T16:25:20.529283Z",
+        "finished_at": "2026-11-03T16:25:29.399946Z"
+    },
+    "step_results": null
+}

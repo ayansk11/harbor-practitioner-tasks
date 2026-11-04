@@ -5,15 +5,24 @@
 evidence that pins each (4), why the task is fair (5), the data and the build asserts (6), the AUC calibration (7), the
 grader and the independence fix (8), the solutions and attempts (9), timings and caps (10), the local matrix (11), the
 hit report (12), where the build departs from the approved design, the two approved changes included (13), the blind
-read (14), the Daytona proof (15), the agent trials with their pre-registration and outcome (16), the gate record
-against `docs/QUALITY_GATE.md` (17), the limitations and open issues (18) and the earlier versions (19). The approved
-design was written before the build and is not part of this repository. Paths are relative to the repository root:
-`T/x` = `tasks/feature-leakage-churn/x`, `app/x` = `T/environment/app/x` (the agent's `/app/x`), `auth/x` =
-`authoring/feature-leakage-churn/x`.
+read (14), the Daytona proof (15), the agent trials with their pre-registration and outcome, run m1 included (16), the
+gate record against `docs/QUALITY_GATE.md` (17), the limitations and open issues (18) and the earlier versions (19).
+The approved design was written before the build and is not part of this repository. Paths are relative to the
+repository root: `T/x` = `tasks/feature-leakage-churn/x`, `app/x` = `T/environment/app/x` (the agent's `/app/x`),
+`auth/x` = `authoring/feature-leakage-churn/x`.
 
-Last updated: 2026-10-31, 23:03 MST (Mac clock): fixes after a pre-commit check: gate G8 names both hints of the blind
-read, G20 and G21 are scored as at this commit, and the canary's time is the run's own. Before that, 2026-10-31, 22:01
-MST (Mac clock): fixes after an independent check of the churn commit parts: 30 of the 31 proof trials equal their local
+Last updated: 2026-11-04, 00:45 MST (Mac clock): run m1's models are called four models of an OpenAI-compatible model
+service, no longer "open" ones, since which weights served them is UNVERIFIED (sections 16, 17 (G14) and 18; the head of
+2026-11-03 below is edited to match); section 5's independent derivation is attributed to the review's run, whose script
+and output are not in this repository, not labelled FACT; section 18 no longer puts the push in the future.
+Before that, 2026-11-03, 17:44 MST (Mac clock; late edits to 21:15 MST by the file's time): run m1 recorded (eight
+trials of Harbor's `terminus-2` agent with four models of an OpenAI-compatible model service, 0 of 8 passed; section
+16), with the statements it changes: how other agents fare (sections 16 and 18), which trials are the unprompted test
+(14 and 18), an independent derivation of the expected values (section 5), the January sample's risk weighed (section
+18, with a pointer in section 5) and the gate record's G14, G20, G26, G28 and G29 (section 17). Before that, 2026-10-31,
+23:03 MST (Mac clock): fixes after a pre-commit check: gate G8 names both hints of the blind read, G20 and G21 are
+scored as at this commit, and the canary's time is the run's own. Before that, 2026-10-31, 22:01 MST
+(Mac clock): fixes after an independent check of the churn commit parts: 30 of the 31 proof trials equal their local
 variant (sections 15 and 17), the naive build's second timing (10, 17 and 18), the proof command and where some FACTs
 are recorded (15 and 16), and wording in sections 14 and 18. Before that, 20:59 MST: the blind read's result (section
 14), the Daytona proof v3 (15) and the three Claude Code trials of task v3 (16) recorded; the gate record (17), the
@@ -197,6 +206,17 @@ on `tickets_30d`, `tenure_days` and `app_minutes_7d` (0 cells on both extracts; 
   with 0 mismatched cells and bit-identical floats on both extracts (FACT, `make_expected.py`, 17:37 MST, and its
   `--check`, 18:08 MST), and the alt, a replay of the commit log by another method, equals the canonical on both
   (section 9). So every graded value is derivable from an extract.
+- A derivation independent of the authors' code (added 2026-11-03, for the review of run m1, section 16): a check
+  written from `app/docs/WAREHOUSE.md`, `app/live/features.py` and H's own `_ops/` records only, without opening
+  `solution/` or `auth/`, gave 0 mismatched cells against `T/tests/expected/H_features.parquet` on `te_district` (all
+  57,896 rows of H; the 2,535 rows whose district has no label loaded before t take the global prior) and on the four
+  order features, and trusting `_loaded_at` instead gave exactly the 53,362 cells of `loaded_at_everywhere`; its parser
+  of the two records needed about 60 lines (the review's run; neither its script nor its output is in this repository).
+  The canonical, the alt and `ref_truth` are the authors' code; this check is not, nor are the blind read's fix
+  (section 14) and the three Claude Code passes (section 16), which reached every graded value from `/app` too. The
+  check was written by a model agent whose context described the design (INFERENCE, as for the blind read in section
+  14), so it is independent of the authors' code but not of their knowledge; the Claude Code passes, which had only
+  `/app` and the instruction, are independent of both.
 - Each graded rule rests on a stated sentence and a record. Which table bore the name `orders` at t: S1, S5 and the
   RENAME statements with their commit. Which commit made an order visible: S2 and the LOAD lines joined to
   `commits.jsonl` on the txn. That the legacy table and `orders_new` held the same rows and values: the parity lines.
@@ -217,7 +237,8 @@ on `tickets_30d`, `tenure_days` and `app_minutes_7d` (0 cells on both extracts; 
 - Not a trap: the dual run moves no live value, and every commit the agent needs is an explicit record. No difficulty is
   added only to lower the pass rate (G29), and nothing is added because of a trial (section 16).
 - What the agent cannot check against a log: the January sample is after both moves, so it is silent on how orders
-  before C became visible (section 18); the rules for M2 to M5 come from the doc and the records alone.
+  before C became visible (section 18); the rules for M2 to M5 come from the doc and the records alone. Run m1 showed
+  what that costs an agent that checks only against the sample (sections 16 and 18).
 
 ## 6. Data and build asserts
 FACT (`auth/gen_data.py`, run twice in place at 17:35 and 17:36 MST by the build's integration step, exit 0, the first
@@ -676,9 +697,10 @@ opened any data, and its context also held the authors' design notes, which desc
 reported the hint itself. So the read shows that the agent's files settle every graded value for a reader who knows
 where to look; it does not show that an agent finds the migration unprompted, and whether the reader found the dual run
 unprompted cannot be answered from it (its code rebuilds the migration from `_ops/`, but the prompt came first). The
-unprompted test is the three Claude Code trials, which had only `/app` and the instruction (section 16). The reader also
-read the package before the four clause edits above (WAREHOUSE.md lines 18 and 19, `app/README.md` lines 8 and 14); they
-reword text and change no graded value (FACT: a diff of the package against the reader's copy, and the matrix re-run
+unprompted test is the agent trials, which had only `/app` and the instruction: the three Claude Code trials and,
+since 2026-11-03, the eight of run m1 (section 16). The reader also read the package before the four clause edits
+above (WAREHOUSE.md lines 18 and 19, `app/README.md` lines 8 and 14); they reword text and change no graded value
+(FACT: a diff of the package against the reader's copy, and the matrix re-run
 above). No reading that changes a graded value was found (the grade's verdict), so no doc fix was needed for one and no
 second reader read; the four clause edits answer the independent check's notes.
 
@@ -851,13 +873,79 @@ phase; tool calls are counted in `agent/trajectory.json`; cost is Claude Code's 
   (item 4); no trajectory fetched the public tests, so no trial is excluded (item 5).
 - INFERENCE (from the 3 of 3 and the agent times): the hardening doubled the investigation Claude Code on Opus 5.5
   needs, but did not make the task one this agent cannot reliably complete. Three trials show that this agent can solve
-  the task, not its pass rate (3 of 3 has a Wilson 95% interval of 0.44 to 1.00). How other agents, the external
-  reviewer's among them, fare on task v3 is UNVERIFIED. Nothing was added to the task after the trials (G29).
+  the task, not its pass rate (3 of 3 has a Wilson 95% interval of 0.44 to 1.00). How other agents fare on task v3 was
+  not measured when this was written; run m1 (below) has since measured four models of an OpenAI-compatible model
+  service with Harbor's `terminus-2` agent, 0 of 8 passed, and how other agents fare, the external reviewer's among
+  them, is still not known. Nothing was added to the task after the trials (G29).
+
+Run m1, added 2026-11-03 (FACT: each trial's `result.json`, `config.json`, `job_lock.json`, `agent/trajectory.json`
+and `verifier/reward.json`, shipped in `validation/feature-leakage-churn/traces/agent-m1/`; the run's rows in
+`validation/agent_trials_m1.json`; the verdicts are the authors' review of the eight trials, 2026-11-03, by model
+agents, recorded outside this repository, in which one reader read every trajectory, compared each final `/app` with the
+package and re-ran it on H on the Mac, and a second tried to break each verdict and upheld all eight). Harbor's
+`terminus-2` agent (2.0.0) with four models of an OpenAI-compatible model service, named as the service names them
+(which weights served them is UNVERIFIED), two attempts each, one trial at a time, 2026-11-03 from 10:26:28 to 14:48:46
+MST, on the proof's copy (`sha256:b042a2c9...` in each `job_lock.json`, the `task_checksum` `70baca47...` of the proof
+and the Claude Code trials in each `result.json`, so the package run was unchanged), with the sandbox's own network. The
+pre-registration above was written for the Claude Code trials; its items 2, 3 and 5 are applied to run m1 too. Agent
+time is `agent_seconds` in `validation/agent_trials_m1.json`; 3,600 s is the agent timeout (`AgentTimeoutError` in
+`result.json`), after which the work was graded as it stood.
+
+| Trial | Model, attempt | Reward (A, B cut1, B cut2) | A's mismatches per feature | B changed cells, cut1 / cut2 | Agent time |
+|---|---|---|---|---|---|
+| `feature-leakage-churn__bkqVNqc` | `gemma-4-31B-it`, 1 | 0.0 (0, 1, 1) | 325,551: `orders_7d` 16,046, `orders_30d` and `spend_30d_cents` 57,478 each, `tickets_30d` 21,105, `days_since_last_order` 57,727, `te_district` 57,833, `status` 57,884 | 0 / 0 | 395 s |
+| `feature-leakage-churn__5ZCVEie` | `gemma-4-31B-it`, 2 | 0.0 (0, 0, 0) | none: the run on H killed at the 60 s cap (60.101 s) | not run | 705 s |
+| `feature-leakage-churn__LcSFoqe` | `glm-5.3-flash`, 1 | 0.0 (0, 0, 0) | 2,511: `te_district` only | 2,163 / 2,341 | 3,600 s |
+| `feature-leakage-churn__MuZJi75` | `glm-5.3-flash`, 2 | 0.0 (0, 0, 0) | none: the run on H crashed (`NameError`, after 9.392 s) | not run | 3,600 s |
+| `feature-leakage-churn__koFPMV7` | `gpt-oss-120b`, 1 | 0.0 (0, 0, 0) | none: the run on H killed at the 60 s cap (60.025 s) | not run | 453 s |
+| `feature-leakage-churn__zhHaP4k` | `gpt-oss-120b`, 2 | 0.0 (0, 0, 0) | none: the run on H killed at the 60 s cap (60.014 s) | not run | 3,600 s |
+| `feature-leakage-churn__pdidSxk` | `qwen3.8-27b`, 1 | 0.0 (0, 1, 1) | 53,362: `orders_7d` 4,345, `orders_30d` and `spend_30d_cents` 16,318 each, `days_since_last_order` 16,381 | 0 / 0 | 1,562 s |
+| `feature-leakage-churn__TDWvT4Y` | `qwen3.8-27b`, 2 | 0.0 (0, 1, 1) | 53,362, the same split | 0 / 0 | 1,130 s |
+
+- As item 2 asks: 0 of 8 passed (0 of 8 has a Wilson 95% upper bound of 0.32). In every trial that check A graded,
+  `days_since_last_login` was left out (0 non-null values) and no row was missing, extra or duplicated. Cost is not
+  measured: each `config.json` sets the model's token prices to 0; the tokens are in `validation/agent_trials_m1.json`.
+- Item 3, each failure classed. M2 to M5 missed by trusting `_loaded_at` for the orders: both `qwen3.8-27b` trials,
+  with every other feature right (the profile of `loaded_at_everywhere`, section 9), and `__5ZCVEie`, whose build
+  without the cap gives the same 53,362 cells (the review's re-run on the Mac). The 60 s cap (counted here under the
+  v2 feature work, since the cap is task v2's contract and is stated in the instruction; INFERENCE, as the
+  pre-registered classes name no speed class; a naive per-row build needs about 123 to 159 s on the Mac, section 10):
+  `__5ZCVEie` (which left `days_since_last_login` out) and both `gpt-oss-120b` trials (whose per-row builds also keep
+  `days_since_last_login` (M8) and trust `_loaded_at`). The v2 feature work: `__bkqVNqc` wrote into temporary copies
+  (`x[mask][i] = v`), so four features were 0 and two null on all of H; `__LcSFoqe` solved M1 to M5, M7 and M8 by the
+  review's reading (nine features with 0 mismatches) and lost 2,511 `te_district` cells to an index bug at district
+  boundaries (lines 66 to 68 of its final `churn/encoding.py`, which is not shipped, though `agent/trajectory.json`
+  prints the file at step 57, read the previous district's row where the point's district has no label loaded before
+  t, whose value is the global prior), and the agent timeout came while it was patching edge cases; `__MuZJi75`
+  understood the migration early (step 9) but its parser detected the rename only at step 55, and its own event
+  engine crashed on H (`NameError` in `churn/live_features.py` line 385). None falls outside these classes: no
+  failing agent read an unclear sentence and took a reading it allows, no check failed a valid value (section 5: the
+  independent derivation), and no trial met a verifier error.
+- Item 5: no command or output of the eight trajectories reached a network host or touched `/tests`, `/solution` or
+  `/logs/verifier`, and the verifier's probe found a private, loopback-only namespace on every graded run, so no trial
+  is excluded; a scan of the shipped copies found no key.
+- What separated the trials (the review): reading `_ops/` beyond its first lines. The six trials that ran only `head`
+  on the two records, or never opened them, all missed the migration; both `glm-5.3-flash` trials parsed them and
+  worked out what it was in their first minutes, as Claude Code did from its third tool call. Four trials checked
+  their output only against the January sample, which cannot see M2 to M5 (three matched all 365 requests,
+  `__MuZJi75` never did), and `__TDWvT4Y` called the instruction's migrations clause "probably a red herring" (step 15
+  of its `agent/trajectory.json`) after a 365 of 365 match (printed at step 12; section 18).
+- INFERENCE (the review's): task v3 meets "cannot reliably complete" for these four models under `terminus-2`
+  (0 of 8, while the three models other than `gpt-oss-120b` passed the four other tasks of the run in 23 of 24
+  attempts, `validation/agent_trials_m1.json`), but not for Claude Code on Opus 5.5 (3 of 3). Model and harness both
+  differ between the two sets, so the gap cannot be split between them, and no model of run m1 ran task v2, so run m1
+  does not measure what the hardening added for these models (INFERENCE). A low pass rate is not itself the goal:
+  nothing was added to the task after run m1 (G29).
+- Harness: `terminus-2` in Harbor 0.25.0 cuts each observation over 10,000 bytes twice, so the marker the agent reads
+  says 69 to 71 bytes were omitted when hundreds of bytes to about 8 KB were (a harness defect, MEDIUM in the review).
+  It cut 15 observations of six trials and hid parts of `app/docs/WAREHOUSE.md` from `__pdidSxk` and `__5ZCVEie`, but
+  changed no verdict (`__TDWvT4Y` saw the whole doc and made the same 53,362-cell error; `__5ZCVEie` also broke the
+  60 s cap).
 
 ## 17. Gate record
 Scored against the checks G1 to G30 of `docs/QUALITY_GATE.md`.
 ```
-Gate record: feature-leakage-churn, task v3 as built (2026-10-31; local, the blind read, the Daytona proof v3 and three Claude Code trials)
+Gate record: feature-leakage-churn, task v3 as built (2026-10-31; local, the blind read, the Daytona proof v3 and three Claude Code trials; run m1 added 2026-11-03)
 Applies to: task feature-leakage-churn
 G1  PASS - code, docs, the January sample, the visible extract with its _ops/ records, H, expected values and pinned packages are in the package; neither the work nor grading needs network
 G2  PASS - a training table that matches what the live service computed decides whether churn-hgb-v4 can ship; the drop tells the model team what v4 must do without
@@ -872,41 +960,47 @@ G10 PASS - a feature table train.py can use for v4, and a documented drop of the
 G11 PASS - black-box CLI runs; only output values are compared; two very different methods pass
 G12 PASS (run, recorded: validation/feature-leakage-churn/PROOF_RESULTS_v3.md) - the shipped pipeline, task v2's trials' rules (v2_rule, min_commit), the scheduler's state lines, schedules, the trusted restamped column, a cache of the visible answer, a log lookup, constants and tuning all score 0, locally and on Daytona; the cache probe failed both check B cuts on Daytona, reward 0 (section 15); limitation: hidden files public after the push
 G13 PASS (run, recorded: validation/feature-leakage-churn/PROOF_RESULTS_v3.md) - the commit-replay alt (no pandas; other dtypes, row and column order, an extra column, the left-out column present and all null) scores 1, locally and on Daytona; a copy's records are recounted from the copy, never stale (section 8)
-G14 PASS - difficulty is investigation (which table bore the name orders at t, which commit put each order there, from two logs) and judgment (the commit log over the scheduler's states, drop over approximate) plus an exact as-of build; measured: 3 of 3 Claude Code trials passed, each working from _ops/, in about twice task v2's agent time (section 16)
+G14 PASS - difficulty is investigation (which table bore the name orders at t, which commit put each order there, from two logs) and judgment (the commit log over the scheduler's states, drop over approximate) plus an exact as-of build; measured: 3 of 3 Claude Code trials passed, each working from _ops/, in about twice task v2's agent time (section 16); run m1: 0 of 8 terminus-2 trials with four models of an OpenAI-compatible model service passed, and only the two that parsed _ops/ worked out the migration (section 16)
 G15 PASS (run) - every commit an explicit record; parity coverage; the name rule and the commit-log sentence; no planted ties and no point between a send and its commit (asserted); lenient formats; the cap is about 65 x the Mac alt median and about 30 x the alt's slowest run on Daytona (1.99 s), a naive per-row build needs about 123 to 159 s on the Mac (section 10); each A-killed attempt moves >= 100 cells on both extracts, except hourly_schedule (12, approved) and cache_visible on the visible extract (0 by construction); the points the blind reader found unclear change no graded value (section 14)
 G16 PASS (run, recorded: validation/feature-leakage-churn/PROOF_RESULTS_v3.md) - seeded simulator and perturbation, new streams for the new parts only, committed H, expected and SHA256SUMS, pinned image; regeneration byte-identical twice; graded copies byte-identical across processes; timeout from measured grading time; canonical 5 of 5 and the clean rebuild (force-build) 1.0 on Daytona (section 15)
 G17 PASS (run, recorded: validation/feature-leakage-churn/PROOF_RESULTS_v3.md) - tests/ only in the verifier image (/tests 0700); /app holds the visible brand's data, records and sample only; check B runs now independent of the H run (section 8): on Daytona no sweep left an entry of uid 1001 and the probe's cache did not reach check B (section 15); no Claude Code trial's command touched /tests (section 16)
 G18 PASS - the Harbor layout; harbor lint clean; Harbor's TaskConfig accepts task.toml (no-network 3600 s; separate verifier 279 s; 2 cpus; 4096 MB); tools/check_task.py prints OK feature-leakage-churn
 G19 PASS - its own copy of the kit (sync_kit.py --check clean for all five tasks); no other task needed
-G20 PASS - the row is in the repository README (README.md, the feature-leakage-churn row of the table "The tasks"); its validation cell gives run v3 and the three Claude Code trials as sections 15 and 16 record them
+G20 PASS - the row is in the repository README (README.md, the feature-leakage-churn row of the table "The tasks"); its validation cell gives run v3, the three Claude Code trials and run m1 as sections 15 and 16 record them
 G21 PASS - limitations in section 18 and in the repository README (this task's row, "The agent network line" under Setup, and the task's entries under "Known limitations")
 G22 PASS (run, recorded: validation/feature-leakage-churn/PROOF_RESULTS_v3.md) - canonical 1 on A and both cuts locally; oracle 5 of 5 at 1.0 on Daytona (section 15)
 G23 PASS (run, recorded: validation/feature-leakage-churn/PROOF_RESULTS_v3.md) - the nop (the shipped pipeline) 0, failing A and both cuts, locally and on Daytona
 G24 PASS (run, recorded: validation/feature-leakage-churn/PROOF_RESULTS_v3.md) - 22 attempts 0, each failing its named check, locally and on Daytona; the probe 0 on Daytona, failing both cuts (section 15)
 G25 PASS (run, recorded: validation/feature-leakage-churn/PROOF_RESULTS_v3.md) - alt 1 on A and both cuts, locally and on Daytona
-G26 PASS - grader commented; per-check, per-feature and sweep sub-metrics in reward.json; in the repository at the revision commit: one redacted trial per row of run v3 (validation/feature-leakage-churn/traces/<variant>/), the three Claude Code trials (traces/agent-claude-code/<trial>/), task v2's proof traces and trials (second-version/) and the first version's evidence (first-version/)
+G26 PASS - grader commented; per-check, per-feature and sweep sub-metrics in reward.json; in the repository at the revision commit: one redacted trial per row of run v3 (validation/feature-leakage-churn/traces/<variant>/), the three Claude Code trials (traces/agent-claude-code/<trial>/), task v2's proof traces and trials (second-version/) and the first version's evidence (first-version/); since 2026-11-03 also the eight trials of run m1 (traces/agent-m1/<trial>/)
 G27 PASS (plan; part UNVERIFIED) - CPU only, no keys; whether a reviewer's harness enforces the [agent] network_mode line is UNVERIFIED; Daytona Tier 1 refuses it, so a runner there removes the line (section 18)
-G28 PASS (run) - a failure is a wrong account of what the warehouse held at t: the table behind a name, the commit behind a row, a task state taken for a commit, current-value attributes, label timing; measured: 3 of 3 Claude Code trials passed, so no failure was there to classify (section 16)
-G29 PASS - no live value changes: the truth is task v2's, the records replace stated rules, the dual run is a real migration pattern; nothing was added after the 3 of 3, as the pre-registration requires (section 16)
+G28 PASS (run) - a failure is a wrong account of what the warehouse held at t: the table behind a name, the commit behind a row, a task state taken for a commit, current-value attributes, label timing; measured: 3 of 3 Claude Code trials passed (section 16); run m1's eight failures are each classed under item 3 (the orders' visibility trusted to _loaded_at, the stated 60 s cap, the v2 feature work), none an unclear sentence, a verifier error or a second valid reading, and a derivation independent of the authors' code confirms the expected values (sections 5 and 16)
+G29 PASS - no live value changes: the truth is task v2's, the records replace stated rules, the dual run is a real migration pattern; nothing was added after the 3 of 3 or after run m1's 0 of 8, as the pre-registration requires (section 16); the removal of task v2's shadow-week sample leaves the January sample, blind to M2 to M5, as the only check in /app: a design risk weighed and disclosed in section 18 (MEDIUM in the run m1 review; the judgement that it is not a trap is an INFERENCE there)
 G30 PASS (plan) - delivered in the existing public repository; commit and push only on the authors' word
 Result: PASS, no FAIL. The Daytona proof v3 (2026-10-31) covers G4, G12, G13, G16, G17 and G22 to G25; the blind read,
-hinted (section 14), and the three Claude Code trials (section 16) back G8 and G15; the trials give G14, G28 and G29
-their measured part. G30 is completed by the revision commit and its push; G27's network part is UNVERIFIED.
+hinted (section 14), and the three Claude Code trials (section 16) back G8 and G15; the trials, run m1 of 2026-11-03
+included, give G14, G28 and G29 their measured part. G30 is completed by the revision commit and its push; G27's
+network part is UNVERIFIED.
 ```
 
 ## 18. Limitations and open issues
-- Three Claude Code trials, 3 of 3 passed (section 16), in about twice task v2's agent time. They show that this agent
-  can solve the task, not its pass rate (3 of 3 has a Wilson 95% interval of 0.44 to 1.00); they ran with the sandbox's
-  network, and how other agents, the external reviewer's among them, fare is UNVERIFIED. INFERENCE: the hardening did
-  not make the task one this agent cannot reliably complete. `difficulty = "hard"` (`task.toml:10`) is the authors'
-  estimate, written before any trial; with 3 of 3 passes it overstates the task for this agent (INFERENCE), and it
-  stays, since an edit to `task.toml` would change the proven package's digest. A high pass rate would not by itself be
-  a defect: G29 rules out difficulty added only to lower it.
+- Few agent trials: three Claude Code trials, 3 of 3 passed (section 16), in about twice task v2's agent time, and in
+  run m1 eight trials of Harbor's `terminus-2` agent with four models of an OpenAI-compatible model service, 0 of 8
+  passed (section 16), all with the sandbox's network. They show that Claude Code on Opus 5.5 can solve the task and
+  that these four models under `terminus-2` did not, not pass rates (3 of 3 has a Wilson 95% interval of 0.44 to 1.00,
+  and 0 of 8 an upper bound of 0.32); how other agents fare, the external reviewer's among them, is not known.
+  INFERENCE: the hardening did not make the task one Claude Code on Opus 5.5 cannot reliably complete; for the four
+  models of run m1 under `terminus-2` the task meets that bar (the review's INFERENCE, from the 0 of 8), though model
+  and harness both differ from the Claude Code trials, so the gap cannot be split between them. `difficulty = "hard"`
+  (`task.toml:10`) is the authors' estimate, written before any trial; with 3 of 3 passes it overstates the task for
+  Claude Code (INFERENCE), not for the models of run m1, and it stays, since an edit to `task.toml` would change the
+  proven package's digest. A high pass rate would not by itself be a defect, nor is a low one a merit: G29 rules out
+  difficulty added only to lower it.
 - The blind read scored 1 but was hinted (its prompt named the migration), so it is evidence of fairness, not of
-  unprompted discovery; the Claude Code trials are the unprompted test. Its context also held the authors' design
-  notes (section 14).
+  unprompted discovery; the agent trials (Claude Code's and run m1's, section 16) are the unprompted test. Its context
+  also held the authors' design notes (section 14).
 - Synthetic data: two simulated brands; the live AUC is computed from simulated live values (section 7).
-- The hidden tests (H, the expected values, the grader) are public in this repository once this revision is pushed; an
+- The hidden tests (H, the expected values, the grader) are public in this repository; an
   agent with network access could fetch them. Hence the network line below; where it cannot be enforced, read each
   trajectory for fetches from GitHub hosts and exclude and report any trial that made one. By Daytona's documentation,
   its Tier 1 and 2 keep GitHub's hosts reachable (the repository README's limitation "The hidden tests are public").
@@ -925,7 +1019,18 @@ their measured part. G30 is completed by the revision commit and its push; G27's
 - The January sample is silent on orders before the move: its 365 requests are of January 2026, months after both
   moves, so matching it says nothing about M2 to M5; only the doc and the records decide those rules. Task v2's
   shadow-week sample, all 42 of whose rows contradicted "trust `_loaded_at`" (task v2's generator report), is gone;
-  check A kills that reading by 53,362 cells on H.
+  check A kills that reading by 53,362 cells on H. Run m1 (section 16) showed what this costs, a design risk that its
+  review rates MEDIUM, not a wrong check: the sample is the only validation signal in `/app`, four trials checked
+  their output only against it (`__pdidSxk`, `__TDWvT4Y`, `__LcSFoqe` and `__MuZJi75`; the last never matched it),
+  and `__TDWvT4Y`, after reading the name rule and the instruction's migrations clause, called that clause "probably a
+  red herring" (step 15 of its `agent/trajectory.json`) and took its 365 of 365 match (printed at step 12) as
+  confirmation (its step 13 calls the match "a strong validation"). Section 2 gives only the general reason for the
+  removal (task v3 moves the evidence) and did not weigh the loss of that signal. Weighed here, after run m1 (INFERENCE,
+  from section 2 and the trials of section 16): the removal took away the one check in `/app` that contradicts trusting
+  `_loaded_at`, so an agent that validates against the logs alone gets false assurance; it hides no graded fact, since
+  the doc and the records still decide every graded value, the instruction points to `_ops/`, and the agents that parsed
+  `_ops/` found the migration. So it is a disclosed design risk, not a trap under G29; restoring such a sample would
+  change the proven package and need a new proof.
 - Thin margins: `scheduler_end` 296 cells on H (under the design's 300 target), `scheduler_start` 108 on the visible
   extract and `status_latest_loaded` 113 on H, each over the 100-cell floor. If the generator is ever re-run with
   other knobs, `mechanisms.assert_targets` stops a regeneration under the floor.

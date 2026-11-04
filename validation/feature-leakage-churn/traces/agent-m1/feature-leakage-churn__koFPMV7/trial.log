@@ -1,0 +1,36 @@
+# Redacted 2026-11-03: machine-specific paths replaced (<submission> x30). <submission> = the submission folder on the authoring Mac, <home> = the author's home folder, <local-scratch> = the session scratch folder, <model-endpoint> = the URL of the model service the agent called. Nothing else changed: no reward, count or timing.
+Selected strategy: _DaytonaDirect
+Building environment from <submission>/jobs/feature-leakage-churn/package-v3/feature-leakage-churn/environment/Dockerfile
+Trajectory dumped to <submission>/jobs/agent-trials/feature-leakage-churn-terminus2-gptoss120b-m1-1/feature-leakage-churn__koFPMV7/agent/trajectory.json
+Parser warnings: - Extra text detected after JSON object
+Trajectory dumped to <submission>/jobs/agent-trials/feature-leakage-churn-terminus2-gptoss120b-m1-1/feature-leakage-churn__koFPMV7/agent/trajectory.json
+Trajectory dumped to <submission>/jobs/agent-trials/feature-leakage-churn-terminus2-gptoss120b-m1-1/feature-leakage-churn__koFPMV7/agent/trajectory.json
+Trajectory dumped to <submission>/jobs/agent-trials/feature-leakage-churn-terminus2-gptoss120b-m1-1/feature-leakage-churn__koFPMV7/agent/trajectory.json
+Trajectory dumped to <submission>/jobs/agent-trials/feature-leakage-churn-terminus2-gptoss120b-m1-1/feature-leakage-churn__koFPMV7/agent/trajectory.json
+Trajectory dumped to <submission>/jobs/agent-trials/feature-leakage-churn-terminus2-gptoss120b-m1-1/feature-leakage-churn__koFPMV7/agent/trajectory.json
+Trajectory dumped to <submission>/jobs/agent-trials/feature-leakage-churn-terminus2-gptoss120b-m1-1/feature-leakage-churn__koFPMV7/agent/trajectory.json
+Trajectory dumped to <submission>/jobs/agent-trials/feature-leakage-churn-terminus2-gptoss120b-m1-1/feature-leakage-churn__koFPMV7/agent/trajectory.json
+Trajectory dumped to <submission>/jobs/agent-trials/feature-leakage-churn-terminus2-gptoss120b-m1-1/feature-leakage-churn__koFPMV7/agent/trajectory.json
+Parser warnings: - Extra text detected before JSON object
+Trajectory dumped to <submission>/jobs/agent-trials/feature-leakage-churn-terminus2-gptoss120b-m1-1/feature-leakage-churn__koFPMV7/agent/trajectory.json
+Trajectory dumped to <submission>/jobs/agent-trials/feature-leakage-churn-terminus2-gptoss120b-m1-1/feature-leakage-churn__koFPMV7/agent/trajectory.json
+Trajectory dumped to <submission>/jobs/agent-trials/feature-leakage-churn-terminus2-gptoss120b-m1-1/feature-leakage-churn__koFPMV7/agent/trajectory.json
+Trajectory dumped to <submission>/jobs/agent-trials/feature-leakage-churn-terminus2-gptoss120b-m1-1/feature-leakage-churn__koFPMV7/agent/trajectory.json
+Trajectory dumped to <submission>/jobs/agent-trials/feature-leakage-churn-terminus2-gptoss120b-m1-1/feature-leakage-churn__koFPMV7/agent/trajectory.json
+Trajectory dumped to <submission>/jobs/agent-trials/feature-leakage-churn-terminus2-gptoss120b-m1-1/feature-leakage-churn__koFPMV7/agent/trajectory.json
+Trajectory dumped to <submission>/jobs/agent-trials/feature-leakage-churn-terminus2-gptoss120b-m1-1/feature-leakage-churn__koFPMV7/agent/trajectory.json
+Trajectory dumped to <submission>/jobs/agent-trials/feature-leakage-churn-terminus2-gptoss120b-m1-1/feature-leakage-churn__koFPMV7/agent/trajectory.json
+Trajectory dumped to <submission>/jobs/agent-trials/feature-leakage-churn-terminus2-gptoss120b-m1-1/feature-leakage-churn__koFPMV7/agent/trajectory.json
+Trajectory dumped to <submission>/jobs/agent-trials/feature-leakage-churn-terminus2-gptoss120b-m1-1/feature-leakage-churn__koFPMV7/agent/trajectory.json
+Trajectory dumped to <submission>/jobs/agent-trials/feature-leakage-churn-terminus2-gptoss120b-m1-1/feature-leakage-churn__koFPMV7/agent/trajectory.json
+Trajectory dumped to <submission>/jobs/agent-trials/feature-leakage-churn-terminus2-gptoss120b-m1-1/feature-leakage-churn__koFPMV7/agent/trajectory.json
+Trajectory dumped to <submission>/jobs/agent-trials/feature-leakage-churn-terminus2-gptoss120b-m1-1/feature-leakage-churn__koFPMV7/agent/trajectory.json
+Trajectory dumped to <submission>/jobs/agent-trials/feature-leakage-churn-terminus2-gptoss120b-m1-1/feature-leakage-churn__koFPMV7/agent/trajectory.json
+Trajectory dumped to <submission>/jobs/agent-trials/feature-leakage-churn-terminus2-gptoss120b-m1-1/feature-leakage-churn__koFPMV7/agent/trajectory.json
+Trajectory dumped to <submission>/jobs/agent-trials/feature-leakage-churn-terminus2-gptoss120b-m1-1/feature-leakage-churn__koFPMV7/agent/trajectory.json
+Trajectory dumped to <submission>/jobs/agent-trials/feature-leakage-churn-terminus2-gptoss120b-m1-1/feature-leakage-churn__koFPMV7/agent/trajectory.json
+Trajectory dumped to <submission>/jobs/agent-trials/feature-leakage-churn-terminus2-gptoss120b-m1-1/feature-leakage-churn__koFPMV7/agent/trajectory.json
+Trajectory dumped to <submission>/jobs/agent-trials/feature-leakage-churn-terminus2-gptoss120b-m1-1/feature-leakage-churn__koFPMV7/agent/trajectory.json
+Collecting main service artifacts
+Selected strategy: _DaytonaDirect
+Building environment from <submission>/jobs/feature-leakage-churn/package-v3/feature-leakage-churn/tests/Dockerfile

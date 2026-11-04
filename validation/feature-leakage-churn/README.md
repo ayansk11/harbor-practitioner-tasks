@@ -1,6 +1,14 @@
 # Validation: feature-leakage-churn
 
-Last updated: 2026-10-31, 23:03 MST (Mac clock): fixes after a pre-commit check: the blind read's two hints, and Daytona
+Last updated: 2026-11-04, 00:45 MST (Mac clock): run m1's models are called four models of an OpenAI-compatible model
+service, no longer "open" ones, since which weights served them is not verified (the head of 2026-11-03 below is edited
+to match), and the section "Run m1" is renamed; its network note names the authors' Daytona Tier 1 account, and the
+figures that rest on the review's own runs (`__5ZCVEie` and `__koFPMV7` run without the cap, the check of the expected
+values written for the review) are marked as recorded outside this repository.
+Before that, 2026-11-03, 17:44 MST (Mac clock; late edits to 21:15 MST by the file's time): run m1 recorded: eight
+trials of task v3 with Harbor's `terminus-2` agent and four models of an OpenAI-compatible model service, 0 of 8 passed
+(section "Agent trials", traces in `traces/agent-m1/`). Before that,
+2026-10-31, 23:03 MST (Mac clock): fixes after a pre-commit check: the blind read's two hints, and Daytona
 Tier 2 marked as not tried. Before that, 2026-10-31, 22:05 MST (Mac clock): fixes after an independent check (the
 wording of the trajectory scan in section "Agent trials", and why task v2 was hardened, as the design record gives it).
 Before that, 21:03 MST: rewritten for task v3, the shipped package (the Daytona proof `v3`, three Claude Code trials,
@@ -34,12 +42,17 @@ copy `sha256:b042a2c9540522bfbb76e91c81eae76b77d9f8f34df7d550a8314a25b24c0de5`, 
   `tools/proof_matrix.py` (`run_v3.log` is its console output).
 - `traces/<variant>/`: one Harbor trial per variant of run `v3` (table below).
 - `traces/agent-claude-code/<trial>/`: the three Claude Code trials of task v3 (section "Agent trials").
+- `traces/agent-m1/<trial>/`: the eight trials of task v3 in run m1, Harbor's `terminus-2` agent with four models of an
+  OpenAI-compatible model service (section "Agent trials"); the results of the whole run, all five tasks, are in
+  `../agent_trials_m1.json`.
 - `second-version/`: the evidence of task v2 (section "Task v2").
 - `first-version/`: the evidence of the first version (section "First version").
 
-Each traces folder carries a `REDACTIONS.md` that lists what was replaced in its copies; no reward, count or timing
-was changed. The "Job folder" column of `PROOF_RESULTS_v3.md` points into `jobs/`, the raw Harbor output, which is
-git-ignored and not part of the repository; the trace folders are the shipped copy.
+Each traces folder carries a `REDACTIONS.md` that lists what was replaced in its copies (`traces/REDACTIONS.md` for
+the proof and Claude Code traces, `traces/agent-m1/REDACTIONS.md` for run m1's, and one each in
+`second-version/traces/` and `first-version/traces/`); no reward, count or timing was changed. The "Job folder" column
+of `PROOF_RESULTS_v3.md` points into `jobs/`, the raw Harbor output, which is git-ignored and not part of the
+repository; the trace folders are the shipped copy.
 
 ## Results and traces (run `v3`)
 
@@ -169,6 +182,12 @@ line (the backend, the copy and `-k 5` in `PROOF_RESULTS_v3.md`; one trial at a 
 
 ## Agent trials
 
+Two sets of agent trials ran task v3 on the same copy as the proof: three with Claude Code on 2026-10-31, and the eight
+of run m1 on 2026-11-03, Harbor's `terminus-2` agent with four models of an OpenAI-compatible model service (section
+"Run m1" below).
+
+### Claude Code (2026-10-31)
+
 Three trials of task v3 with Harbor's `claude-code` agent (Claude Code 2.1.316, `agent_info` in each `result.json`)
 and the model `claude-opus-5-5`, on Daytona, 2026-10-31, one at a time (`n_concurrent_trials` 1 in `job_lock.json`),
 in the job `feature-leakage-churn-claudecode-opus55-v3-cc1`, on the same copy as the proof (each trial's
@@ -197,11 +216,11 @@ Code's `total_cost_usd` (`agent/claude-code.txt`, equal to `cost_usd` in `result
   passes of 3 (3 of 3 about one chance in four) and 5 to 15 minutes of agent time; the trials took 7.1 to 7.6 minutes.
   By the pre-registration, task v3 ships with that count stated, and no trap is added to lower it (a low pass rate is
   not itself a sign of quality, gate check G29). Three trials show that this agent can solve the task, not its pass
-  rate (3 of 3 has a Wilson 95% interval of 0.44 to 1.00). How the external reviewer's own agent fares on task v3 is
-  not known.
-- These trials are the unprompted test of the task. The blind read recorded in the design record (section 14) scored
-  1 but was hinted (its prompt named the migration, and its context held the authors' design notes, which describe
-  task v3's design), so it is evidence of fairness, not of unprompted discovery.
+  rate (3 of 3 has a Wilson 95% interval of 0.44 to 1.00). Run m1 (below) gave 0 of 8 with `terminus-2` and four models
+  of an OpenAI-compatible model service. How the external reviewer's own agent fares on task v3 is not known.
+- These trials and those of run m1 (below) are the unprompted test of the task. The blind read recorded in the design
+  record (section 14) scored 1 but was hinted (its prompt named the migration, and its context held the authors'
+  design notes, which describe task v3's design), so it is evidence of fairness, not of unprompted discovery.
 - What the agents did (`agent/trajectory.json`): in its first three commands each read `INCIDENT.md`, `CHANGELOG.md`
   and `docs/WAREHOUSE.md`, the live service's and the pipeline's code, the README and the heads of the data files and
   of `_ops/commits.jsonl`. Each then studied the two `_ops/` records (its tool calls name `orders_new`,
@@ -230,6 +249,141 @@ Code's `total_cost_usd` (`agent/claude-code.txt`, equal to `cost_usd` in `result
   "Task v2").
 - The first version: 0 of 3 with Harbor's `terminus-2` agent and `openai/gpt-oss-120b` on 2026-10-30 (traces in
   `first-version/traces/agent-r3/`; section "First version").
+
+### Run m1: `terminus-2` with four models (2026-11-03)
+
+Eight trials of task v3 with Harbor's `terminus-2` agent (version 2.0.0, `agent_info` in each `result.json`) on
+Daytona, 2026-11-03 from 10:26:28 to 14:48:46 (Mac clock, MST; the first `started_at` and the last `finished_at` of the
+eight `result.json` files, which give them in UTC, 7 hours ahead), one at a time (each started after the one before
+had finished): two attempts with each of four models of an OpenAI-compatible model service, named as the service names
+them (`gemma-4-31B-it`, `glm-5.3-flash`, `gpt-oss-120b`, `qwen3.8-27b`; which weights served them is UNVERIFIED). The
+agent's loop runs on the machine that runs Harbor (the authors' Mac) and calls the model service; the commands the
+model writes run in a terminal in the task's sandbox. Each trial was its own one-trial Harbor job
+(`n_concurrent_trials` 1 in each `job_lock.json`), with the task's agent timeout of 3,600 s. All eight ran the same
+copy as the proof and the Claude Code trials: the digest
+`sha256:b042a2c9540522bfbb76e91c81eae76b77d9f8f34df7d550a8314a25b24c0de5` in each `job_lock.json` and the
+`task_checksum` given above in each `result.json`. Because the copy lacks the agent network line, the agent phase had
+the sandbox's own network (Harbor's default, public); the shipped package denies the agent network. Each
+`config.json` gives the model service's URL (`api_base`, `<model-endpoint>` in the copies) and the model's token limits
+(`model_info`). The results of the whole run, all five tasks, are in `../agent_trials_m1.json`, with each trial's
+tokens.
+
+| Trial | Model | Attempt | Reward | Checks A, B cut1, B cut2 | `A_mismatched_cells` | Agent time | Outcome (the review) | Trace folder |
+|---|---|---|---|---|---|---|---|---|
+| `feature-leakage-churn__bkqVNqc` | `gemma-4-31B-it` | 1 | 0.0 | 0, 1, 1 | 325551 | 395 s | capability failure: writes into temporary copies left four features 0 and two null on every row of H; the output never compared with the January sample | [`traces/agent-m1/feature-leakage-churn__bkqVNqc/`](traces/agent-m1/feature-leakage-churn__bkqVNqc/) |
+| `feature-leakage-churn__5ZCVEie` | `gemma-4-31B-it` | 2 | 0.0 | 0, 0, 0 (the run on H killed at the 60 s cap) | none compared | 705 s | capability failure: too slow for the 60 s cap; it also trusts `_loaded_at` for the orders | [`traces/agent-m1/feature-leakage-churn__5ZCVEie/`](traces/agent-m1/feature-leakage-churn__5ZCVEie/) |
+| `feature-leakage-churn__LcSFoqe` | `glm-5.3-flash` | 1 | 0.0 | 0, 0, 0 | 2511 | 3,600 s (agent timeout) | capability failure, a near miss: the migration and nine features right, `te_district` wrong on 2,511 cells (an index bug at district boundaries); stopped by the agent timeout | [`traces/agent-m1/feature-leakage-churn__LcSFoqe/`](traces/agent-m1/feature-leakage-churn__LcSFoqe/) |
+| `feature-leakage-churn__MuZJi75` | `glm-5.3-flash` | 2 | 0.0 | 0, 0, 0 (the run on H crashed) | none compared | 3,600 s (agent timeout) | capability failure: the migration understood, its own event engine not debugged within the hour; a `NameError` on H | [`traces/agent-m1/feature-leakage-churn__MuZJi75/`](traces/agent-m1/feature-leakage-churn__MuZJi75/) |
+| `feature-leakage-churn__koFPMV7` | `gpt-oss-120b` | 1 | 0.0 | 0, 0, 0 (the run on H killed at the 60 s cap) | none compared | 453 s | capability failure: a per-row loop too slow for the cap, the left-out feature kept, `_loaded_at` trusted; saw its first build hang, never saw the rewrite finish, never checked a value | [`traces/agent-m1/feature-leakage-churn__koFPMV7/`](traces/agent-m1/feature-leakage-churn__koFPMV7/) |
+| `feature-leakage-churn__zhHaP4k` | `gpt-oss-120b` | 2 | 0.0 | 0, 0, 0 (the run on H killed at the 60 s cap) | none compared | 3,600 s (agent timeout) | capability failure: a per-row loop too slow for the cap, the left-out feature kept, `_loaded_at` trusted; its terminal stopped updating for its last 38 minutes (from step 36) | [`traces/agent-m1/feature-leakage-churn__zhHaP4k/`](traces/agent-m1/feature-leakage-churn__zhHaP4k/) |
+| `feature-leakage-churn__pdidSxk` | `qwen3.8-27b` | 1 | 0.0 | 0, 1, 1 | 53362 | 1,562 s | capability failure: `_loaded_at` trusted for the orders, so the migration (M2 to M5) missed: the profile of the attempt `loaded_at_everywhere` | [`traces/agent-m1/feature-leakage-churn__pdidSxk/`](traces/agent-m1/feature-leakage-churn__pdidSxk/) |
+| `feature-leakage-churn__TDWvT4Y` | `qwen3.8-27b` | 2 | 0.0 | 0, 1, 1 | 53362 | 1,130 s | capability failure: as attempt 1; it called the instruction's migrations clause "probably a red herring" (step 15 of its `agent/trajectory.json`) after a 365 of 365 match with the January sample (printed at step 12) | [`traces/agent-m1/feature-leakage-churn__TDWvT4Y/`](traces/agent-m1/feature-leakage-churn__TDWvT4Y/) |
+
+The checks and `A_mismatched_cells` are read from `verifier/reward.json`, as in the proof table above, whose names
+this section uses ("the order features" among them). Where the run on H failed (`run_failed_H` 1: killed at the 60 s
+cap, `rc=-9` in `verifier/test-stdout.txt`, or the crash), grading stopped after it, so all three checks are 0 and
+check A compared nothing. Agent time is `agent_seconds` in `../agent_trials_m1.json`; at 3,600 s the agent timeout
+stopped the agent (`AgentTimeoutError` in `result.json`) and its work was graded as it stood. The outcome is the
+verdict of the authors' review of the eight trials (2026-11-03, by model agents, recorded outside this repository): one
+reader read every trajectory, compared each final `/app` with the package and re-ran it on H on the authors' Mac, and a
+second tried to break each verdict and upheld all eight.
+
+- Outcome: 0 of 8 passed (0 of 8 has a Wilson 95% upper bound of 0.32). Three of the same four models
+  (`gemma-4-31B-it`, `glm-5.3-flash`, `qwen3.8-27b`) passed the other four tasks of the run at nearly every attempt,
+  23 of their 24 attempts there, against 0 of 6 here (`../agent_trials_m1.json`), so the harness does not block
+  success in general (INFERENCE, the review's). INFERENCE (the review's): for these models under
+  `terminus-2`, task v3 meets "cannot reliably complete", while Claude Code on Opus 5.5 passed it 3 of 3 (above).
+  Model and harness both differ between the two sets, so the gap cannot be split between them, and as no model of run m1
+  ran task v2, run m1 does not measure how much the hardening raised the bar for these models (INFERENCE). A low pass
+  rate is not itself the goal (gate check G29): nothing was added to the task because of either set of trials.
+- What separated the trials (the review): whether the agent read `_ops/` beyond its first lines. The six trials that
+  ran only `head` on the two records, or never opened them, all missed the migration. Both `glm-5.3-flash` trials
+  parsed the records and worked out what the migration was in their first minutes (`__MuZJi75` saw the rename within
+  about a minute; `__LcSFoqe` named the migration about 1.9 minutes in (step 13) and had worked out the dual run
+  within about 6). Claude Code read `_ops/` from its third tool call (above).
+- Trusting `_loaded_at` for the orders: both `qwen3.8-27b` trials built every other feature right, `plan` and
+  `te_district` included, and left out `days_since_last_login`, but took each order as visible from its `_loaded_at`,
+  which for the orders loaded before the rename is a commit into `orders_new` (the backfill's, or an hourly one during
+  the dual run) instead of the commit of the legacy load and the rename that `_ops/` records (mechanisms M2 to M5 of
+  the design record, section 4). Check A failed on the order features only (`orders_7d` 4345, `orders_30d` and
+  `spend_30d_cents` 16318 each, `days_since_last_order` 16381), while both B checks passed. Both read only the first
+  lines of `_ops/scheduler.log` and `_ops/commits.jsonl`, and their only check was the January sample in `logs/`, which
+  matched 365 of 365 and cannot see these mechanisms (below). `__5ZCVEie` (`gemma-4-31B-it`) trusts `_loaded_at` in
+  the same way: the review's run of its code without the cap (recorded outside this repository) gives the same 53,362
+  cells.
+- Code, speed and checking: `__bkqVNqc` (`gemma-4-31B-it`) assigned into temporary copies (`x[mask][i] = v` in
+  `churn/windows.py` and `churn/status.py`), so `orders_7d`, `orders_30d`, `spend_30d_cents` and `tickets_30d` are 0
+  and `days_since_last_order` and `status` null on every row of H, and it kept the shipped proxy for `te_district`
+  (325,551 mismatched cells in all, 267,718 of them in the six features); it timed its command but never compared the
+  output with the January sample. `__5ZCVEie` timed a run at 2 min 38.8 s on `/app/data`, rewrote the build, never
+  saw its last version finish and declared the task complete; on H the 60 s cap killed it
+  (`rc=-9 timed_out=True 60.101s` in `verifier/test-stdout.txt`). Both `gpt-oss-120b` trials replaced the build with a
+  loop over the scoring points, which the cap killed (at 60.025 s and 60.014 s), kept the left-out feature
+  `days_since_last_login` and trusted `_loaded_at`; `__koFPMV7` never timed its runs or checked any output value (it
+  saw its first per-row build hang and killed it at step 15, then rewrote it as another per-row loop that it never saw
+  finish), and the review's run of it without the cap (recorded outside this repository) took 157.6 s and missed 281,387
+  cells. The instruction states the 60 s cap and asks the agent to time a run on `/app/data`.
+- The near miss, `__LcSFoqe` (`glm-5.3-flash`): it found the order table's migration in its first minutes and wrote
+  `churn/visibility.py`, which parses the two records and gives each order placed before the rename the commit of the
+  committed legacy range that holds it; its prototype matched the January sample on all ten features, its run on H
+  took 13.855 s, and nine of the ten features had 0 mismatches there. It lost 2,511 `te_district` cells to an index
+  bug at district boundaries: lines 66 to 68 of its final `churn/encoding.py` (the final `/app` is not shipped;
+  `agent/trajectory.json` prints the file at step 57) take the previous district's row when a point's own district
+  has no label loaded before t, where the right value is the global prior. The same bug moved 2,163 and 2,341 cells
+  in the two B checks. It had fixed this pattern in `churn/status.py` and planned a check of stability under the
+  grader's cuts, which this bug fails, when the agent timeout stopped it, at about 59 s per step. INFERENCE (the
+  review's): with about 10 more minutes it might have found the bug; the timeout is not a task defect.
+- `__MuZJi75` (`glm-5.3-flash`) also understood the migration early but spent the hour on an event engine of its own,
+  `churn/live_features.py`, with indexing, syntax and type bugs, at about 62.6 s per step; its last full run still had
+  `orders_7d` and `orders_30d` wrong on 279 of the 365 sample rows, and its final code fails on H with `NameError:
+  name 'point_positions' is not defined` (`verifier/test-stdout.txt`).
+- `__zhHaP4k` (`gpt-oss-120b`): its terminal stopped updating for its last 38 minutes (counted from step 36; the last
+  output event of `agent/recording.cast` is at 19:32:01 UTC, 41 minutes before the agent phase ended). A slow test it
+  had started in the foreground held the terminal while it kept typing; the echoed input stopped at 4,095 bytes, the
+  Linux terminal's canonical-mode input limit, and 190 of its 208 later observations end with the same echoed line,
+  while the shell ran queued commands (two of its files were written during the freeze, by the file times in its
+  `/app`, which is not shipped). INFERENCE (the review's): a stall in the harness's terminal relay that the model set
+  off. Its graded code is the per-row build it had described, and it fails on its own.
+- Fair grading (the review): the expected values follow from the task's own documents. A check written for the review
+  from `docs/WAREHOUSE.md`, `live/features.py` and H's own `_ops/` records only, without opening `solution/` or the
+  authoring code, gives 0 mismatched cells against `tests/expected/H_features.parquet` on `te_district` (all 57,896
+  rows; the 2,535 rows whose district has no label loaded before t take the global prior) and on the four order
+  features, and trusting `_loaded_at` instead gives exactly the 53,362 cells of the Qwen trials; its parser of the two
+  records needed about 60 lines (neither its script nor its output is in this repository). The check was written by a
+  model agent whose context described the design (INFERENCE, as for the blind read in section 14 of the design record),
+  so it is independent of the authors' code but not of their knowledge. Every failed check was a real mismatch; the 60 s
+  cap, the left-out feature and the pointer to `_ops/` are in the instruction, and no trial used a gap in the grader. No
+  trial passed, so no pass is suspect.
+- A design risk (MEDIUM in the review; not a wrong check): the January sample (`logs/live_2026-01_sample.jsonl`, 365
+  requests) is the only validation signal in `/app`, and it is silent on the order mechanisms M2 to M5 (design
+  record, section 18). Four trials checked their values only against it (`__pdidSxk`, `__TDWvT4Y` and `__LcSFoqe`
+  matched all 365 requests; `__MuZJi75` never did), and `__TDWvT4Y`, after reading the doc's name rule and the
+  instruction's migrations clause, called that clause "probably a red herring" (step 15 of its
+  `agent/trajectory.json`) and took its 365 of 365 match (printed at step 12) as confirmation (its step 13 calls the
+  match "a strong validation"). Task v3 removed task v2's 42-request shadow-week sample, the one sample that
+  contradicted trusting `_loaded_at`; the design record now weighs that loss (section 18). The repository README states
+  the sample's limit under its known limitations.
+- The harness (a defect of `terminus-2` in Harbor 0.25.0, MEDIUM in the review; not a task defect): it cuts each
+  observation over 10,000 bytes twice, so the marker the agent reads says 69 to 71 bytes were omitted when hundreds of
+  bytes to about 8 KB were. Here 15 observations of six trials were cut. It hid task text from two: `__pdidSxk` saw
+  about 10 of the 17.9 KB that the six `cat`s of one early step printed, and never saw the lines of
+  `docs/WAREHOUSE.md` on the nightly `legacy_orders` job or its section on labels; `__5ZCVEie` read the doc once,
+  cut, and never saw the name rule or the definition of `_loaded_at`. No verdict changed: `__TDWvT4Y` saw the whole
+  doc and made the same 53,362-cell error, and `__5ZCVEie` also broke the 60 s cap.
+- Network and answer key: the review's scans of every keystroke, observation and message, of `agent/terminus_2.pane`
+  and `agent/recording.cast` and of each final `/app`'s text files found no network command (curl, wget, nc, ncat,
+  ssh, scp, ping, dig, telnet, pip, apt, `git clone`), no urllib, requests, socket or http code, no URL, no IP address
+  other than loopback, no GitHub host, and no path under `/tests`, `/solution` or `/logs/verifier`; every pattern hit
+  was false (`ncat` and `nc` after an escaped newline, `ping` inside words, `wget` in the agent's standard prompt, the
+  words "ssh session" in one message). The verifier's probe found a private, loopback-only namespace on every graded
+  run (`net_private_*` 1 in each `reward.json`). So the sandbox's network (Harbor's default, under the limits of the
+  authors' Daytona Tier 1 account) was available but unused, and no trial is excluded.
+- Each folder in `traces/agent-m1/<trial>/` holds `agent/trajectory.json` (Harbor's record of the agent's steps: the
+  model's messages, its keystrokes and what the terminal showed), `agent/terminus_2.pane` and `agent/recording.cast`
+  (the terminal's text and a recording of it), the trial and job records (`result.json`, `config.json`, `trial.log`,
+  `job_result.json`, `job_lock.json`, `artifacts/manifest.json`) and `verifier/`.
+  [`traces/agent-m1/REDACTIONS.md`](traces/agent-m1/REDACTIONS.md) lists what was replaced in them (the authoring
+  Mac's paths and the model service's URL); a scan of the copies (2026-11-03) found no key in any file.
 
 ## Task v2 (`second-version/`)
 

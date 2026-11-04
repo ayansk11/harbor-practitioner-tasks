@@ -9,7 +9,14 @@ the Daytona proof, the agent trials and their pre-registration (11), the gate re
 revision changed (14). The first version's record, which the pre-revision files under `authoring/ab-test-reanalysis/`
 cite by section number, is in git: `git show 495c9f5:docs/ab-test-reanalysis/DESIGN.md`.
 
-Last updated: 2026-10-31, 23:03 MST (Mac clock): fixes after a pre-commit check: the first version's grader is compared
+Last updated: 2026-11-04, 00:45 MST (Mac clock): run m1's models are called four models of an OpenAI-compatible model
+service, no longer "open" ones, since which weights served them is UNVERIFIED (sections 11.4 (g) and (h), 12 (G14) and
+13; the head of 2026-11-03 below is edited to match); limitation 2 (section 13) no longer puts the push in the future.
+Before that, 2026-11-03, 17:44 MST (Mac clock; late edits to 21:15 MST by the file's time): run m1 recorded (eight
+trials of Harbor's `terminus-2` agent with four models of an OpenAI-compatible model service, 5 of 8 passed; section
+11.4 (h)), and the statements it changes brought up to date: how other agents fare (11.4 (g), limitation 4), the README
+row (section 13) and the gate record's G14, G20, G26, G28 and G29 (section 12).
+Before that, 2026-10-31, 23:03 MST (Mac clock): fixes after a pre-commit check: the first version's grader is compared
 with `git show 495c9f5:...`, Daytona Tier 2 is marked as not tried in sections 11.1 and 13, and two locators and one
 command path are corrected. Before that, 2026-10-31, 22:01 MST (Mac clock): wording fixed after a check of 2026-10-31:
 "the authors" in sections 3, 11.1 and 11.3, the shipped trial logs named for the web-tool flag (11.3), G30 scored PASS
@@ -22,8 +29,8 @@ with the measured pass count, 3 of 3 (section 11.4 (g)), and the record's wordin
 the blind read and the fix pass, before any Daytona run or agent trial of the revised package.
 
 The Daytona proof rev1 (2026-10-31, 01:37:54 to 01:51:53 MST, on the copy without the agent network line) gave ALL AS
-EXPECTED (section 11.2); the agent trials: sections 11.3 and 11.4. A verdict marked "(local)" rests on runs on the Mac
-(Darwin arm64, Python 3.12.13; FACT, auth/solution_checks.out.md line 3).
+EXPECTED (section 11.2); the agent trials: sections 11.3 and 11.4, run m1 of 2026-11-03 in 11.4 (h). A verdict marked
+"(local)" rests on runs on the Mac (Darwin arm64, Python 3.12.13; FACT, auth/solution_checks.out.md line 3).
 
 Labels: FACT (sourced or measured; the locator follows), INFERENCE (reasoned; the basis is named), RECOMMENDATION,
 UNVERIFIED. Paths are relative to the repository root: "auth/x" = `authoring/ab-test-reanalysis/x`, "T/x" =
@@ -97,7 +104,7 @@ not enter Harbor's task digest, which hashes only `task.toml`, `instruction.md`,
 
 | Path | What it is |
 |---|---|
-| `task.toml` | schema 1.4; the `/app` artifact with `data`, `__pycache__`, `.venv` excluded; `[agent]` 3,600 s and `network_mode = "no-network"`; `[verifier]` separate, 1,000 s, its own 1 vCPU / 2,048 MB; agent sandbox 2 vCPU / 4,096 MB; the label `difficulty = "hard"`, written before any trial (the measured count: section 11.4 (g)) |
+| `task.toml` | schema 1.4; the `/app` artifact with `data`, `__pycache__`, `.venv` excluded; `[agent]` 3,600 s and `network_mode = "no-network"`; `[verifier]` separate, 1,000 s, its own 1 vCPU / 2,048 MB; agent sandbox 2 vCPU / 4,096 MB; the label `difficulty = "hard"`, written before any trial of the revision (the measured counts: section 11.4 (g) and (h)) |
 | `instruction.md` | the request, what is authoritative and what is not, the command, how the result is checked (limits, packages, tolerances, the six readouts), the shared closing sentence |
 | `environment/Dockerfile` | pinned base digest; numpy 2.5.4, pandas 3.1.0, scipy 1.18.1, python-dateutil 3.0.0, six 1.17.0, tzdata 2026.6; `COPY app/ /app/` (unchanged from the first version) |
 | `environment/app/EXPERIMENT.md` | the plan, agreed 2026-08-25: question, randomization, population, metric, uncertainty (delta method, user bootstrap with at least 2,000 resamples, CR1), SRM check, decision order, input files, output keys |
@@ -434,11 +441,11 @@ tasks/ab-test-reanalysis` prints "OK ab-test-reanalysis" (runs after a change of
 network setting; the earlier rule refused the line), as it did on the copy of the package without that one line;
 `harbor lint tasks/ab-test-reanalysis --json` prints `[]`; Harbor 0.25.0's `TaskConfig.model_validate` accepts
 `task.toml` (agent 3,600 s, no-network; verifier separate, 1,000 s; environment 2 CPUs, 4,096 MB; the label
-`difficulty = "hard"`, written before any trial, section 11.4 (g)); `tools/sync_kit.py --check` exits 0;
-auth/app_checks.py exits 0 twice with byte-identical output (93 PASS); auth/grader_probes.py prints "40 probes: ALL
-AS EXPECTED" with byte-identical output; a lint of the 85 text files of the package and auth/ finds no non-ASCII
-byte, no em or en dash and no machine path. Not re-run in the fix pass, because none of their inputs changed:
-auth/solution_checks.py ("ALL CHECKS PASS", 2026-10-30) and auth/calibration_study.py.
+`difficulty = "hard"`, written before any trial of the revision, section 11.4 (g)); `tools/sync_kit.py --check`
+exits 0; auth/app_checks.py exits 0 twice with byte-identical output (93 PASS); auth/grader_probes.py prints "40
+probes: ALL AS EXPECTED" with byte-identical output; a lint of the 85 text files of the package and auth/ finds no
+non-ASCII byte, no em or en dash and no machine path. Not re-run in the fix pass, because none of their inputs
+changed: auth/solution_checks.py ("ALL CHECKS PASS", 2026-10-30) and auth/calibration_study.py.
 
 ## 10. Blind read
 A second reader (Sonnet 5.5) got only `T/instruction.md`, `T/environment/app/` (plan, docs, PM note, README, shipped
@@ -569,7 +576,7 @@ its system prompt among them) are not shipped.
 
 ### 11.4 Pre-registration
 Items (a) to (f) were written on 2026-10-31, before any agent trial of the revised task; (g) and the clarification of
-(b) were added after the three trials.
+(b) were added after the three trials, and (h) on 2026-11-03, after run m1.
 (a) The design is frozen as approved on 2026-10-30, with its three grafts and their realism reasons (section 1.2:
     the plan's exclusion sentence, the dogfood accounts with the masked-imbalance set h_srm, the arm-swapped and
     arrow-free hidden sets). Nothing is added to the task because of a trial result (G29).
@@ -598,13 +605,70 @@ Items (a) to (f) were written on 2026-10-31, before any agent trial of the revis
     the visible decision from the agent's files; with the tests open, its own code reproduced all six expected
     readouts. Three trials show that this agent solves the task, not its pass rate: 3 of 3 has a Wilson 95% interval
     of 0.44 to 1.00. The first version had 1 of 3 with Harbor's `terminus-2` agent and `openai/gpt-oss-120b` ((f)).
-    How other agents, the external reviewer's among them, fare on the revision is UNVERIFIED. `task.toml` still
-    carries the label `difficulty = "hard"`, written before any trial; an edit to `task.toml` would change the proven
+    How other agents fare on the revision was not measured when (g) was written; run m1 has since measured four models
+    of an OpenAI-compatible model service with Harbor's `terminus-2` agent, 5 of 8 passed ((h)), and how other agents
+    fare, the external reviewer's among them, is still not known. `task.toml` still carries the label
+    `difficulty = "hard"`, written before any trial of the revision; an edit to `task.toml` would change the proven
     package's digest.
+(h) Run m1, recorded 2026-11-03 (FACT: each trial's `result.json`, `config.json`, `job_lock.json`,
+    `agent/trajectory.json` and `verifier/reward.json`, shipped in `validation/ab-test-reanalysis/traces/agent-m1/`;
+    the run's rows in `validation/agent_trials_m1.json`; the verdicts are the authors' review of the eight trials,
+    2026-11-03, by model agents, recorded outside this repository, in which one reader read every trajectory and
+    compared each final `/app` with the package and a second tried to break each verdict and upheld all eight). Harbor's
+    `terminus-2` agent (2.0.0) with four models of an OpenAI-compatible model service, named as the service names them
+    (which weights served them is UNVERIFIED), two attempts each, each trial its own one-trial job, at most two at a
+    time, 2026-11-03 from 10:00:37 to 10:25:21 MST, on the proof's copy (the digest `sha256:0fc5d05c...` in each
+    `job_lock.json`, the `task_checksum` `274fcfeb...` in each `result.json`), so with the sandbox's own network. The
+    pre-registration was written for the Claude Code trials; its rules (a), (b) and (e) are applied to run m1 too. Agent
+    time is `agent_seconds` in `validation/agent_trials_m1.json`; "6 of 6" and the like are `sets_passed` in
+    `verifier/reward.json`.
+
+| Model | Attempt 1 | Attempt 2 |
+|---|---|---|
+| `gemma-4-31B-it` | `ab-test-reanalysis__tPd3ppr`: 1.0 (6 of 6), 89 s | `ab-test-reanalysis__muieaNN`: 0.0 (3 of 6), 74 s |
+| `glm-5.3-flash` | `ab-test-reanalysis__U9Ka5Fx`: 1.0 (6 of 6), 560 s | `ab-test-reanalysis__9bw5VW9`: 1.0 (6 of 6), 359 s |
+| `gpt-oss-120b` | `ab-test-reanalysis__KhS7pKJ`: 0.0 (0 of 6), 135 s | `ab-test-reanalysis__JYJviea`: 0.0 (0 of 6), 146 s |
+| `qwen3.8-27b` | `ab-test-reanalysis__JZg3Hry`: 1.0 (6 of 6), 377 s | `ab-test-reanalysis__sFqSFFL`: 1.0 (6 of 6), 408 s |
+
+- 5 of 8 passed (a Wilson 95% interval of 0.31 to 0.86; two attempts per model are counts, not rates). Across the
+  whole run the three models other than `gpt-oss-120b` (`gemma-4-31B-it`, `glm-5.3-flash`, `qwen3.8-27b`) passed the
+  four tasks other than `feature-leakage-churn` in 23 of their 24 attempts (`validation/agent_trials_m1.json`).
+- Rule (b): the three failures are capability failures, none a task defect. Both `gpt-oss-120b` trials never opened
+  the evidence (no command reads `app/docs/`, which the instruction names): `__KhS7pKJ` kept the shipped readout (the
+  nop's problem counts) and `__JYJviea` moved the SRM test to the raw assignment counts, against plan section 6.
+  `__muieaNN` read the launch log's dogfood line, dismissed the 100 accounts by size and stopped once the SRM test
+  passed, against plan section 3 (a user whose variant was not set by the randomization is not in the experiment); its
+  problem counts (8, 6 and 9) equal those of `keep_overrides` (failing sets: section 9; counts:
+  `validation/ab-test-reanalysis/README.md`, the run rev1 table). No failing agent read an unclear sentence and took a
+  reading the text allows.
+- Rule (a): nothing is added to the task because of these results (G29); the count is stated in the validation
+  README. Rule (e): no command or output of the eight trajectories reached a network host or touched `/tests`,
+  `/solution` or `/logs/verifier`, so no trial is excluded, and a scan of the shipped copies found no key.
+- What the passes show: each of the five wrote the reference fix's three rules and kept the shipped delta method and
+  SRM test (`__U9Ka5Fx` also guarded `stats.py` for an arm with fewer than two users or no counted pageview), so each
+  should equal the reference on any non-degenerate export of the layout (INFERENCE, the review's: the rules equal the
+  reference's, but only the six graded exports were run, and degenerate exports are unspecified, limitation 8). All
+  five named the hand-assigned accounts from DATA_DICTIONARY's `method` row and the launch log before any query of
+  that column, and `__tPd3ppr` passed in 89 s without any query of the data (its only commands on `/app/data` ran the
+  fixed pipeline, as the instruction asks). INFERENCE (the review's): in practice H3 is a reading item for these
+  models, not the investigation that section 1.2 calls it, and on this evidence the revision is not a task that these
+  models cannot reliably complete (two of them, `glm-5.3-flash` and `qwen3.8-27b`, 4 of 4); it separates
+  agents that read the evidence and act on it from agents that skip or dismiss it. INFERENCE: the label
+  `difficulty = "hard"`, written before any trial of the revision, overstates the task for Claude Code (3 of 3, (g))
+  and for two of the four models of run m1 (`glm-5.3-flash` and `qwen3.8-27b`, 4 of 4); it stays, as (g) says.
+- Against the other trials: `gpt-oss-120b` passed 0 of 2 here, for another reason than the first version's failures
+  ((f); the validation README, section "First version"): it never opened the docs. Model and harness both differ from
+  the Claude Code trials, so the gap between their 3 of 3 and this 5 of 8 cannot be split between the two
+  (INFERENCE). The approved design's 20% to 45% estimate ((g)) was a guess for a frontier agent, not measured; the two
+  sets together passed 8 of 11 trials.
+- Harness: `terminus-2` in Harbor 0.25.0 cuts each long observation twice (`agents/terminus_2/terminus_2.py` lines
+  745-781, 1443, 1635 and 1638), so its marker understates what was cut (a harness defect, MEDIUM in the review); no
+  observation of the three failing trials was cut. `apply_patch` does not exist in the sandbox (both `gpt-oss-120b`
+  trials tried it). Neither changed a verdict.
 
 ## 12. Gate record
 ```
-Gate record: ab-test-reanalysis, the revision as built (2026-10-31; local, the Daytona proof rev1 and three Claude Code trials)
+Gate record: ab-test-reanalysis, the revision as built (2026-10-31; local, the Daytona proof rev1 and three Claude Code trials; run m1 added 2026-11-03)
 Applies to: task ab-test-reanalysis
 G1  PASS - plan, docs, code, the visible and five hidden exports, references and pinned images are in the package; neither the agent's work nor grading needs a network (the images install pinned wheels at build time, as in every task)
 G2  PASS - the PM gets the plan's no_ship before a launch that two wrong readings would have shipped or blocked, and a pipeline that is right for the next experiments
@@ -619,24 +683,24 @@ G10 PASS - a corrected readout and a pipeline that gives the plan's readout on a
 G11 PASS (local) - only readout values are compared; canonical, alt_time (bootstrap) and alt_recount (CR1, stdlib) differ in route, code and interval method and score 1
 G12 PASS - ten attempts and five probes score 0, each failing where the design says (the ten attempts also on Daytona, rev1); hard-coding, a one-off script and an instance patch fail the hidden runs; residual: a one-rho design-effect factor on the pageview interval passes the CI part when every count is right (limitation 6)
 G13 PASS - the three valid routes give identical counts (assertion (e)); the plan's interval methods stay within 0.1111 hw of the reference, half the band or less; alt_time and alt_recount 1.0 on Daytona (rev1)
-G14 PASS - the work is reading the plan, the docs, the code and the data against each other and judging what each number measures; three defects, each needed (every two-of-three fix scores 0); the plan states H3's rule, but neither it nor the instruction names the hand-assigned accounts (the `method` column, the launch record's log and the gap between PM_NOTE's 17,165 users of B and the 17,065 hash users of B in the data show them); measured: 3 of 3 Claude Code trials passed (section 11.4 (g))
+G14 PASS - the work is reading the plan, the docs, the code and the data against each other and judging what each number measures; three defects, each needed (every two-of-three fix scores 0); the plan states H3's rule, but neither it nor the instruction names the hand-assigned accounts (the `method` column, the launch record's log and the gap between PM_NOTE's 17,165 users of B and the 17,065 hash users of B in the data show them); measured: 3 of 3 Claude Code trials passed (section 11.4 (g)), and 5 of 8 terminus-2 trials with four models of an OpenAI-compatible model service in run m1, each pass naming the hand-assigned accounts from the docs before any query of the `method` column, so in practice H3 was found by reading (INFERENCE, 11.4 (h))
 G15 PASS (local) - one reading per rule, confirmed by the blind read; exact counts make a misreading fatal, so every open reading it found was closed before any trial; tolerances and the 120 s cap are stated (slowest valid run 2.155 s on the Mac, 2.731 s on Daytona)
 G16 PASS - fixed seeds and gzip mtime 0; generation byte-identical twice and equal to the package; pins and base digest unchanged; references must agree or generation stops; deterministic grader; canonical 10 of 10 and the clean rebuild (force-build) 1.0 on Daytona (rev1)
 G17 PASS - answers and hidden inputs only in tests/, which only the separate verifier image holds; environment/Dockerfile copies app/ only and nothing in /app refers to tests/; on Daytona the verifier checked its 26 files in every trial (rev1) and no Claude Code trial's command touched /tests; public after the push (limitation 2)
 G18 PASS - Harbor's TaskConfig validates task.toml and harbor lint is clean; check_task.py passes the package and the copy without the line
 G19 PASS - its own instruction, environment, verifier (kit in sync: sync_kit.py --check) and solutions; nothing depends on another task
-G20 PASS - the row is in the repository README (README.md, the ab-test-reanalysis row of the table "The tasks"); its validation cell gives run rev1 and the three Claude Code trials as sections 11.2 and 11.3 record them
+G20 PASS - the row is in the repository README (README.md, the ab-test-reanalysis row of the table "The tasks"); its validation cell gives run rev1, the three Claude Code trials and run m1 as sections 11.2, 11.3 and 11.4 (h) record them
 G21 PASS - setup, the network line and the limitations are written here (sections 11 and 13) and in the repository README (this task's row, "The agent network line" under Setup, and the task's entries under "Known limitations")
 G22 PASS - canonical 1.0 in both interpreter modes locally and 10 of 10 on Daytona (rev1)
 G23 PASS - nop (the shipped "invalid") 0.0, failing all six, locally and on Daytona (rev1)
 G24 PASS - ten attempts 0.0 with solve.sh exit 0 and no crash, each a realistic analyst mistake; on Daytona (rev1) each exited 0 on all five hidden runs and failed the sets of section 9
 G25 PASS - alt_time and alt_recount 1.0 in both modes locally and on Daytona (rev1)
-G26 PASS - prompt, environment and verifier are readable; the proof traces of rev1 (validation/ab-test-reanalysis/traces/<variant>/), the redacted traces of the three Claude Code trials (validation/ab-test-reanalysis/traces/agent-claude-code/<trial>/) and the first version's evidence (validation/ab-test-reanalysis/first-version/) are in the repository
+G26 PASS - prompt, environment and verifier are readable; the proof traces of rev1 (validation/ab-test-reanalysis/traces/<variant>/), the redacted traces of the three Claude Code trials (validation/ab-test-reanalysis/traces/agent-claude-code/<trial>/) and of the eight trials of run m1 (validation/ab-test-reanalysis/traces/agent-m1/<trial>/) and the first version's evidence (validation/ab-test-reanalysis/first-version/) are in the repository
 G27 PASS (condition) - no key or machine of the authors is needed; where the agent network line cannot be enforced Harbor rejects the trial, and the runner removes the line (section 11.1)
-G28 PASS (design) - the work is valuable, the score checks the plan's readout, and a failure shows a convenience field or a filter trusted by its name, or a missed hand assignment; pre-registration (b) separates task defects; measured: 3 of 3 Claude Code trials passed, so no failure was there to classify (11.4 (g))
-G29 PASS - three faults from one launch, no distractor, nothing added for difficulty; the pre-registration forbids adding a trap after a trial, and none was added after the 3 of 3 (11.4 (g))
+G28 PASS (design) - the work is valuable, the score checks the plan's readout, and a failure shows a convenience field or a filter trusted by its name, or a missed hand assignment; pre-registration (b) separates task defects; measured: 3 of 3 Claude Code trials passed (11.4 (g)); run m1's three failures are capability failures under (b), the docs never opened or the hand-assigned accounts dismissed, none a task defect (11.4 (h))
+G29 PASS - three faults from one launch, no distractor, nothing added for difficulty; the pre-registration forbids adding a trap after a trial, and none was added after the 3 of 3 or run m1's 5 of 8 (11.4 (g), (h))
 G30 PASS (plan) - delivered by the revision commit and push on the authors' word; the reviewer is invited already
-Result: PASS; no FAIL. The Daytona proof rev1 (2026-10-31) covers G4, G12, G13, G16, G17 and G22 to G25. G30 is completed by the revision commit and its push.
+Result: PASS; no FAIL. The Daytona proof rev1 (2026-10-31) covers G4, G12, G13, G16, G17 and G22 to G25. G30 is completed by the revision commit and its push. Run m1 (2026-11-03) adds to the measured parts of G14, G28 and G29.
 ```
 
 ## 13. README row, limitations, open issues
@@ -648,7 +712,8 @@ exact, CTR and diff within 1e-9, SRM p within 1% relative, flag and decision exa
 a delta-method reference (bootstrap and CR1 accepted); validation = the local matrix of section 9; the Daytona proof
 rev1 (oracle 10 of 10 = 1.0; alt_time and alt_recount 1.0; clean rebuild 1.0; nop 0.0; ten attempts 0.0); three Claude
 Code trials with `claude-opus-5-5`, web search off, 3 of 3 passed (run on the copy without the agent network line, so
-with the sandbox's network; section 11.3).
+with the sandbox's network; section 11.3); run m1, Harbor's `terminus-2` agent with four models of an OpenAI-compatible
+model service on the same copy, 5 of 8 passed (section 11.4 (h)).
 
 Limitations:
 1. Synthetic data: the lifts (+10%, +13%, -10%), the rates and the velocity threshold that only the carousel's arrows
@@ -656,7 +721,7 @@ Limitations:
    no arrow taps (on visible: 1,466 item, 14 link and 0 nav events; section 3 item 4), and 12,789 of 34,100 assigned
    users (37.5%) have pageviews but none at `assigned_at`, which DATA_DICTIONARY explains as leaving before the page
    loaded (counts: an independent review of 2026-10-31).
-2. The hidden tests are public once this revision is pushed: the hidden inputs and expected readouts are in `T/tests/`
+2. The hidden tests are public: the hidden inputs and expected readouts are in `T/tests/`
    of a public repository, so an agent with network access can fetch them; on Daytona Tier 1 and 2 GitHub's hosts
    stay reachable (the repository README's limitation "The hidden tests are public").
 3. The agent network line (section 11.1): Daytona Tier 1 refuses it, so the proven package differs from the shipped
@@ -665,9 +730,12 @@ Limitations:
    for fetches of the public hidden tests.
    Where the line is enforced, Harbor adds an installed agent's model host to the agent phase's allowlist and turns
    off the agent's web tools (Harbor 0.25.0 source, section 11.1); no run has used that allowlist yet.
-4. Three trials only: 3 of 3 passed (section 11.4 (g)). They show that this agent can solve the task, not its pass
-   rate (3 of 3 has a Wilson 95% interval of 0.44 to 1.00). They ran with the sandbox's network (section 11.3); how
-   other agents, the external reviewer's among them, fare is UNVERIFIED.
+4. Few trials: Claude Code 3 of 3 (section 11.4 (g)) and, in run m1, Harbor's `terminus-2` agent with four models of an
+   OpenAI-compatible model service, 5 of 8 (11.4 (h)), all with the sandbox's network. They show which agents can solve
+   the task, not pass rates (3 of 3 has a Wilson 95% interval of 0.44 to 1.00, 5 of 8 one of 0.31 to 0.86). In run m1
+   every pass found the hand-assigned accounts in the docs before any query of the `method` column, so H3 tested reading
+   more than investigation (INFERENCE, the review's), and two of the four models passed 2 of 2. How other agents fare,
+   the external reviewer's among them, is not known.
 5. Thin margins, to be re-checked after any data change (auth/generation_report.out.md, auth/calibration_study.out.md):
    visible keep_overrides ships with its lower bound at +0.27 of its half-widths (the soft condition); h_srm
    keep_overrides at +0.38 against its 0.35 floor; h_neg's assertion (m) miss 0.0448 against 0.03; calibration gate 1

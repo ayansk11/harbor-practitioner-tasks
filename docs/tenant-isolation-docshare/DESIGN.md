@@ -6,7 +6,16 @@ G1 to G30), the Daytona proof results and the known limitations. Paths are relat
 `submission/` in a command is that root as it was named on the authoring Mac. Short names such as `tests/grade.py`
 are inside the task folder `tasks/tenant-isolation-docshare/`.
 
-Last updated: 2026-11-03, 06:37 MST (Mac clock): fixes after a pre-commit check (no count, result or verdict changed):
+Last updated: 2026-11-04, 01:16 MST (Mac clock): the note after the gate record (section 8), the first place after this
+head that names the review of run m1, now says that the review was made by model agents and is recorded outside this
+repository.
+Before that, 2026-11-03, 17:32 MST (Mac clock; late edits to 20:38 MST by the file's time): run m1 of 2026-11-03, the
+first agent trials on the current grader (Harbor's `terminus-2` agent with four models of an OpenAI-compatible model
+service, two trials each; 6 of 8 pass; `validation/tenant-isolation-docshare/README.md`, "Agent trials"), is recorded in
+section 9 (the README row, the limitation on strong agents and the replay gap's note on agent trials); two LOW findings
+of the run's review are added to the known limitations (section 9), and a dated note after the current gate record
+(section 8) says what the run adds. No package file, no count of sections 6, 7 and 10 and no gate verdict changed.
+Before that, 2026-11-03, 06:37 MST (Mac clock): fixes after a pre-commit check (no count, result or verdict changed):
 section 7's `replay_memo` row says why it has no held-back rename failure (its rename is carried out, then answered 404,
 so the held sweep counts it) and that its delete checks the login only, where its `ABOUT.md` says role-only; six prose
 lines longer than 120 columns are rewrapped, no word changed.
@@ -462,6 +471,18 @@ G30 PASS (plan) - delivered by the commit and push of this fix, on the authors' 
 Result: PASS (no FAIL, no N/A). The (run) items are proven by the recorded Daytona run full2 of 2026-11-03 (section 10.1); G30 is completed by the commit and push of this fix (on the authors' go).
 ```
 
+Note (2026-11-03, after run m1; the record above is unchanged): the eight agent trials of run m1 ran on this package
+(its digest in all eight `job_lock.json` files) and add evidence to four items. G13: the six passes, by three models,
+are six different fixes, none a reference, and each scored 1.0. G28: in the two failing trials every failed refused
+request that their `verifier/test-stdout.txt` shows (up to three per check) was answered 200, 201 or 204, a real gap
+of the fix (INFERENCE, from the run's review (by model agents, recorded outside this repository), whose replay is not
+shipped: the same holds for all of them, and the permitted steps that failed broke because refused writes had gone
+through before them); no failure came from the instruction or the grader. G21: section 9 now also lists the two LOW
+findings of that review (bodies that are not JSON objects; the alt reference's answer to such a body on a foreign
+rename), both on input the grader never sends. G20: the repository README's validation cell for this task now also
+reports run m1 (6 of 8, on the current grader); the G20 line above, which says that the agent trials were graded by the
+grader before its fix, holds for the three trials of 2026-10-30 only.
+
 Previous record (superseded by the one above; kept for its "(run)" evidence, which is of the grader that run
 full1 proved, section 10.2). Its G12 FAIL was closed by the grader fix of 2026-11-03, and run full2 proved the fix
 (section 10.1). Since 2026-11-03 the files it cites as `validation/tenant-isolation-docshare/PROOF_RESULTS_full1.md`
@@ -515,17 +536,39 @@ org switching and support's read-only access; success check = about 3,700 HTTP r
 hidden database, refused and permitted ones mixed: refused ones must get a 4xx with no file data and change nothing
 (DB diff), allowed ones must answer as the untouched service does; validation = Daytona run full2 of 2026-11-03
 (section 10.1, the current grader) plus the local matrix in section 7; run full1 (section 10.2) and the agent trials
-of 2026-10-30 were graded by the earlier grader, before its fix of 2026-11-03.
+of 2026-10-30 were graded by the earlier grader, before its fix of 2026-11-03; the agent trials of run m1 (2026-11-03,
+6 of 8) by the current one (`validation/tenant-isolation-docshare/README.md`, "Agent trials").
 
 Known limitations (G21):
 - The flaw class is well known; strong agents may pass often (fine: "A low pass rate by itself is not a sign of
-  quality").
+  quality"). Updated 2026-11-03: they do. In run m1, the first agent trials on the current grader (Harbor's
+  `terminus-2` agent; `validation/tenant-isolation-docshare/README.md`, "Agent trials"), `gemma-4-31B-it`,
+  `glm-5.3-flash` and `qwen3.8-27b` passed 2 of 2 each, with six different fixes, while `gpt-oss-120b` passed 0 of 2
+  (0 of 5 with the trials of 2026-10-30 on the earlier grader), stopping after the 9 visible tests with the audit
+  incomplete. INFERENCE: for those three models the task is not hard; it separates only `gpt-oss-120b`, the model with
+  the fewest passes in the run (1 of 10 over the five tasks). Two trials per model are counts, not pass rates.
 - The second reader shares an author with `policy.py` (section 3).
 - The strict active-organisation rule (switch before touching the second org's files) is a policy choice. It is
   stated in PERMISSIONS.md section 2, but an agent that skims it may allow a member of both orgs too much and fail.
 - Thumbs must be byte-identical to today's previews; an agent that rewrites the renderer fails.
 - List order and export order are not checked (API.md states them; the instruction does not), so a fix that changes
   them still scores 1.
+- Bodies that are JSON but not an object (LOW; found 2026-11-03 by the review of run m1; not graded). The app's API.md
+  (line 44) says that malformed bodies get 400, but a non-empty list, a non-empty string, a non-zero number or `true`
+  sent by a permitted member to `PATCH /api/files/<id>` or `POST /api/export` gets 500 from the shipped service, from
+  both reference fixes and from four of the six passes of run m1 (the two `glm-5.3-flash` passes answer 400); an empty
+  list, an empty string, `0`, `false` and `null` get 400 everywhere. Cause: `request.get_json(silent=True) or {}`
+  followed by `body.get(...)` (`routes/files.py` lines 50-51 and `routes/export.py` lines 17-18 of the shipped
+  service). The grader sends only bad names, a string `file_ids` and an empty `file_ids` list (`tests/grade.py` lines
+  764-770), so this is lenient toward agents. Changing the references or the grader would change the package and its
+  digest.
+- The alt reference fix answers 500 where a refusal is due (LOW; found by the same review; not graded).
+  `solution/alt/docshare/routes/files.py` reads a rename's body (lines 58-59) before its organisation check (lines
+  60-62), so a member who renames another organisation's file with a body that is not a JSON object (such as `["x"]`
+  or `"x"`) gets 500, not the 403 or 404 of PERMISSIONS.md section 6; the shipped service also answers 500 there,
+  while the canonical fix and all six passes of run m1 refuse. The grader never sends such a body from a caller it
+  expects to be refused, so alt's scores (G13, G25) stand on what is graded, but on that input alt departs from the
+  policy.
 - The replay gap: found 2026-11-02, closed 2026-11-03 (a dated record).
   - 2026-10-28: the mixing of the two runs (section 5, "Mixed runs") defeats a service that refuses every write in
     one run and allows every write in the other (`phase_gate`: 0.0 in runs full1 and full2, section 10).
@@ -570,6 +613,8 @@ Known limitations (G21):
     `validation/tenant-isolation-docshare/first-version/traces/agent-r3/`) were graded by the earlier grader and have
     not been graded again. INFERENCE: the fix would not lift their 0, since each failed at least 460 refused-read
     checks in run 1 (their `verifier/reward.json`), whose reads the current grader sends unchanged (section 4).
+    Updated 2026-11-03: the first agent trials on the current grader are those of run m1, 6 of 8 (the first
+    limitation above); its two failures failed refused reads in run 1 too (among 435 and 1,166 failed run-1 checks).
 - The agent's service has the host network during grading (kit rule 8; the `network isolation: ON` of the Daytona
   logs is for the grader's own runs as uid 1001, such as the checkpoint, not for services), so it could send out what
   it serves, the hidden data of all four orgs. That would not raise its own score, but it would spoil the hidden data

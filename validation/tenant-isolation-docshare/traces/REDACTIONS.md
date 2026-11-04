@@ -1,15 +1,15 @@
 # Redactions in this traces folder (2026-11-03)
 
-Every file here is a copy of a Harbor trial or job file of the Daytona proof run `full2`, one trial per variant.
-Machine-specific paths were replaced; nothing else was changed (no reward, count or timing). A comparison of every
-file here with its original in the job folders (2026-11-03) found each changed JSON file equal to its original once
-the path strings are replaced (the numbers identical, the bytes too), each changed text file equal to its original
-with the paths replaced and one line added at the top, and every other file equal to its original byte for byte. A
-scan of the copies (2026-11-03) found no sandbox provider's key, no other path of the authoring Mac and no account
-name in any file.
+Every file in the variant folders here (all but `agent-m1/`) is a copy of a Harbor trial or job file of the Daytona
+proof run `full2`, one trial per variant. Machine-specific paths were replaced; nothing else was changed (no reward,
+count or timing). A comparison of every file here with its original in the job folders (2026-11-03) found each
+changed JSON file equal to its original once the path strings are replaced (the numbers identical, the bytes too),
+each changed text file equal to its original with the paths replaced and one line added at the top, and every other
+file equal to its original byte for byte. A scan of the copies (2026-11-03) found no sandbox provider's key, no other
+path of the authoring Mac and no account name in any file.
 
 The earlier grader's traces, with the agent trials of 2026-10-30, are in `../first-version/traces/`, which has its
-own `REDACTIONS.md`.
+own `REDACTIONS.md`. The agent trials of run m1 (2026-11-03) are in `agent-m1/`, which has its own `REDACTIONS.md`.
 
 | Placeholder | What it replaces |
 |---|---|
@@ -67,4 +67,4 @@ files cannot carry a comment, so they are listed here, with the text files.
 | `replay_memo/trial.log` (text; first line added) | `<submission>` x2 |
 | `replay_memo/job_lock.json` | `<submission>` x1 |
 
-Files with no machine-specific path (copied byte for byte): 65.
+Files outside `agent-m1/` with no machine-specific path (copied byte for byte): 65.

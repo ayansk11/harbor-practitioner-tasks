@@ -7,7 +7,16 @@ relative to the repository root unless they start with `submission/` (the reposi
 short names such as `tests/grade.py` are inside the task folder `tasks/orders-export-missing-rows/`, and the service's
 own files (`tools/export_orders.py`, `logs/`, `tests/test_api.py`, `INCIDENT.md`) inside its `environment/app/`.
 
-Last updated: 2026-11-02 (Mac clock, MST): section 12 now says what `verifier.timeout_sec` covers (Harbor's source),
+Last updated: 2026-11-04, 00:38 MST (Mac clock): section 9, where it first names the review of run m1, now says that the
+review was made by model agents and is recorded outside this repository.
+Before that, 2026-11-03, 17:34 MST (Mac clock; late edits to 21:15 MST by the file's time): section 9's limitation on
+strong agents now records the agent trials, run m1 of 2026-11-03 among them (Harbor's `terminus-2` agent with four
+models of an OpenAI-compatible model service, two trials each; 6 of 8 pass;
+`validation/orders-export-missing-rows/README.md`, "Agent trials"); section 9 also lists two LOW findings (large
+cursor ids, whose 6-digit limit was found on 2026-10-30 and whose 2^63 corner by the run's review; a slow but correct
+seek, the review's), and a dated note after the gate record (section 11) says what the run adds. No package file, no
+count and no gate verdict changed.
+Before that, 2026-11-02 (Mac clock, MST): section 12 now says what `verifier.timeout_sec` covers (Harbor's source),
 and two multiplication signs are now ASCII `x`.
 Before that, 2026-10-29 (Mac clock, MST): wording edited for outside readers, pointers fixed, and one stale figure
 corrected (the verifier timeout of the 120 s-budget alternative in section 8: near 1,200 s, not 500 s); no verdict
@@ -331,6 +340,28 @@ by the old 240 s budget) (FACT, the first build's local_check.py runs; not saved
   that read `gen_data.py` could predict their shape, but it is not in the package.
 - Easy for strong agents (the main risk named in the brief): "A low pass rate by itself is not a sign of quality"
   (the assignment, "How we will review"). The second code path, the backfilled ids and the insert semantics are where weaker fixes fail.
+  Updated 2026-11-03 (INFERENCE, from the counts below): the agent trials bear this out
+  (`validation/orders-export-missing-rows/README.md`, "Agent trials"; Harbor's `terminus-2` agent).
+  `openai/gpt-oss-120b` passed 3 of 3 on 2026-10-30; in run m1 of 2026-11-03 `gemma-4-31B-it`, `glm-5.3-flash` and
+  `qwen3.8-27b` passed 2 of 2 each and `gpt-oss-120b` 0 of 2, so 9 of 11 in all. Every m1 trial named the cause by
+  its sixth step; one failure fixed only the shared helper (as the attempt `fix_helper_only` does) and the other
+  never landed an edit. Two trials per model are counts, not pass rates.
+- Large cursor ids are not tested (LOW; the 6-digit limit was found in the trials of 2026-10-30, the 2^63 corner by the
+  review of run m1 on 2026-11-03, made by model agents and recorded outside this repository). The grader's malformed
+  cursors (`not-a-cursor`, `!!!`; `tests/grade.py` line 47) fail before any id is parsed, and no order of the hidden
+  database or among the inserted ones has an id of 1,000,000 or more (`validation/orders-export-missing-rows/README.md`,
+  "Agent trials"). So a fix that limits the id to 6 digits (the three passes of 2026-10-30) still scores 1, and so does
+  one that hands an id of 2^63 or more to SQLite unchecked (three passes of run m1; INFERENCE from their code and the
+  library's behaviour, not run against a service: SQLite cannot bind such an integer and `orders_service/app.py` lines
+  14-16 answer only HTTP errors, so the service answers 500, not the 400 of API.md line 36). Clients never build
+  cursors, and no pass relied on it; the canonical accepts up to 18 digits
+  (`solution/canonical/app/orders_service/pagination.py` line 26).
+- A slow but correct seek scores 1 (LOW; found by the same review; accepted by design, sections 5, 7 and 8). The OR
+  form `created_at < ? OR (created_at = ? AND id < ?)` is correct, but the review's query plans (on the Mac's SQLite)
+  show SQLite scanning the index from the newest row instead of seeking into it, so a page costs more the deeper it
+  is: the cost that keyset paging was adopted to remove (`orders_service/pagination.py` lines 3-5, PERF-87). Four of
+  the six passes of run m1 use it; the grader's limit-50 walk of `/orders` (601 pages) took 2.42 to 3.01 s in them
+  and 1.10 and 1.12 s in the two that use the row value, as the canonical does.
 
 ## 10. README row (draft for the repository README)
 | Task | Capability assessed | User-facing objective | How success is checked | Validation run |
@@ -375,6 +406,12 @@ Result: PASS. The (run) items are proven by the recorded Daytona runs of 2026-10
 review (FAIL with the grader as first built) and closed again on local evidence; J, K and L scored 0 on Daytona, so it
 stays closed. Not exercised by the runs: the 900 s budget against the naive full-load fix (section 9). No FAIL.
 ```
+
+Note (2026-11-03, after run m1; the record above is unchanged): the eight agent trials of run m1 ran on this package
+(its digest in all eight `job_lock.json` files). 6 of 8 passed, with both forms of the compound seek (the OR form and
+the row value), which adds to G13; the two failures match designed failure rows (as the attempt `fix_helper_only`
+does, and the original service where no edit landed); INFERENCE (the review's): both are capability gaps and not a task
+defect (G28). Section 9 now lists the review's two LOW findings (G21).
 
 ## 12. Daytona proof results (2026-10-28)
 FACT: `validation/orders-export-missing-rows/PROOF_RESULTS_full1.md` (run `full1`; the same rows are in

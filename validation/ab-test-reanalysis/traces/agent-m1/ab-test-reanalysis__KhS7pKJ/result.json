@@ -1,0 +1,219 @@
+{
+    "id": "fdfdb94d-f414-4838-a04b-d8037a822977",
+    "task_name": "diffuse-labs/ab-test-reanalysis",
+    "trial_name": "ab-test-reanalysis__KhS7pKJ",
+    "trial_uri": "file://<submission>/jobs/agent-trials/ab-test-reanalysis-terminus2-gptoss120b-m1-1/ab-test-reanalysis__KhS7pKJ",
+    "task_id": {
+        "path": "<submission>/jobs/ab-test-reanalysis/package-rev1/ab-test-reanalysis"
+    },
+    "source": null,
+    "task_checksum": "274fcfeb9730803d14e0e19bfa6772a2f81ee82d3477737e0f3fb3e263048240",
+    "config": {
+        "task": {
+            "path": "<submission>/jobs/ab-test-reanalysis/package-rev1/ab-test-reanalysis",
+            "git_url": null,
+            "git_commit_id": null,
+            "name": null,
+            "ref": null,
+            "overwrite": false,
+            "download_dir": null,
+            "source": null
+        },
+        "trial_name": "ab-test-reanalysis__KhS7pKJ",
+        "trials_dir": "<submission>/jobs/agent-trials/ab-test-reanalysis-terminus2-gptoss120b-m1-1",
+        "install_only": false,
+        "timeout_multiplier": 1.0,
+        "agent_timeout_multiplier": null,
+        "verifier_timeout_multiplier": null,
+        "agent_setup_timeout_multiplier": null,
+        "environment_build_timeout_multiplier": 3.0,
+        "agent": {
+            "name": "terminus-2",
+            "import_path": null,
+            "model_name": "openai/gpt-oss-120b",
+            "base_url": null,
+            "model_api_key_name": null,
+            "model_api_format": null,
+            "skip_model_parsing": false,
+            "n_concurrent": null,
+            "concurrency_group": null,
+            "skills": [],
+            "override_timeout_sec": null,
+            "override_setup_timeout_sec": null,
+            "max_timeout_sec": null,
+            "resume_trajectory": false,
+            "load_trajectory": null,
+            "extra_allowed_hosts": [],
+            "kwargs": {
+                "model_info": {
+                    "max_input_tokens": 131072,
+                    "max_output_tokens": 32768,
+                    "input_cost_per_token": 0,
+                    "output_cost_per_token": 0
+                },
+                "api_base": "<model-endpoint>"
+            },
+            "mcp_servers": []
+        },
+        "user_agent": null,
+        "environment": {
+            "type": "daytona",
+            "import_path": null,
+            "force_build": false,
+            "delete": true,
+            "stream": false,
+            "cpu_enforcement_policy": "auto",
+            "memory_enforcement_policy": "auto",
+            "override_cpus": null,
+            "override_memory_mb": null,
+            "override_storage_mb": null,
+            "override_gpus": null,
+            "override_tpu": null,
+            "mounts": null,
+            "extra_docker_compose": [],
+            "kwargs": {},
+            "extra_allowed_hosts": []
+        },
+        "verifier": {
+            "override_timeout_sec": null,
+            "max_timeout_sec": null,
+            "disable": false
+        },
+        "artifacts": [],
+        "extra_instruction_paths": [],
+        "extra_instructions": [],
+        "job_id": "b1e2b50b-bec4-401f-9ba7-57b0e8746bf1",
+        "source_trial": null
+    },
+    "agent_info": {
+        "name": "terminus-2",
+        "version": "2.0.0",
+        "model_info": {
+            "name": "gpt-oss-120b",
+            "provider": "openai"
+        }
+    },
+    "agent_result": {
+        "n_input_tokens": 128899,
+        "n_cache_tokens": 0,
+        "n_output_tokens": 11602,
+        "cost_usd": null,
+        "model_usage": {
+            "gpt-oss-120b": {
+                "n_input_tokens": 128899,
+                "n_cache_tokens": 0,
+                "n_output_tokens": 11602,
+                "cost_usd": null
+            }
+        },
+        "rollout_details": [],
+        "metadata": {
+            "n_episodes": 11,
+            "api_request_times_msec": [
+                3458.2369327545166,
+                4445.645093917847,
+                22055.9241771698,
+                1856.7638397216797,
+                9476.633787155151,
+                9988.90495300293,
+                4184.571027755737,
+                20626.22618675232,
+                17904.747009277344,
+                3177.074909210205,
+                2594.1760540008545
+            ],
+            "summarization_count": 0
+        }
+    },
+    "verifier_result": {
+        "rewards": {
+            "reward": 0.0,
+            "band_hw": 0.25,
+            "run_cap_sec": 120,
+            "res_os_cpu_count": 64,
+            "res_cpu_affinity": 64,
+            "res_cgroup_cpus": 1.0,
+            "res_cgroup_mem_mib": 2048.0,
+            "res_host_memtotal_mib": 773337.81640625,
+            "visible_ok": 0,
+            "visible_problems": 11,
+            "visible_ctr_max_err": 0.0036245435420213246,
+            "visible_diff_err": 0.0012037184089061237,
+            "visible_srm_p_rel_err": 0.9999949490758403,
+            "visible_ci_lo_err_hw": 0.18996271823277494,
+            "visible_ci_hi_err_hw": 0.2661586405515201,
+            "h_null_run_rc": 0,
+            "h_null_run_timed_out": 0,
+            "h_null_run_seconds": 1.225,
+            "h_null_ok": 0,
+            "h_null_problems": 11,
+            "h_null_ctr_max_err": 0.013567980983741651,
+            "h_null_diff_err": 0.015802382674115115,
+            "h_null_srm_p_rel_err": 0.9999981973388455,
+            "h_null_ci_lo_err_hw": 1.4766610403848686,
+            "h_null_ci_hi_err_hw": 1.4736152699614495,
+            "h_pos_run_rc": 0,
+            "h_pos_run_timed_out": 0,
+            "h_pos_run_seconds": 1.325,
+            "h_pos_ok": 0,
+            "h_pos_problems": 11,
+            "h_pos_ctr_max_err": 0.005185524234828681,
+            "h_pos_diff_err": 0.007611075966996034,
+            "h_pos_srm_p_rel_err": 0.999995610809352,
+            "h_pos_ci_lo_err_hw": 1.175766038784049,
+            "h_pos_ci_hi_err_hw": 1.1860585992180095,
+            "h_srm_run_rc": 0,
+            "h_srm_run_timed_out": 0,
+            "h_srm_run_seconds": 1.324,
+            "h_srm_ok": 0,
+            "h_srm_problems": 9,
+            "h_srm_ctr_max_err": 0.008258381259958966,
+            "h_srm_diff_err": 0.010799526437720378,
+            "h_srm_srm_p_rel_err": 0.9999999979333021,
+            "h_srm_ci_lo_err_hw": 1.8748954389328454,
+            "h_srm_ci_hi_err_hw": 1.918593847213809,
+            "h_plain_run_rc": 0,
+            "h_plain_run_timed_out": 0,
+            "h_plain_run_seconds": 1.226,
+            "h_plain_ok": 0,
+            "h_plain_problems": 5,
+            "h_plain_ctr_max_err": 0.002437071955883663,
+            "h_plain_diff_err": 0.00003464801770126924,
+            "h_plain_srm_p_rel_err": 1.4240168292155358e-14,
+            "h_plain_ci_lo_err_hw": 0.0049115351594507,
+            "h_plain_ci_hi_err_hw": 0.006413564945054995,
+            "h_neg_run_rc": 0,
+            "h_neg_run_timed_out": 0,
+            "h_neg_run_seconds": 1.324,
+            "h_neg_ok": 0,
+            "h_neg_problems": 11,
+            "h_neg_ctr_max_err": 0.00848188386776623,
+            "h_neg_diff_err": 0.01108116827015325,
+            "h_neg_srm_p_rel_err": 1.0,
+            "h_neg_ci_lo_err_hw": 2.0229876911606355,
+            "h_neg_ci_hi_err_hw": 1.9905621096761243,
+            "sets_passed": 0
+        }
+    },
+    "verifier_environment_mode": "separate",
+    "exception_info": null,
+    "started_at": "2026-11-03T17:00:37.095423Z",
+    "finished_at": "2026-11-03T17:04:15.205914Z",
+    "environment_setup": {
+        "started_at": "2026-11-03T17:00:37.160356Z",
+        "finished_at": "2026-11-03T17:01:05.037993Z"
+    },
+    "agent_setup": {
+        "started_at": "2026-11-03T17:01:05.038226Z",
+        "finished_at": "2026-11-03T17:01:15.300454Z"
+    },
+    "agent_execution": {
+        "started_at": "2026-11-03T17:01:15.301301Z",
+        "finished_at": "2026-11-03T17:03:30.618393Z"
+    },
+    "verifier": {
+        "started_at": "2026-11-03T17:03:34.614022Z",
+        "finished_at": "2026-11-03T17:04:15.205829Z"
+    },
+    "step_results": null
+}

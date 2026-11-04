@@ -1,0 +1,25 @@
+{
+    "task": {
+        "path": "<submission>/tasks/et0-station-ingest"
+    },
+    "trial_name": "et0-station-ingest__Fd3SWyE",
+    "trials_dir": "<submission>/jobs/agent-trials/et0-station-ingest-terminus2-qwen38-27b-m1-1",
+    "environment_build_timeout_multiplier": 3.0,
+    "agent": {
+        "name": "terminus-2",
+        "model_name": "openai/qwen3.8-27b",
+        "kwargs": {
+            "model_info": {
+                "max_input_tokens": 229376,
+                "max_output_tokens": 32768,
+                "input_cost_per_token": 0,
+                "output_cost_per_token": 0
+            },
+            "api_base": "<model-endpoint>"
+        }
+    },
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "f572248a-fca7-415f-b74a-e263a7b26bc3"
+}

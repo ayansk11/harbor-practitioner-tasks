@@ -5,7 +5,12 @@ from the plan and why, the local checks, the quality-gate record against `docs/Q
 Daytona proof results and the known limitations. Paths are relative to the repository root; short names such as
 `tests/grade.py` are inside the task folder `tasks/et0-station-ingest/`.
 
-Last updated: 2026-11-02 (Mac clock, MST): section 13 now says what `verifier.timeout_sec` covers (Harbor's source).
+Last updated: 2026-11-03, 17:33 MST (Mac clock; late edits to 20:38 MST by the file's time): limitation 2 (section 11)
+now records run m1 of 2026-11-03 (Harbor's `terminus-2` agent with four models of an OpenAI-compatible model service,
+two trials each; 7 of 8 pass; `validation/et0-station-ingest/README.md`, "Agent trials") and what it means for the
+`difficulty` label; a dated note after the gate record (section 10) says what the run adds. No package file, no count
+and no gate verdict changed.
+Before that, 2026-11-02 (Mac clock, MST): section 13 now says what `verifier.timeout_sec` covers (Harbor's source).
 Before that, 2026-10-31 (Mac clock, MST): limitation 2 (section 11) now records the two agent trials of 2026-10-30.
 Before that, 2026-10-30 (Mac clock, MST): limitation 2 (section 11) now records the agent pilot. Before that, 2026-10-29 (Mac clock, MST): wording edited for outside readers and pointers fixed (no number, verdict
 or limitation changed; a byte count added to section 2). Before that, also 2026-10-29: section 13 adds the Daytona proof results of 2026-10-28 and the gate record
@@ -365,6 +370,14 @@ G29 PASS - the three defects are real metadata fields; off-grid hidden heights, 
 G30 PASS (plan) - delivery of the repository is a separate, repository-level step
 Result: PASS (implementation); no FAIL; the (run) items are proven by the recorded Daytona runs of 2026-10-28 (section 13); the grader's own symlink defence (read_as_runner) is still unexercised on Daytona, a second layer behind Harbor's artifact sanitising
 ```
+
+Note (2026-11-03, after run m1; the record above is unchanged): the eight agent trials of run m1 ran on this package
+(its digest in all eight `job_lock.json` files). 7 of 8 passed. INFERENCE (from those counts): this bears out G14's
+"probably at the easy end for a strong agent" and the likely-easy difficulty that G21 lists (limitation 2). The one
+failure missed the hemisphere sign, a capability gap the task targets; the review of the run (`validation/README.md`,
+"Run m1", bullet "Review") found no failure that came from the instruction or the grader (G28; INFERENCE, the
+review's).
+
 What the Daytona proof run must show:
 - oracle x10 = 1; `--ae SOLUTION=alt` = 1; nop = 0; oracle with `--force-build` = 1.
 - each of the nine attempts = 0 with `--ae SOLUTION=<name>`: `fit_to_metservice`, `hardcode_output`, `linear_wind`,
@@ -394,16 +407,25 @@ above, Daytona matrix run full1 (section 13).
 Limitations and open issues (honest):
 1. The radiation-unit defect is blatant (27-35 mm/day at three stations). A real service would likely catch it fast.
    It stays because the approved design includes it; the subtler parts are the wind height and the hemisphere.
-2. Probably easy for a strong agent. FACT: `wind_height_m` and `radiation_units` are loaded in `et0/meta.py` and used
-   nowhere else; `et0/ingest.py` comments the raw columns as already "m/s at 2 m" and "MJ m-2 day-1"; METHOD.md 3.3 and
-   3.4 give both conversions; the hemisphere defect is one line in `meta.py`, and CDB's met-service mismatch points to
-   it. What difficulty there is comes from not following the altitude hint, fixing all three, and making the wind fix
-   general (1 to 20 m, off-grid heights, leap year). The `task.toml` label stays at the approved "easy-medium": three
-   agent trials have run, all with Harbor's `terminus-2` agent and `openai/gpt-oss-120b` (the pilot of 2026-10-29 and
-   two trials on 2026-10-30; reward 0.0 in each, and each left the hemisphere defect in `et0/meta.py`;
-   `validation/et0-station-ingest/README.md`, "Agent pilot" and "Agent trials"). Three trials of one agent and one
-   model are not a pass rate, so neither "easy" nor "easy-medium" is measured (UNVERIFIED). Relabel to "easy" if
-   trials show a high pass rate.
+2. Easy for most of the models tried (first written as "Probably easy for a strong agent"; updated 2026-11-03 after
+   run m1). FACT: `wind_height_m` and `radiation_units` are loaded in `et0/meta.py` and used nowhere else;
+   `et0/ingest.py` comments the raw columns as already "m/s at 2 m" and "MJ m-2 day-1"; METHOD.md 3.3 and 3.4 give
+   both conversions; the hemisphere defect is one line in `meta.py`, and CDB's met-service mismatch points to it. What
+   difficulty there is comes from not following the altitude hint, fixing all three, and making the wind fix general
+   (1 to 20 m, off-grid heights, leap year). Agent trials, all with Harbor's `terminus-2` agent
+   (`validation/et0-station-ingest/README.md`, "Agent pilot" and "Agent trials"): the first three, with
+   `openai/gpt-oss-120b` (the pilot of 2026-10-29 and two trials on 2026-10-30), scored 0.0, each leaving the
+   hemisphere defect in `et0/meta.py`. Run m1 of 2026-11-03, two trials with each of four models of an
+   OpenAI-compatible model service, passed 7 of 8: `gemma-4-31B-it`, `glm-5.3-flash` and `qwen3.8-27b` 2 of 2 each
+   and `gpt-oss-120b` 1 of 2, whose failure left the same defect. Over these 11 trials `gpt-oss-120b` has passed 1 of
+   5 and the three other models 6 of 6. INFERENCE (from those trials): the earlier 0 of 3 reflected one model, not
+   the task; every pass read the three defects from the code and METHOD.md, and the altitude lead decided no trial
+   (its one follower already failed on the hemisphere sign). Two trials per model are counts, not pass rates. This
+   limitation said to relabel the task "easy" if trials show a high pass rate. Three models passed all 6 of their
+   trials and `gpt-oss-120b` passed 1 of 5, so whether that rule is met depends on which models stand for a typical
+   agent, and the authors have not decided it (INFERENCE: "easy" would fit the three models that passed every trial).
+   `task.toml` still says "easy-medium", because it is part of the package, whose Harbor digest every proof and trial
+   ran, and this update changes no package file.
 3. Synthetic weather, not real station records (the repository README says so, under "Known limitations").
 4. The honest-variant list in section 7 is our judgment of what a careful practitioner might do.
 5. Timings are Mac timings; the 60 s cap and 120 s verifier timeout rest on that margin (UNVERIFIED on Daytona when
