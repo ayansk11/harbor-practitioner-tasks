@@ -8,16 +8,17 @@ replaced; nothing else was changed (no reward, count or timing). A comparison of
 the job folders (2026-11-03, by 17:09 MST) found each changed JSON file equal to its original once those strings are
 replaced (the numbers identical), each changed text file equal to its original with the paths replaced and one line
 added at the top, and every other file equal to its original byte for byte. A scan of the copies (2026-11-03) found no
-model service's key, no sandbox provider's key, no service URL or host, no other path of the authoring Mac and no
-account name in any file.
+model service's key, no sandbox provider's key, no URL or host name of the model service, no other path of the authoring
+Mac and no account name in any file.
 
 Each trial folder holds the agent's own record as `terminus-2` wrote it, copied byte for byte: `agent/trajectory.json`
 (Harbor's record of the agent's steps: the model's messages, the keystrokes it sent and what the terminal showed),
 `agent/terminus_2.pane` (the text of the agent's terminal) and `agent/recording.cast` (an asciinema recording of that
-terminal). These records carry the model's own characters unchanged, a few of them outside ASCII (in both
-`gpt-oss-120b` trials a non-breaking hyphen and an en dash, and in `__zhHaP4k` also a less-than-or-equal sign). Not
-copied: each trial's own `lock.json` (equal to the one trial entry of the job's `lock.json`, which is copied as
-`job_lock.json`), the job's `config.json` and `job.log`, the downloaded copy of `/app` (`artifacts/app/`;
+terminal). The shell prompt in the terminal records shows the sandbox's host name (a Daytona sandbox id); it is not a
+credential and was left as is. These records also carry the model's own characters unchanged, a few of them outside
+ASCII (in both `gpt-oss-120b` trials a non-breaking hyphen and an en dash, and in `__zhHaP4k` also a less-than-or-equal
+sign). Not copied: each trial's own `lock.json` (equal to the one trial entry of the job's `lock.json`, which is copied
+as `job_lock.json`), the job's `config.json` and `job.log`, the downloaded copy of `/app` (`artifacts/app/`;
 `artifacts/manifest.json` is copied) and, for the three trials stopped at the agent timeout
 (`feature-leakage-churn__LcSFoqe`, `feature-leakage-churn__MuZJi75` and `feature-leakage-churn__zhHaP4k`),
 `exception.txt`, whose traceback `result.json` also holds (`exception_info`).
